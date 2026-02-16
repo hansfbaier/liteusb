@@ -4,8 +4,8 @@
 # Copyright (c) 2024 Great Scott Gadgets <info@greatscottgadgets.com>
 # Copyright (c) 2025 Hans Baier <foss@hans-baier.de>
 # SPDX-License-Identifier: BSD-3-Clause
-from liteusb.tests           import LiteUSBTestCase, usb_domain_test_case
-from .test_usb2_packet  import USBPacketizerTest
+from liteusb.tests.test_case import LiteUSBTestCase, usb_domain_test_case
+from liteusb.tests.test_usb2_packet import USBPacketizerTest
 
 from liteusb.gateware.usb.usb2         import USBSpeed
 from liteusb.gateware.usb.usb2.request import USBSetupDecoder

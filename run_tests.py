@@ -58,7 +58,8 @@ def discover_tests(test_pattern=None, start_dir=None):
         unittest.TestSuite with discovered tests
     """
     if start_dir is None:
-        start_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tests')
+        # Use the inner liteusb package tests directory
+        start_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'liteusb', 'tests')
     
     if test_pattern:
         # If a specific test file is requested
