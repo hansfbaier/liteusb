@@ -74,7 +74,7 @@ class USBIsochronousStreamInEndpoint(Module):
         self.data_requested = Signal()
         self.frame_finished = Signal()
 
-        self.bytes_in_frame = Signal(range(0, self._MAX_FRAME_DATA + 1))
+        self.bytes_in_frame = Signal(max=self._MAX_FRAME_DATA + 1)
 
         #
         # Internal logic
@@ -91,9 +91,9 @@ class USBIsochronousStreamInEndpoint(Module):
 
         # Track our transmission state.
         bytes_left_in_frame  = Signal.like(self.bytes_in_frame)
-        bytes_left_in_packet = Signal(range(0, self._max_packet_size + 1), reset=self._max_packet_size - 1)
+        bytes_left_in_packet = Signal(max=self._max_packet_size + 1, reset=self._max_packet_size - 1)
         next_data_pid        = Signal(2)
-        tx_cnt               = Signal(range(0, self._MAX_FRAME_DATA))
+        tx_cnt               = Signal(max=self._MAX_FRAME_DATA)
         next_byte            = Signal.like(tx_cnt)
 
         # Helper signals for SEND_DATA state

@@ -73,7 +73,7 @@ class USBIsochronousStreamOutEndpoint(Module):
         overflow = Signal()
 
         # Stores a count of received bytes in the current packet.
-        rx_cnt = Signal(range(self._max_packet_size))
+        rx_cnt = Signal(max=self._max_packet_size)
 
         #
         # Receiver logic.

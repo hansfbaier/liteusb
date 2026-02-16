@@ -6,6 +6,9 @@
 
 """ ULPI interfacing hardware. Ported from Amaranth to Migen. """
 
+import operator
+from functools import reduce
+
 from migen import *
 from migen.genlib.fsm import FSM, NextState
 from migen.genlib.record import Record
@@ -281,7 +284,7 @@ class ULPIRxEventDecoder(Module):
         # Sample the DATA lines whenever these conditions are met
         rx_active_bit = self.ulpi.data.i[4]
         self.sync.usb += [
-            If(receiving & ~self.ulpi.nxt & ~self.register_operation_in_progress,
+            If(receiving & ~self.ulpi.nxt.i & ~self.register_operation_in_progress,
                 self.last_rx_command.eq(self.ulpi.data.i),
 
                 If(~self.rx_active & rx_active_bit,
@@ -437,7 +440,7 @@ class ULPIControlTranslator(Module):
             requests.append(signals['write_requested'])
         
         if requests:
-            self.comb += has_any_request.eq(Cat(*requests).bool())
+            self.comb += has_any_request.eq(reduce(operator.__or__, requests))
 
         # Handle each register
         for address, signals in self._register_signals.items():

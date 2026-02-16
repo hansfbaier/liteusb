@@ -386,13 +386,14 @@ class GetDescriptorHandlerBlock(Module):
             ]
         else:
             # For other domains, use the domain's sync
-            getattr(self, f"_{self._domain}").append(
+            domain_sync = getattr(self.sync, self._domain)
+            domain_sync += [
                 If(words_remaining <= self._max_packet_length,
                     length.eq(words_remaining)
                 ).Else(
                     length.eq(self._max_packet_length)
                 )
-            )
+            ]
 
         # Position tracking
         position_in_stream = Signal(max=descriptor_max_length + 1)
@@ -423,7 +424,8 @@ class GetDescriptorHandlerBlock(Module):
             if self._domain == "sync":
                 self.sync += Case(Cat(index, type_number), idx_cases)
             else:
-                getattr(self, f"_{self._domain}").append(Case(Cat(index, type_number), idx_cases))
+                domain_sync = getattr(self.sync, self._domain)
+                domain_sync += Case(Cat(index, type_number), idx_cases)
         else:
             self.comb += descr_idx.eq(index)
 

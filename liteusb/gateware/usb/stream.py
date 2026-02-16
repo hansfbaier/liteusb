@@ -169,7 +169,6 @@ class USBOutStreamBoundaryDetector(Module):
         # WAIT_FOR_FIRST_BYTE -- we're not actively receiving data, yet. Wait for the
         # first byte of a new packet.
         fsm.act("WAIT_FOR_FIRST_BYTE",
-            getattr(self, "_" + domain).eq(1),  # Mark as active in domain
             out_stream.valid.eq(0),
 
             # We have no data to output, so this can't be our first or last bytes...
