@@ -7,7 +7,8 @@
 
 from liteusb.tests           import LiteUSBUSBTestCase, usb_domain_test_case
 
-from liteusb.gateware.usb.usb2.descriptor import GetDescriptorHandlerBlock, DeviceDescriptorCollection
+from liteusb.gateware.usb.usb2.descriptor import GetDescriptorHandlerBlock
+from usb_protocol.emitters import DeviceDescriptorCollection
 from usb_protocol.types import DescriptorTypes
 
 from usb_protocol.emitters.descriptors.standard import get_string_descriptor
