@@ -175,7 +175,20 @@ class USBSetupDecoder(Module):
 
             # Create our tokenizer...
             self.submodules.tokenizer = tokenizer = USBTokenDetector(utmi=self.utmi)
-            self.comb += tokenizer.interface.connect(self.tokenizer)
+            # Manually connect tokenizer interface signals
+            self.comb += [
+                self.tokenizer.pid.eq(tokenizer.interface.pid),
+                self.tokenizer.address.eq(tokenizer.interface.address),
+                self.tokenizer.endpoint.eq(tokenizer.interface.endpoint),
+                self.tokenizer.new_token.eq(tokenizer.interface.new_token),
+                self.tokenizer.ready_for_response.eq(tokenizer.interface.ready_for_response),
+                self.tokenizer.frame.eq(tokenizer.interface.frame),
+                self.tokenizer.new_frame.eq(tokenizer.interface.new_frame),
+                self.tokenizer.is_in.eq(tokenizer.interface.is_in),
+                self.tokenizer.is_out.eq(tokenizer.interface.is_out),
+                self.tokenizer.is_setup.eq(tokenizer.interface.is_setup),
+                self.tokenizer.is_ping.eq(tokenizer.interface.is_ping),
+            ]
 
             # ... and our timer.
             self.submodules.timer = timer = USBInterpacketTimer()

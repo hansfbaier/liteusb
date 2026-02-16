@@ -490,10 +490,8 @@ class GetDescriptorHandlerBlock(Module):
         fsm.act("SEND_DESCRIPTOR",
             self.tx.valid.eq(1),
             rom_read_port.adr.eq(descriptor_data_base_address + word_in_stream),
-            # Byte select: reverse byte order within word (word_select(~byte_in_stream, 8))
-            self.tx.payload.eq(rom_read_port.dat_r[
-                ((3 - byte_in_stream) * 8):((3 - byte_in_stream) * 8 + 8)
-            ]),
+            # Byte select: reverse byte order within word using part()
+            self.tx.payload.eq(rom_read_port.dat_r.part((3 - byte_in_stream) * 8, 8)),
             self.tx.first.eq(on_first_packet),
             self.tx.last.eq(on_last_packet),
 

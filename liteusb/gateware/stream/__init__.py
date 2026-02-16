@@ -117,12 +117,19 @@ class StreamInterface(Record):
 
 
 
+    @property
+    def p(self):
+        """ Shorthand for accessing payload-related signals (payload/data, first, last). """
+        return self
+
     def __getattr__(self, name):
 
         # Allow "data" to be a semantic alias for payload.
         # In some cases, this makes more sense to write; so we'll allow either.
         # Individual sections of the code base should stick to one or the other (please).
         if name == 'data':
-            name = "payload"
+            # Access the payload field directly
+            return object.__getattribute__(self, 'payload')
 
-        return super().__getattr__(name)
+        # For any other attribute, raise AttributeError
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")

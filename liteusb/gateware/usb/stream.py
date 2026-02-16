@@ -85,7 +85,11 @@ class USBOutStreamInterface(Record):
 
     def stream_eq(self, other):
         """ Generates a list of connections that connect this stream to the provided UTMIReceiveInterface. """
-        return self.connect(other)
+        return [
+            self.valid.eq(other.valid),
+            self.next.eq(other.next),
+            self.payload.eq(other.payload),
+        ]
 
 
 

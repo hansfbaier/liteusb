@@ -101,6 +101,7 @@ class TransactionalizedFIFO(Module):
 
         # Range shortcuts for internal signals.
         address_range = range(0, depth + 1)
+        address_bits = (depth + 1).bit_length()
 
         #
         # Core internal "backing store".
@@ -125,8 +126,8 @@ class TransactionalizedFIFO(Module):
 
         # We'll track two pieces of data: our _committed_ write position, and our current un-committed write one.
         # This will allow us to rapidly backtrack to our pre-commit position.
-        committed_write_pointer = Signal(address_range)
-        current_write_pointer   = Signal(address_range)
+        committed_write_pointer = Signal(address_bits)
+        current_write_pointer   = Signal(address_bits)
         self.comb += write_port.adr.eq(current_write_pointer)
 
 
@@ -164,8 +165,8 @@ class TransactionalizedFIFO(Module):
 
         # We'll track two pieces of data: our _committed_ read position, and our current un-committed read one.
         # This will allow us to rapidly backtrack to our pre-commit position.
-        committed_read_pointer = Signal(address_range)
-        current_read_pointer   = Signal(address_range)
+        committed_read_pointer = Signal(address_bits)
+        current_read_pointer   = Signal(address_bits)
 
 
         # Compute the location for the next read, accounting for wraparound. We'll not assume a binary-sized
