@@ -1,0 +1,255 @@
+# LiteUSB
+
+```
+              Copyright 2020-2025 / Great Scott Gadgets & Enjoy-Digital
+```
+
+[![](https://github.com/enjoy-digital/liteusb/workflows/ci/badge.svg)](https://github.com/enjoy-digital/liteusb/actions)
+![License](https://img.shields.io/badge/License-BSD%203--Clause-orange.svg)
+
+## Overview
+
+**LiteUSB** is a small footprint and configurable USB device gateware library, originally developed as a port of [LUNA](https://github.com/greatscottgadgets/luna) from Amaranth HDL to Migen/LiteX. It provides a complete USB 2.0 device stack for FPGA designs, enabling easy integration of USB functionality into System-on-Chip (SoC) designs.
+
+### Key Features
+
+- :heavy_check_mark: **USB 2.0 Device Support**: Full-speed (12 Mbps) and high-speed (480 Mbps) operation
+- :heavy_check_mark: **Multiple PHY Interfaces**: ULPI and UTMI PHY support
+- :heavy_check_mark: **LiteX Integration**: Native integration with LiteX SoC framework
+- :heavy_check_mark: **Migen-based**: Uses Migen for hardware description
+- :heavy_check_mark: **Configurable**: Modular design allows selecting only needed components
+- :heavy_check_mark: **Standard Compliant**: Standard USB request handlers and descriptors
+- :heavy_check_mark: **Endpoint Support**: Control, Bulk, Interrupt, and Isochronous endpoints
+- :heavy_check_mark: **Simulation Support**: Tested and verifiable with simulation
+
+### Architecture
+
+```
+                    +------------------+
+                    |   USB Host       |
+                    +--------+---------+
+                             |
+                    +--------v---------+
+                    |    ULPI/UTMI     |
+                    |      PHY         |
+                    +--------+---------+
+                             |
+                    +--------v---------+
+                    |   LiteUSB Core   |
+                    |  - USB Device    |
+                    |  - Endpoints     |
+                    |  - Descriptors   |
+                    +--------+---------+
+                             |
+            +----------------+----------------+
+            |                |                |
+    +-------v-------+ +------v------+ +------v------+
+    |   Control     | |   Bulk      | |  Interrupt  |
+    |   Endpoint    | |  Endpoints  | |  Endpoints  |
+    |   (EP0)       | |             | |             |
+    +---------------+ +-------------+ +-------------+
+```
+
+## Installation
+
+### Prerequisites
+
+- Python 3.7+
+- Migen
+- LiteX
+- usb-protocol
+
+### Install from Source
+
+```bash
+# Clone the repository
+git clone https://github.com/enjoy-digital/liteusb.git
+cd liteusb
+
+# Install dependencies and liteusb
+pip install -e .
+
+# Or install directly from PyPI (when available)
+pip install liteusb
+```
+
+### Using LiteX Setup Script
+
+If you're using the LiteX ecosystem, the recommended way to install is via the litex_setup script:
+
+```bash
+# Download and run the LiteX setup script
+wget https://raw.githubusercontent.com/enjoy-digital/litex/master/litex_setup.py
+chmod +x litex_setup.py
+./litex_setup.py --init --install --user
+```
+
+## Quick Start
+
+### Basic Usage
+
+```python
+from migen import *
+from liteusb import USBDevice
+from liteusb.gateware.interface.ulpi import ULPIInterface
+
+# Create USB device with PHY
+phy = platform.request("usb")
+usb = USBDevice(bus=phy)
+
+# Add standard control endpoint with descriptors
+from usb_protocol.emitters import DeviceDescriptorCollection
+
+descriptors = DeviceDescriptorCollection()
+with descriptors.DeviceDescriptor() as d:
+    d.idVendor = 0x1209
+    d.idProduct = 0x0001
+    d.iManufacturer = "LiteUSB"
+    d.iProduct = "My Device"
+
+usb.add_standard_control_endpoint(descriptors)
+```
+
+### Complete Example
+
+See [examples/simple_device.py](examples/simple_device.py) for a complete working example:
+
+```python
+#!/usr/bin/env python3
+from migen import *
+from liteusb import USBDevice
+from usb_protocol.emitters import DeviceDescriptorCollection
+
+class MyUSBDevice(Module):
+    def __init__(self, phy):
+        self.submodules.usb = usb = USBDevice(bus=phy)
+        
+        # Create descriptors
+        descriptors = DeviceDescriptorCollection()
+        with descriptors.DeviceDescriptor() as d:
+            d.idVendor = 0x1209
+            d.idProduct = 0x0001
+        
+        # Add control endpoint
+        usb.add_standard_control_endpoint(descriptors)
+        
+        # Connect device
+        self.comb += usb.connect.eq(1)
+```
+
+### Integration with LiteX Platform
+
+```python
+from litex_boards.platforms import my_platform
+from litex.build.generic_platform import Pins, IOStandard
+
+# Create platform
+platform = my_platform.Platform()
+
+# Add USB PHY resource (if not already defined)
+platform.add_extension([
+    ("usb", 0,
+        Subsignal("clk", Pins("A1")),
+        Subsignal("stp", Pins("B1")),
+        Subsignal("dir", Pins("C1")),
+        Subsignal("nxt", Pins("D1")),
+        Subsignal("data", Pins("E1 E2 E3 E4 E5 E6 E7 E8")),
+        IOStandard("LVCMOS33"),
+    ),
+])
+
+# Build the design
+from litex.soc.integration.builder import Builder
+builder = Builder(soc)
+builder.build()
+```
+
+## Available Modules
+
+### Core Modules
+
+| Module | Description |
+|--------|-------------|
+| `liteusb.USBDevice` | Main USB device class |
+| `liteusb.gateware.usb.usb2.device` | USB 2.0 device implementation |
+| `liteusb.gateware.usb.usb2.control` | Control endpoint (EP0) |
+
+### Endpoint Types
+
+| Module | Description |
+|--------|-------------|
+| `liteusb.gateware.usb.usb2.endpoints.stream` | Stream-based endpoints |
+| `liteusb.gateware.usb.usb2.endpoints.isochronous` | Isochronous endpoints |
+| `liteusb.gateware.usb.usb2.endpoints.status` | Status endpoints |
+
+### PHY Interfaces
+
+| Module | Description |
+|--------|-------------|
+| `liteusb.gateware.interface.ulpi` | ULPI PHY interface |
+| `liteusb.gateware.interface.utmi` | UTMI PHY interface |
+
+### Request Handlers
+
+| Module | Description |
+|--------|-------------|
+| `liteusb.gateware.usb.request.standard` | Standard USB requests |
+| `liteusb.gateware.usb.request.interface` | Interface request handler |
+
+### Utilities
+
+| Module | Description |
+|--------|-------------|
+| `liteusb.gateware.utils.cdc` | Clock domain crossing |
+| `liteusb.gateware.utils.bus` | Bus utilities |
+| `liteusb.gateware.utils.io` | I/O utilities |
+
+## Documentation
+
+For more detailed documentation, examples, and API reference, visit the [LiteUSB Wiki](https://github.com/enjoy-digital/liteusb/wiki).
+
+### Related Projects
+
+- [LUNA](https://github.com/greatscottgadgets/luna) - Original Amaranth-based USB library
+- [LiteX](https://github.com/enjoy-digital/litex) - SoC builder framework
+- [Migen](https://github.com/m-labs/migen) - Python-based HDL
+
+## License
+
+This project is licensed under the **BSD 3-Clause License**. See the LICENSE file for details.
+
+```
+Copyright (c) 2020-2025 Great Scott Gadgets <info@greatscottgadgets.com>
+Copyright (c) 2020-2025 Florent Kermarrec <florent@enjoy-digital.fr>
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
+## Contact
+
+- **Issues**: [GitHub Issues](https://github.com/enjoy-digital/liteusb/issues)
+- **Email**: florent@enjoy-digital.fr
+- **LiteX Discord**: [Join Discord](https://discord.gg/PkJwjDbxeG)
