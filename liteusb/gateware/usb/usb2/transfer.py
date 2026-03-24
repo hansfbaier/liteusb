@@ -146,7 +146,7 @@ class USBInTransferManager(Module):
         buffer_read_ports = [
             buffer[i].get_port(clock_domain="usb") for i in range(2)
         ]
-        # Memory ports are part of the Memory special, don't add to submodules
+        self.specials += buffer_write_ports + buffer_read_ports
 
         # Create values equivalent to the buffer numbers for our read and write buffer; which switch
         # whenever we swap our two buffers.
@@ -194,13 +194,17 @@ class USBInTransferManager(Module):
             read_stream_ended.eq(0),
         )
 
+        # Create write enable signal
+        buffer_0_we = in_stream.valid & in_stream.ready & ~self.buffer_toggle
+        buffer_1_we = in_stream.valid & in_stream.ready & self.buffer_toggle
+
         # Increment our fill count whenever we accept new data.
-        self.sync.usb += If(~self.discard & buffer_write.we,
+        self.sync.usb += If(~self.discard & (buffer_0_we | buffer_1_we),
             write_fill_count.eq(write_fill_count + 1)
         )
 
         # If the stream ends while we're adding data to the buffer, mark this as an ended stream.
-        self.sync.usb += If(in_stream.last & buffer_write.we,
+        self.sync.usb += If(in_stream.last & (buffer_0_we | buffer_1_we),
             write_stream_ended.eq(1)
         )
 
@@ -221,7 +225,9 @@ class USBInTransferManager(Module):
 
             # We're ready to receive data iff we have space in the buffer we're currently filling.
             in_stream.ready.eq((write_fill_count != self._max_packet_size) & ~write_stream_ended),
-            buffer_write.we.eq(in_stream.valid & in_stream.ready)
+            # Drive write enable for both ports - only the active buffer will actually write
+            buffer_write_ports[0].we.eq(in_stream.valid & in_stream.ready & ~self.buffer_toggle),
+            buffer_write_ports[1].we.eq(in_stream.valid & in_stream.ready & self.buffer_toggle)
         ]
 
         # A packet is completing when:
@@ -249,6 +255,7 @@ class USBInTransferManager(Module):
         # Main FSM
         #
         fsm = FSM(reset_state="WAIT_FOR_DATA")
+        fsm = ClockDomainsRenamer("usb")(fsm)
         self.submodules.fsm = fsm
 
         # WAIT_FOR_DATA -- We don't yet have a full packet to transmit, so  we'll capture data

@@ -149,18 +149,22 @@ class USBInTransferManagerTest(LiteUSBUSBTestCase):
 
         # If we're sent a full packet _without the transfer stream ending_...
         yield transfer_stream.valid.eq(1)
-        for value in [0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88]:
+        for i, value in enumerate([0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88]):
             yield transfer_stream.payload.eq(value)
             yield
+        
         yield transfer_stream.valid.eq(0)
 
 
+        # Wait for FSM to process the completed packet and move to WAIT_TO_SEND state
+        yield
+        
         # ... we should receive that data packet without a ZLP.
         yield from self.pulse(dut.tokenizer.ready_for_response)
-        # Note: +2 cycle delay for Migen simulation timing vs Amaranth (memory read latency)
-        # First cycle for FSM transition, second cycle for memory read
+        
+        # Note: +1 cycle delay for Migen simulation timing vs Amaranth (memory read latency)
         yield
-        yield
+        
         for value in [0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88]:
             self.assertEqual((yield packet_stream.payload), value)
             yield
