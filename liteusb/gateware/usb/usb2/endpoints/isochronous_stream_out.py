@@ -83,7 +83,7 @@ class USBIsochronousStreamOutEndpoint(Module):
         # internally as our main stream.
         self.submodules.boundary_detector = boundary_detector = USBOutStreamBoundaryDetector()
         self.comb += [
-            interface.rx.stream_eq(boundary_detector.unprocessed_stream),
+            boundary_detector.unprocessed_stream.stream_eq(interface.rx),
             boundary_detector.complete_in.eq(interface.rx_complete),
             boundary_detector.invalid_in.eq(interface.rx_invalid),
         ]

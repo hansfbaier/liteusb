@@ -195,22 +195,18 @@ class USBIsochronousStreamOutEndpointTest(LiteUSBUSBTestCase):
         # self.assertEqual((yield consumer.p.data), data[0])
 
         # ... until we finally mark the packet as complete and invalidate the producer stream.
-        # Keep the stream valid, assert rx_complete, then end the stream - this ensures
-        # the boundary detector captures complete_in while in RECEIVE_AND_TRANSMIT state
-        # and then transitions to OUTPUT_STROBES when the stream ends
+        # Assert rx_complete while stream is still valid, then end the stream
         yield dut.interface.rx_complete.eq(1)
         yield
-        yield dut.interface.rx_complete.eq(0)
-        # Now end the stream - boundary_detector will output complete_out next cycle
+        yield
         yield producer.valid.eq(0)
         yield producer.next.eq(0)
         yield
+        yield dut.interface.rx_complete.eq(0)
+        yield
 
-        # After additional cycles for the TransactionalizedFIFO to commit after boundary detector
-        # processes the complete signal and FIFO updates
-        # Note: For Migen, we need significantly more cycles than Amaranth due to different
-        # simulation timing semantics for TransactionalizedFIFO and boundary detector
-        for _ in range(20):
+        # Wait for boundary detector to output complete_out and FIFO to commit
+        for _ in range(5):
             yield
 
         self.assertEqual((yield consumer.valid), 1)
