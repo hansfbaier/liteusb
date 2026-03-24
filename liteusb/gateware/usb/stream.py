@@ -8,6 +8,7 @@
 """ Core stream definitions. """
 
 from migen import *
+from migen.genlib.fsm import NextValue
 
 from ..stream         import StreamInterface
 from ..stream.arbiter import StreamArbiter
@@ -166,8 +167,10 @@ class USBOutStreamBoundaryDetector(Module):
         buffered_complete = Signal()
         buffered_invalid  = Signal()
 
-        # Create the finite state machine
+        # Create the finite state machine in the usb domain
         fsm = FSM(reset_state="WAIT_FOR_FIRST_BYTE")
+        # Explicitly place FSM in the usb domain to match the test clock
+        fsm = ClockDomainsRenamer("usb")(fsm)
         self.submodules += fsm
 
         # WAIT_FOR_FIRST_BYTE -- we're not actively receiving data, yet. Wait for the
@@ -189,7 +192,7 @@ class USBOutStreamBoundaryDetector(Module):
             # Once we've received our first byte, buffer it, and mark it as our first byte.
             If(in_stream.valid & in_stream.next,
                 buffered_byte.eq(in_stream.payload),
-                is_first_byte.eq(1),
+                NextValue(is_first_byte, 1),
                 NextState("RECEIVE_AND_TRANSMIT")
             )
         )
@@ -208,16 +211,16 @@ class USBOutStreamBoundaryDetector(Module):
 
             # If we get a new byte, emit our buffered byte, and store the incoming byte.
             If(in_stream.valid & in_stream.next,
+                # indicate whether our current byte was the first byte captured...
+                self.first.eq(is_first_byte),
+
                 # Output our buffered byte...
                 out_stream.payload.eq(buffered_byte),
                 out_stream.next.eq(1),
 
-                # indicate whether our current byte was the first byte captured...
-                self.first.eq(is_first_byte),
-
                 # ... and store the new, incoming byte.
                 buffered_byte.eq(in_stream.payload),
-                is_first_byte.eq(0)
+                NextValue(is_first_byte, 0)
             ),
 
             # Once we no longer have an active packet, transmit our _last_ byte,
@@ -230,6 +233,7 @@ class USBOutStreamBoundaryDetector(Module):
 
                 # ... and indicate that it's the last byte in our stream.
                 self.last.eq(1),
+                NextValue(is_first_byte, 0),
                 NextState("OUTPUT_STROBES")
             )
         )
