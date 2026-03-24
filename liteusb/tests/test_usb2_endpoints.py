@@ -208,7 +208,9 @@ class USBIsochronousStreamOutEndpointTest(LiteUSBUSBTestCase):
 
         # After additional cycles for the TransactionalizedFIFO to commit after boundary detector
         # processes the complete signal and FIFO updates
-        for _ in range(12):
+        # Note: For Migen, we need significantly more cycles than Amaranth due to different
+        # simulation timing semantics for TransactionalizedFIFO and boundary detector
+        for _ in range(20):
             yield
 
         self.assertEqual((yield consumer.valid), 1)

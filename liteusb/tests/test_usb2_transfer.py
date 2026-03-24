@@ -69,6 +69,7 @@ class USBInTransferManagerTest(LiteUSBUSBTestCase):
             yield
 
         # Once we've filled up -both- buffers, our data should no longer be ready.
+        # Note: For Migen, we need to yield once more than Amaranth to see the updated state
         yield
         self.assertEqual((yield transfer_stream.ready), 0)
 
@@ -76,6 +77,8 @@ class USBInTransferManagerTest(LiteUSBUSBTestCase):
         yield from self.pulse(dut.tokenizer.ready_for_response)
 
         # ... we should start transmitting...
+        # Note: +1 cycle delay for Migen simulation timing vs Amaranth
+        yield
         self.assertEqual((yield packet_stream.valid), 1)
 
         # ... we should see the full packet be emitted...
@@ -153,6 +156,8 @@ class USBInTransferManagerTest(LiteUSBUSBTestCase):
 
         # ... we should receive that data packet without a ZLP.
         yield from self.pulse(dut.tokenizer.ready_for_response)
+        # Note: +1 cycle delay for Migen simulation timing vs Amaranth (memory read latency)
+        yield
         for value in [0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88]:
             self.assertEqual((yield packet_stream.payload), value)
             yield
@@ -176,6 +181,8 @@ class USBInTransferManagerTest(LiteUSBUSBTestCase):
 
         # ... we should emit the relevant data packet...
         yield from self.pulse(dut.tokenizer.ready_for_response)
+        # Note: +1 cycle delay for Migen simulation timing vs Amaranth (memory read latency)
+        yield
         for value in [0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88]:
             self.assertEqual((yield packet_stream.payload), value)
             yield
@@ -203,6 +210,8 @@ class USBInTransferManagerTest(LiteUSBUSBTestCase):
 
         # ... we should emit the relevant short packet...
         yield from self.pulse(dut.tokenizer.ready_for_response)
+        # Note: +1 cycle delay for Migen simulation timing vs Amaranth (memory read latency)
+        yield
         for value in [0xAA, 0xBB, 0xCC, 0xDD]:
             self.assertEqual((yield packet_stream.payload), value)
             yield
@@ -242,6 +251,8 @@ class USBInTransferManagerTest(LiteUSBUSBTestCase):
         yield from self.pulse(dut.tokenizer.ready_for_response)
 
         # ... we should start transmitting...
+        # Note: +1 cycle delay for Migen simulation timing vs Amaranth
+        yield
         self.assertEqual((yield packet_stream.valid), 1)
 
         # ... and should see the full packet be emitted...
@@ -281,6 +292,8 @@ class USBInTransferManagerTest(LiteUSBUSBTestCase):
         yield from self.pulse(dut.tokenizer.ready_for_response)
 
         # ... we should start transmitting...
+        # Note: +1 cycle delay for Migen simulation timing vs Amaranth
+        yield
         self.assertEqual((yield packet_stream.valid), 1)
 
         # ... and should see the full packet be emitted...

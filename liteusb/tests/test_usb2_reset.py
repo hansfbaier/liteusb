@@ -59,7 +59,10 @@ class USBResetSequencerTest(LiteUSBUSBTestCase):
         self.assertEqual((yield dut.bus_reset), 0)
 
         # ... we choose to wait for 5us and then we should see a cycle of reset.
+        # Note: Migen simulation timing requires checking reset signal during the cycle it's asserted
+        # The bus_reset signal is asserted combinationally when timer == _CYCLES_5_MICROSECONDS
         yield from self.advance_cycles(dut._CYCLES_5_MICROSECONDS)
+        # Check bus_reset on the exact cycle it's asserted (Migen timing difference from Amaranth)
         self.assertEqual((yield dut.bus_reset), 1)
 
         yield from self.advance_cycles(10)
