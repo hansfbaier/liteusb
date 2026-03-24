@@ -10,7 +10,7 @@
 import functools
 import operator
 
-from migen import Signal, Module, Cat
+from migen import Signal, Module, Cat, If
 from migen.genlib.fsm import FSM, NextState
 from migen.genlib.coding import Encoder
 from migen.genlib.record import Record
@@ -174,7 +174,7 @@ class USBSetupDecoder(Module):
         if self.standalone:
 
             # Create our tokenizer...
-            self.submodules.tokenizer = tokenizer = USBTokenDetector(utmi=self.utmi)
+            self.submodules.tokenizer_module = tokenizer = USBTokenDetector(utmi=self.utmi)
             # Manually connect tokenizer interface signals
             self.comb += [
                 self.tokenizer.pid.eq(tokenizer.interface.pid),
@@ -191,7 +191,7 @@ class USBSetupDecoder(Module):
             ]
 
             # ... and our timer.
-            self.submodules.timer = timer = USBInterpacketTimer()
+            self.submodules.timer_module = timer = USBInterpacketTimer()
             timer.add_interface(self.timer)
 
             self.comb += timer.speed.eq(self.speed)

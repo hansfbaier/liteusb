@@ -137,8 +137,7 @@ class USBInTransferManager(Module):
         # We'll create two buffers; so we can fill one as we empty the other.
         transmit_buffer_0 = Memory(8, self._max_packet_size)
         transmit_buffer_1 = Memory(8, self._max_packet_size)
-        self.submodules.transmit_buffer_0 = transmit_buffer_0
-        self.submodules.transmit_buffer_1 = transmit_buffer_1
+        self.specials += [transmit_buffer_0, transmit_buffer_1]
         
         buffer = [transmit_buffer_0, transmit_buffer_1]
         buffer_write_ports = [
@@ -147,10 +146,7 @@ class USBInTransferManager(Module):
         buffer_read_ports = [
             buffer[i].get_port(clock_domain="usb") for i in range(2)
         ]
-        self.submodules.buffer_write_port_0 = buffer_write_ports[0]
-        self.submodules.buffer_write_port_1 = buffer_write_ports[1]
-        self.submodules.buffer_read_port_0 = buffer_read_ports[0]
-        self.submodules.buffer_read_port_1 = buffer_read_ports[1]
+        # Memory ports are part of the Memory special, don't add to submodules
 
         # Create values equivalent to the buffer numbers for our read and write buffer; which switch
         # whenever we swap our two buffers.

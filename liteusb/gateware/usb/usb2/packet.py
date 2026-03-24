@@ -11,7 +11,7 @@ import operator
 import functools
 
 from migen import *
-from migen.genlib.record import Record
+from migen.genlib.record import Record, DIR_M_TO_S, DIR_S_TO_M
 from migen.genlib.fsm import FSM
 
 from . import USBSpeed, USBPacketID
@@ -70,8 +70,8 @@ class DataCRCInterface(Record):
 
     def __init__(self):
         super().__init__([
-            ('start', 1),
-            ('crc',   16)
+            ('start', 1, DIR_S_TO_M),
+            ('crc',   16, DIR_M_TO_S)
         ])
 
 
@@ -146,11 +146,11 @@ class InterpacketTimerInterface(Record):
 
     def __init__(self):
         super().__init__([
-            ('start',      1),
+            ('start',      1, DIR_S_TO_M),
 
-            ('tx_allowed', 1),
-            ('tx_timeout', 1),
-            ('rx_timeout', 1),
+            ('tx_allowed', 1, DIR_M_TO_S),
+            ('tx_timeout', 1, DIR_M_TO_S),
+            ('rx_timeout', 1, DIR_M_TO_S),
         ])
 
 
