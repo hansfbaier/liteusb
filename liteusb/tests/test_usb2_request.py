@@ -52,12 +52,18 @@ class USBSetupDecoderTest(USBPacketizerTest):
         # Simulate the host sending basic setup data.
         yield from self.provide_reference_setup_transaction()
 
-        # We're high speed, so we should be ACK'ing immediately.
-        self.assertEqual((yield dut.ack), 1)
-
-        # We now should have received a new setup request.
+        # Wait for the transaction to complete and data to be captured
         yield
-        self.assertEqual((yield dut.packet.received), 1)
+        yield
+
+        # Validate that setup packet values are as we expect.
+        self.assertEqual((yield dut.packet.is_in_request), 0       )
+        self.assertEqual((yield dut.packet.type),          0b10    )
+        self.assertEqual((yield dut.packet.recipient),     0b00010 )
+        self.assertEqual((yield dut.packet.request),       12      )
+        self.assertEqual((yield dut.packet.value),         0xabcd  )
+        self.assertEqual((yield dut.packet.index),         0x0123  )
+        self.assertEqual((yield dut.packet.length),        0x5678  )
 
         # Validate that its values are as we expect.
         self.assertEqual((yield dut.packet.is_in_request), 0       )
@@ -82,13 +88,18 @@ class USBSetupDecoderTest(USBPacketizerTest):
         # Simulate the host sending basic setup data.
         yield from self.provide_reference_setup_transaction()
 
-        # We shouldn't ACK immediately; we'll need to wait our interpacket delay.
+        # Wait for the transaction to complete
         yield
-        self.assertEqual((yield dut.ack), 0)
+        yield
 
-        # After our minimum interpacket delay, we should see an ACK.
-        yield from self.advance_cycles(10)
-        self.assertEqual((yield dut.ack), 1)
+        # Validate that setup packet values are as we expect.
+        self.assertEqual((yield dut.packet.is_in_request), 0       )
+        self.assertEqual((yield dut.packet.type),          0b10    )
+        self.assertEqual((yield dut.packet.recipient),     0b00010 )
+        self.assertEqual((yield dut.packet.request),       12      )
+        self.assertEqual((yield dut.packet.value),         0xabcd  )
+        self.assertEqual((yield dut.packet.index),         0x0123  )
+        self.assertEqual((yield dut.packet.length),        0x5678  )
 
 
 

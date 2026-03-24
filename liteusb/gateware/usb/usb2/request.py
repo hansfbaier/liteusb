@@ -11,7 +11,7 @@ import functools
 import operator
 
 from migen import Signal, Module, Cat, If
-from migen.genlib.fsm import FSM, NextState
+from migen.genlib.fsm import FSM, NextState, NextValue
 from migen.genlib.coding import Encoder
 from migen.genlib.record import Record
 
@@ -238,13 +238,14 @@ class USBSetupDecoder(Module):
                 # If we got exactly eight bytes, this is a valid setup packet.
                 If(data_handler.length == 8,
                     # Collect the signals that make up our bmRequestType [USB2, 9.3].
-                    self.packet.recipient.eq(data_handler.packet[0][0:2]),
-                    self.packet.type.eq(data_handler.packet[0][5:7]),
-                    self.packet.is_in_request.eq(data_handler.packet[0][7]),
-                    self.packet.request.eq(data_handler.packet[1]),
-                    self.packet.value.eq(Cat(data_handler.packet[2], data_handler.packet[3])),
-                    self.packet.index.eq(Cat(data_handler.packet[4], data_handler.packet[5])),
-                    self.packet.length.eq(Cat(data_handler.packet[6], data_handler.packet[7])),
+                    # Use NextValue to store in registers so data persists after FSM exits this state
+                    NextValue(self.packet.recipient,    data_handler.packet[0][0:2]),
+                    NextValue(self.packet.type,         data_handler.packet[0][5:7]),
+                    NextValue(self.packet.is_in_request, data_handler.packet[0][7]),
+                    NextValue(self.packet.request,      data_handler.packet[1]),
+                    NextValue(self.packet.value,        Cat(data_handler.packet[2], data_handler.packet[3])),
+                    NextValue(self.packet.index,        Cat(data_handler.packet[4], data_handler.packet[5])),
+                    NextValue(self.packet.length,       Cat(data_handler.packet[6], data_handler.packet[7])),
                     # ... and indicate that we have new data.
                     self.packet.received.eq(1),
                     # We'll now need to wait a receive-transmit delay before initiating our ACK.
