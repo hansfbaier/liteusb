@@ -176,22 +176,9 @@ class USBOutStreamBoundaryDetector(Module):
         # WAIT_FOR_FIRST_BYTE -- we're not actively receiving data, yet. Wait for the
         # first byte of a new packet.
         fsm.act("WAIT_FOR_FIRST_BYTE",
-            out_stream.valid.eq(0),
-
-            # We have no data to output, so this can't be our first or last bytes...
-            self.first.eq(0),
-            self.last.eq(0),
-            out_stream.next.eq(0),
-
-            # ... and we can't have gotten a complete or invalid strobe that matters to us.
-            buffered_complete.eq(0),
-            buffered_invalid.eq(0),
-            self.complete_out.eq(0),
-            self.invalid_out.eq(0),
-
             # Once we've received our first byte, buffer it, and mark it as our first byte.
             If(in_stream.valid & in_stream.next,
-                buffered_byte.eq(in_stream.payload),
+                NextValue(buffered_byte, in_stream.payload),
                 NextValue(is_first_byte, 1),
                 NextState("RECEIVE_AND_TRANSMIT")
             )
@@ -201,54 +188,80 @@ class USBOutStreamBoundaryDetector(Module):
         # We'll transmit one byte per byte received; ensuring we always retain a single byte --
         # our last byte.
         fsm.act("RECEIVE_AND_TRANSMIT",
-            out_stream.valid.eq(1),
-            out_stream.next.eq(0),
-
             # Buffer any complete/invalid signals we get while receiving, so we don't output
             # them before we finish outputting our processed stream.
-            buffered_complete.eq(buffered_complete | self.complete_in),
-            buffered_invalid.eq(buffered_invalid | self.invalid_in),
+            NextValue(buffered_complete, buffered_complete | self.complete_in),
+            NextValue(buffered_invalid, buffered_invalid | self.invalid_in),
 
             # If we get a new byte, emit our buffered byte, and store the incoming byte.
             If(in_stream.valid & in_stream.next,
-                # indicate whether our current byte was the first byte captured...
-                self.first.eq(is_first_byte),
-
-                # Output our buffered byte...
-                out_stream.payload.eq(buffered_byte),
-                out_stream.next.eq(1),
-
                 # ... and store the new, incoming byte.
-                buffered_byte.eq(in_stream.payload),
+                NextValue(buffered_byte, in_stream.payload),
                 NextValue(is_first_byte, 0)
             ),
 
             # Once we no longer have an active packet, transmit our _last_ byte,
             # and move back to waiting for an active packet.
             If(~in_stream.valid,
-                # Output our buffered byte...
-                out_stream.payload.eq(buffered_byte),
-                out_stream.next.eq(1),
-                self.first.eq(is_first_byte),
-
-                # ... and indicate that it's the last byte in our stream.
-                self.last.eq(1),
                 NextValue(is_first_byte, 0),
                 NextState("OUTPUT_STROBES")
             )
         )
 
         fsm.act("OUTPUT_STROBES",
-            # We've just finished transmitting our processed stream; so clear our data strobes...
-            self.first.eq(0),
-            self.last.eq(0),
-            out_stream.next.eq(0),
-
-            # ... and output our buffered complete/invalid strobes.
-            self.complete_out.eq(buffered_complete),
-            self.invalid_out.eq(buffered_invalid),
+            NextValue(buffered_complete, 0),
+            NextValue(buffered_invalid, 0),
             NextState("WAIT_FOR_FIRST_BYTE")
         )
+
+        # Synchronous output assignments to match Amaranth timing
+        # These implement the same behavior as Amaranth's m.d.usb +=
+        self.sync.usb += [
+            # Default assignments
+            out_stream.valid.eq(0),
+            out_stream.next.eq(0),
+            self.first.eq(0),
+            self.last.eq(0),
+            self.complete_out.eq(0),
+            self.invalid_out.eq(0),
+
+            # WAIT_FOR_FIRST_BYTE state outputs
+            If(fsm.ongoing("WAIT_FOR_FIRST_BYTE"),
+                out_stream.valid.eq(0),
+                self.first.eq(0),
+                self.last.eq(0),
+                out_stream.next.eq(0),
+                self.complete_out.eq(0),
+                self.invalid_out.eq(0)
+            ),
+
+            # RECEIVE_AND_TRANSMIT state outputs
+            If(fsm.ongoing("RECEIVE_AND_TRANSMIT"),
+                out_stream.valid.eq(1),
+                out_stream.next.eq(0),
+
+                # If we get a new byte, emit our buffered byte
+                If(in_stream.valid & in_stream.next,
+                    out_stream.payload.eq(buffered_byte),
+                    out_stream.next.eq(1),
+                    self.first.eq(is_first_byte)
+                ),
+
+                # Once we no longer have an active packet, transmit our _last_ byte
+                If(~in_stream.valid,
+                    out_stream.payload.eq(buffered_byte),
+                    out_stream.next.eq(1),
+                    self.first.eq(is_first_byte),
+                    self.last.eq(1)
+                )
+            ),
+
+            # OUTPUT_STROBES state outputs
+            If(fsm.ongoing("OUTPUT_STROBES"),
+                self.complete_out.eq(buffered_complete),
+                self.invalid_out.eq(buffered_invalid)
+            )
+        ]
 
 
 class USBRawSuperSpeedStream(StreamInterface):

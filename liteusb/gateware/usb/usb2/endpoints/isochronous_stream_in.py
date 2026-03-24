@@ -142,71 +142,25 @@ class USBIsochronousStreamInEndpoint(Module):
 
         # IDLE -- the host hasn't yet requested data from our endpoint.
         fsm.act("IDLE",
-            self.frame_finished.eq(0),
-            next_byte.eq(0),
-            tx_cnt.eq(0),
-            tx_stream.first.eq(0),
-
             # Once the host requests a packet from us...
             If(data_requested,
                 # If we have data to send, send it.
                 If(bytes_left_in_frame,
-                    tx_stream.first.eq(1),
                     NextState("SEND_DATA")
                 # Otherwise, we'll send a ZLP.
                 ).Else(
                     NextState("SEND_ZLP")
-                ),
-
-                # Strobe when a new packet starts.
-                self.data_requested.eq(1)
+                )
             )
         )
 
         # SEND_DATA -- our primary data-transmission state; handles packet transmission
         fsm.act("SEND_DATA",
-            self.frame_finished.eq(0),
-
-            # Our data is always valid in this state...
-            tx_stream.valid.eq(1),
-            # ... and we're terminating if we're on the last byte of the packet or frame.
-            tx_stream.last.eq(byte_terminates_send),
-
-            # Strobe frame_finished one cycle after we're on the last byte of the frame.
-            self.frame_finished.eq(last_byte_in_frame),
-
-            # Producer has data available.
-            If(self.stream.valid,
-                tx_stream.payload.eq(self.stream.payload)
-            ),
-
-            # Don't advance ...
-            next_byte.eq(tx_cnt),
-            self.stream.ready.eq(0),
-            tx_cnt.eq(next_byte),
-
-            # ... until our data is accepted.
+            # Don't advance ... until our data is accepted.
             If(tx_stream.ready,
-                tx_stream.first.eq(0),
-
-                # Advance to the next byte in the frame ...
-                self.stream.ready.eq(1),
-                next_byte.eq(tx_cnt + 1),
-
-                # ... and mark the relevant byte as sent.
-                bytes_left_in_frame.eq(bytes_left_in_frame - 1),
-                bytes_left_in_packet.eq(bytes_left_in_packet - 1),
-
                 # If we've just completed transmitting a packet, or we've
                 # just transmitted a full frame, end our transmission.
                 If(byte_terminates_send,
-                    # Move to the next DATA pid, which is always one DATA PID less.
-                    # [USB2.0: 5.9.2]. We'll reset this back to its maximum value when
-                    # the next frame starts.
-                    next_data_pid.eq(next_data_pid - 1),
-
-                    # Mark our next packet as being a full one.
-                    bytes_left_in_packet.eq(self._max_packet_size),
                     NextState("IDLE")
                 )
             )
@@ -214,9 +168,101 @@ class USBIsochronousStreamInEndpoint(Module):
 
         # SEND_ZLP -- sends a zero-length packet, and then return to idle.
         fsm.act("SEND_ZLP",
-            self.frame_finished.eq(0),
-            # We'll request a ZLP by strobing LAST and VALID without strobing FIRST.
-            tx_stream.valid.eq(1),
-            tx_stream.last.eq(1),
             NextState("IDLE")
         )
+
+        # Synchronous output assignments to match Amaranth timing (m.d.usb +=)
+        self.sync.usb += [
+            # Default frame_finished
+            self.frame_finished.eq(0),
+
+            # IDLE state outputs
+            If(fsm.ongoing("IDLE"),
+                tx_cnt.eq(0),
+                tx_stream.first.eq(0),
+
+                # Once the host requests a packet from us...
+                If(data_requested,
+                    # If we have data to send, mark first byte.
+                    If(bytes_left_in_frame,
+                        tx_stream.first.eq(1)
+                    )
+                )
+            ),
+
+            # SEND_DATA state outputs
+            If(fsm.ongoing("SEND_DATA"),
+                # Strobe frame_finished one cycle after we're on the last byte of the frame.
+                self.frame_finished.eq(last_byte_in_frame),
+
+                # Don't advance ... until our data is accepted.
+                If(tx_stream.ready,
+                    tx_stream.first.eq(0),
+
+                    # ... and mark the relevant byte as sent.
+                    bytes_left_in_frame.eq(bytes_left_in_frame - 1),
+                    bytes_left_in_packet.eq(bytes_left_in_packet - 1),
+
+                    # If we've just completed transmitting a packet...
+                    If(byte_terminates_send,
+                        # Move to the next DATA pid, which is always one DATA PID less.
+                        next_data_pid.eq(next_data_pid - 1),
+
+                        # Mark our next packet as being a full one.
+                        bytes_left_in_packet.eq(self._max_packet_size)
+                    )
+                )
+            ),
+
+            # SEND_ZLP state outputs
+            If(fsm.ongoing("SEND_ZLP"),
+                # Nothing to do here
+            )
+        ]
+
+        # Combinational output assignments to match Amaranth timing (m.d.comb +=)
+        self.comb += [
+            # IDLE state combinational outputs
+            If(fsm.ongoing("IDLE"),
+                next_byte.eq(0),
+
+                # Strobe when a new packet starts.
+                If(data_requested,
+                    self.data_requested.eq(1)
+                )
+            ),
+
+            # SEND_DATA state combinational outputs
+            If(fsm.ongoing("SEND_DATA"),
+                # Our data is always valid in this state...
+                tx_stream.valid.eq(1),
+                # ... and we're terminating if we're on the last byte of the packet or frame.
+                tx_stream.last.eq(byte_terminates_send),
+
+                # Producer has data available.
+                If(self.stream.valid,
+                    tx_stream.payload.eq(self.stream.payload)
+                ),
+
+                # Don't advance ...
+                next_byte.eq(tx_cnt),
+                self.stream.ready.eq(0),
+
+                # ... until our data is accepted.
+                If(tx_stream.ready,
+                    # Advance to the next byte in the frame ...
+                    self.stream.ready.eq(1),
+                    next_byte.eq(tx_cnt + 1)
+                )
+            ),
+
+            # SEND_ZLP state combinational outputs
+            If(fsm.ongoing("SEND_ZLP"),
+                # We'll request a ZLP by strobing LAST and VALID without strobing FIRST.
+                tx_stream.valid.eq(1),
+                tx_stream.last.eq(1)
+            )
+        ]
+
+        # Update tx_cnt based on next_byte (synchronous)
+        self.sync.usb += tx_cnt.eq(next_byte)
