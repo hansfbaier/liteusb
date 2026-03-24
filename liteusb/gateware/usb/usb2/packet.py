@@ -347,12 +347,12 @@ class USBTokenDetector(Module):
             If(~self.utmi.rx_active,
                 NextState("IDLE")
             ).Elif(self.utmi.rx_valid,
-                is_normal_token.eq(self.utmi.rx_data[0:2] == self.TOKEN_SUFFIX),
-                is_ping_token.eq(self.utmi.rx_data[0:4] == USBPacketID.PING),
-                is_valid_pid.eq(self.utmi.rx_data[0:4] == ~self.utmi.rx_data[4:8]),
-
-                # If we have a valid token, move to capture it.
-                If((is_normal_token | is_ping_token) & is_valid_pid,
+                # Use direct comparisons instead of intermediate signals
+                # to ensure proper evaluation within the same cycle
+                # Note: ~ operator needs to be masked to 4 bits for proper comparison
+                If(((self.utmi.rx_data[0:2] == self.TOKEN_SUFFIX) |
+                    (self.utmi.rx_data[0:4] == USBPacketID.PING)) &
+                   (self.utmi.rx_data[0:4] == (~self.utmi.rx_data[4:8] & 0b1111)),
                     NextValue(current_pid, self.utmi.rx_data),
                     NextState("READ_TOKEN_0")
                 ).Else(
@@ -476,7 +476,6 @@ class USBHandshakeDetector(Module):
         self.detected = HandshakeExchangeInterface(is_detector=True)
 
         active_pid = Signal(4)
-        is_valid_pid = Signal()
 
         # Keep our strobes un-asserted unless otherwise specified.
         self.sync += [
@@ -500,10 +499,9 @@ class USBHandshakeDetector(Module):
             If(~self.utmi.rx_active,
                 NextState("IDLE")
             ).Elif(self.utmi.rx_valid,
-                is_valid_pid.eq(self.utmi.rx_data[0:4] == ~self.utmi.rx_data[4:8]),
-
                 # If we have a valid PID, move to capture it.
-                If(is_valid_pid,
+                # Note: ~ operator needs to be masked to 4 bits for proper comparison
+                If(self.utmi.rx_data[0:4] == (~self.utmi.rx_data[4:8] & 0b1111),
                     NextValue(active_pid, self.utmi.rx_data),
                     NextState("AWAIT_COMPLETION")
                 ).Else(
@@ -582,36 +580,47 @@ class USBDataPacketCRC(Module):
         self.crc   = Signal(16, reset=initial_value)
 
         # Register that contains the running CRCs.
-        crc        = Signal(16, reset=self._initial_value)
+        self._crc        = Signal(16, reset=self._initial_value)
 
         # Signal that contains the output version of our active CRC.
-        output_crc = Signal(16)
+        self._output_crc = Signal(16)
 
-        # We'll clear our CRC whenever any of our interfaces request it.
-        start_signals = [interface.start for interface in self._interfaces]
-        clear = Signal()
-        if start_signals:
-            self.comb += clear.eq(functools.reduce(operator.__or__, start_signals))
+        # Internal clear signal - will be connected to interface.start signals in do_finalize()
+        self._clear_internal = Signal()
 
         # If we're clearing our CRC in progress, move our holding register back to
         # our initial value.
         self.sync += [
-            If(clear,
-                crc.eq(self._initial_value)
+            If(self._clear_internal,
+                self._crc.eq(self._initial_value)
             ).Elif(self.rx_valid,
-                crc.eq(self._generate_next_crc(crc, self.rx_data))
+                self._crc.eq(self._generate_next_crc(self._crc, self.rx_data))
             ).Elif(self.tx_valid,
-                crc.eq(self._generate_next_crc(crc, self.tx_data))
+                self._crc.eq(self._generate_next_crc(self._crc, self.tx_data))
             )
         ]
 
         # Convert from our intermediary "running CRC" format into the current CRC-16...
         # In migen, we use bit slicing to reverse: crc[::-1] reverses the bits
-        self.comb += output_crc.eq(~Cat(crc[i] for i in range(15, -1, -1)))
+        self.comb += self._output_crc.eq(~Cat(self._crc[i] for i in range(15, -1, -1)))
+
+        # Connect the public crc signal to the output
+        self.comb += self.crc.eq(self._output_crc)
+
+    def do_finalize(self):
+        # Called after all interfaces have been added via add_interface()
+        # Now we can safely connect the start signals
+
+        # We'll clear our CRC whenever any of our interfaces request it.
+        if self._interfaces:
+            start_signals = [interface.start for interface in self._interfaces]
+            self.comb += self._clear_internal.eq(functools.reduce(operator.__or__, start_signals))
+        else:
+            self.comb += self._clear_internal.eq(0)
 
         # ... and connect it to each of our interfaces.
         for interface in self._interfaces:
-            self.comb += interface.crc.eq(output_crc)
+            self.comb += interface.crc.eq(self._output_crc)
 
 
     def add_interface(self, interface):
@@ -756,10 +765,6 @@ class USBDataPacketReceiver(Module):
         # Keeps track of the most recently received word; for CRC comparison/removal.
         data_pipeline     = Signal(16)
 
-        # FSM helper signals
-        is_data = Signal()
-        is_valid_pid = Signal()
-
         # Keep our control signals + strobes un-asserted unless otherwise specified.
         self.sync += [
             self.packet_complete.eq(0),
@@ -788,11 +793,9 @@ class USBDataPacketReceiver(Module):
             If(~self.utmi.rx_active,
                 NextState("IDLE")
             ).Elif(self.utmi.rx_valid,
-                is_data.eq(self.utmi.rx_data[0:2] == self._DATA_SUFFIX),
-                is_valid_pid.eq(self.utmi.rx_data[0:4] == ~self.utmi.rx_data[4:8]),
-
                 # If this is a data packet, capture its PID.
-                If(is_valid_pid & is_data,
+                # Note: ~ operator needs to be masked to 4 bits for proper comparison
+                If((self.utmi.rx_data[0:4] == (~self.utmi.rx_data[4:8] & 0b1111)) & (self.utmi.rx_data[0:2] == self._DATA_SUFFIX),
                     NextValue(self.active_pid, self.utmi.rx_data),
                     NextState("RECEIVE_FIRST_BYTE")
                 ).Else(
@@ -989,11 +992,10 @@ class USBDataPacketDeserializer(Module):
             If(~self.utmi.rx_active,
                 NextState("IDLE")
             ).Elif(self.utmi.rx_valid,
-                is_data.eq(self.utmi.rx_data[0:2] == self._DATA_SUFFIX),
-                is_valid_pid.eq(self.utmi.rx_data[0:4] == ~self.utmi.rx_data[4:8]),
-
-                # If this is a data packet, capture it.
-                If(is_valid_pid & is_data,
+                # Use direct comparisons instead of intermediate signals
+                # Note: ~ operator needs to be masked to 4 bits for proper comparison
+                If((self.utmi.rx_data[0:4] == (~self.utmi.rx_data[4:8] & 0b1111)) &
+                   (self.utmi.rx_data[0:2] == self._DATA_SUFFIX),
                     NextValue(active_pid, self.utmi.rx_data),
                     NextValue(position_in_packet, 0),
                     NextState("CAPTURE_DATA")
@@ -1012,7 +1014,8 @@ class USBDataPacketDeserializer(Module):
                     # TODO: potentially signal the babble?
                     NextState("IRRELEVANT")
                 ).Else(
-                    active_packet[position_in_packet].eq(self.utmi.rx_data),
+                    # Use NextValue for synchronous assignment to capture data
+                    NextValue(active_packet[position_in_packet], self.utmi.rx_data),
                     NextValue(position_in_packet, position_in_packet + 1),
                     NextValue(last_word, Cat(last_word[8:], self.utmi.rx_data)),
                     NextValue(last_word_crc, last_byte_crc),
@@ -1026,7 +1029,8 @@ class USBDataPacketDeserializer(Module):
                     NextValue(self.packet_id, active_pid),
                     NextValue(self.length, position_in_packet - 2),
                     NextValue(self.new_packet, 1),
-                    [self.packet[i].eq(active_packet[i]) for i in range(self._max_packet_size)],
+                    # Use NextValue for synchronous assignment to capture packet data
+                    [NextValue(self.packet[i], active_packet[i]) for i in range(self._max_packet_size)],
                     NextState("IDLE")
                 )
             )

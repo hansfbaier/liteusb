@@ -1,4 +1,4 @@
-Metadata-Version: 2.4
+Metadata-Version: 2.1
 Name: liteusb
 Version: 2025.12
 Summary: Small footprint and configurable USB core for LiteX.
@@ -290,3 +290,5 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 - **Issues**: [GitHub Issues](https://github.com/enjoy-digital/liteusb/issues)
 - **Email**: florent@enjoy-digital.fr
 - **LiteX Discord**: [Join Discord](https://discord.gg/PkJwjDbxeG)
+
+

@@ -105,9 +105,6 @@ class ULPIRegisterWindow(Module):
 
         # IDLE: wait for a request to be made
         fsm.act("IDLE",
-            # Apply a NOP whenever we're idle.
-            self.ulpi_data_out.eq(0),
-
             # Constantly latch in our arguments while IDLE.
             self.current_address.eq(self.address),
             self.current_write.eq(self.write_data),
@@ -118,6 +115,9 @@ class ULPIRegisterWindow(Module):
                 NextState("START_WRITE")
             )
         )
+        self.sync.usb += If(fsm.ongoing("IDLE"),
+            self.ulpi_data_out.eq(0)
+        )
 
         #
         # Read handling.
@@ -126,23 +126,30 @@ class ULPIRegisterWindow(Module):
         # START_READ: wait for the bus to be idle, so we can transmit.
         fsm.act("START_READ",
             If(~self.ulpi_dir,
-                self.ulpi_data_out.eq(self.COMMAND_REG_READ | self.address),
-                self.ulpi_out_req.eq(1),
                 NextState("SEND_READ_ADDRESS")
             )
+        )
+        self.sync.usb += If(fsm.ongoing("START_READ") & ~self.ulpi_dir,
+            self.ulpi_data_out.eq(self.COMMAND_REG_READ | self.address),
+            self.ulpi_out_req.eq(1)
         )
 
         # SEND_READ_ADDRESS: Request sending the read address
         fsm.act("SEND_READ_ADDRESS",
-            self.ulpi_out_req.eq(1),
-
             If(self.ulpi_dir,
-                self.ulpi_out_req.eq(0),
                 NextState("START_READ")
             ).Elif(self.ulpi_next,
-                self.ulpi_out_req.eq(0),
-                self.ulpi_data_out.eq(0),
                 NextState("READ_TURNAROUND")
+            )
+        )
+        self.sync.usb += If(fsm.ongoing("SEND_READ_ADDRESS"),
+            If(self.ulpi_dir,
+                self.ulpi_out_req.eq(0)
+            ).Elif(self.ulpi_next,
+                self.ulpi_out_req.eq(0),
+                self.ulpi_data_out.eq(0)
+            ).Else(
+                self.ulpi_out_req.eq(1)
             )
         )
 
@@ -150,12 +157,15 @@ class ULPIRegisterWindow(Module):
         fsm.act("READ_TURNAROUND",
             NextState("READ_COMPLETE")
         )
+        # No synchronous outputs needed (defaults are zero).
 
         # READ_COMPLETE: the ULPI read exchange is complete
         fsm.act("READ_COMPLETE",
-            self.read_data.eq(self.ulpi_data_in),
-            self.done.eq(1),
             NextState("IDLE")
+        )
+        self.sync.usb += If(fsm.ongoing("READ_COMPLETE"),
+            self.read_data.eq(self.ulpi_data_in),
+            self.done.eq(1)
         )
 
         #
@@ -165,49 +175,65 @@ class ULPIRegisterWindow(Module):
         # START_WRITE: wait for the bus to be idle
         fsm.act("START_WRITE",
             If(~self.ulpi_dir,
-                self.ulpi_data_out.eq(self.COMMAND_REG_WRITE | self.address),
-                self.ulpi_out_req.eq(1),
                 NextState("SEND_WRITE_ADDRESS")
             )
+        )
+        self.sync.usb += If(fsm.ongoing("START_WRITE") & ~self.ulpi_dir,
+            self.ulpi_data_out.eq(self.COMMAND_REG_WRITE | self.address),
+            self.ulpi_out_req.eq(1)
         )
 
         # SEND_WRITE_ADDRESS: Continue sending the write address
         fsm.act("SEND_WRITE_ADDRESS",
-            self.ulpi_out_req.eq(1),
-
             If(self.ulpi_dir,
-                self.ulpi_out_req.eq(0),
                 NextState("START_WRITE")
             ).Elif(self.ulpi_next,
-                self.ulpi_data_out.eq(self.write_data),
                 NextState("HOLD_WRITE")
+            )
+        )
+        self.sync.usb += If(fsm.ongoing("SEND_WRITE_ADDRESS"),
+            If(self.ulpi_dir,
+                self.ulpi_out_req.eq(0)
+            ).Elif(self.ulpi_next,
+                self.ulpi_data_out.eq(self.write_data)
+            ).Else(
+                self.ulpi_out_req.eq(1)
             )
         )
 
         # Hold the write data on the bus
         fsm.act("HOLD_WRITE",
-            self.ulpi_out_req.eq(1),
-
             If(self.ulpi_dir,
-                self.ulpi_out_req.eq(0),
                 NextState("START_WRITE")
             ).Elif(self.ulpi_next,
-                self.ulpi_data_out.eq(0),
-                self.ulpi_stop.eq(1),
                 NextState("STOPPING")
+            )
+        )
+        self.sync.usb += If(fsm.ongoing("HOLD_WRITE"),
+            If(self.ulpi_dir,
+                self.ulpi_out_req.eq(0)
+            ).Elif(self.ulpi_next,
+                self.ulpi_data_out.eq(0),
+                self.ulpi_stop.eq(1)
+            ).Else(
+                self.ulpi_out_req.eq(1)
             )
         )
 
         fsm.act("STOPPING",
-            self.ulpi_stop.eq(0),
-
             If(self.ulpi_dir,
-                self.ulpi_out_req.eq(0),
                 NextState("START_WRITE")
             ).Else(
-                self.ulpi_out_req.eq(0),
-                self.done.eq(1),
                 NextState("IDLE")
+            )
+        )
+        self.sync.usb += If(fsm.ongoing("STOPPING"),
+            self.ulpi_stop.eq(0),
+            If(self.ulpi_dir,
+                self.ulpi_out_req.eq(0)
+            ).Else(
+                self.ulpi_out_req.eq(0),
+                self.done.eq(1)
             )
         )
 
@@ -442,30 +468,46 @@ class ULPIControlTranslator(Module):
         if requests:
             self.comb += has_any_request.eq(reduce(operator.__or__, requests))
 
-        # Handle each register
+        # Build combinatorial If-Elif chain for register window control
+        comb_chain = None
+        sync_chain = None
         for address, signals in self._register_signals.items():
             request_write = signals['write_requested'] & ~self.register_window.done & self.bus_idle
-
-            self.comb += [
-                If(signals['write_requested'],
+            if comb_chain is None:
+                comb_chain = If(signals['write_requested'],
                     signals['write_done'].eq(self.register_window.done),
                     self.register_window.address.eq(address),
                     self.register_window.write_data.eq(signals['write_value']),
-                    self.register_window.write_request.eq(request_write),
+                    self.register_window.write_request.eq(request_write)
                 )
-            ]
-            
-            self.sync.usb += If(signals['write_requested'],
-                self.busy.eq(request_write | self.register_window.busy)
+                sync_chain = If(signals['write_requested'],
+                    self.busy.eq(request_write | self.register_window.busy)
+                )
+            else:
+                comb_chain = comb_chain.Elif(signals['write_requested'],
+                    signals['write_done'].eq(self.register_window.done),
+                    self.register_window.address.eq(address),
+                    self.register_window.write_data.eq(signals['write_value']),
+                    self.register_window.write_request.eq(request_write)
+                )
+                sync_chain = sync_chain.Elif(signals['write_requested'],
+                    self.busy.eq(request_write | self.register_window.busy)
+                )
+        
+        # Add final Else clause for no register accesses
+        if comb_chain is not None:
+            comb_chain = comb_chain.Else(
+                self.register_window.write_request.eq(0)
             )
-
-        # If no register accesses are active
-        self.comb += If(~has_any_request,
-            self.register_window.write_request.eq(0)
-        )
-        self.sync.usb += If(~has_any_request,
-            self.busy.eq(self.register_window.busy)
-        )
+            sync_chain = sync_chain.Else(
+                self.busy.eq(self.register_window.busy)
+            )
+            self.comb += comb_chain
+            self.sync.usb += sync_chain
+        else:
+            # No registers? (should not happen)
+            self.comb += self.register_window.write_request.eq(0)
+            self.sync.usb += self.busy.eq(self.register_window.busy)
 
         # Ensure our register window is never performing a read.
         self.comb += self.register_window.read_request.eq(0)
