@@ -97,7 +97,7 @@ class ULPIRegisterWindow(Module):
             self.done        .eq(0)
         ]
 
-        fsm = FSM(reset_state="IDLE")
+        fsm = ClockDomainsRenamer("usb")(FSM(reset_state="IDLE"))
         self.submodules.fsm = fsm
 
         # We're busy whenever we're not IDLE; indicate so.
@@ -565,11 +565,20 @@ class ULPITransmitTranslator(Module):
     def do_finalize(self):
         bit_stuffing_disabled = (self.op_mode == self.OP_MODE_NO_BIT_STUFFING)
 
-        fsm = FSM(reset_state="IDLE")
+        fsm = ClockDomainsRenamer("usb")(FSM(reset_state="IDLE"))
         self.submodules.fsm = fsm
 
         # Mark ourselves as busy whenever we're not in idle.
         self.comb += self.busy.eq(~fsm.ongoing("IDLE"))
+
+        # ulpi_out_req is driven synchronously, matching LUNA's timing.
+        self.sync.usb += [
+            If(fsm.ongoing("IDLE") & self.tx_valid & self.bus_idle,
+                self.ulpi_out_req.eq(1)
+            ).Elif(fsm.ongoing("TRANSMIT") & ~self.tx_valid,
+                self.ulpi_out_req.eq(0)
+            )
+        ]
 
         # IDLE: our transmitter is ready
         fsm.act("IDLE",
@@ -577,7 +586,6 @@ class ULPITransmitTranslator(Module):
 
             If(self.tx_valid & self.bus_idle,
                 If(bit_stuffing_disabled,
-                    self.ulpi_out_req.eq(1),
                     self.ulpi_data_out.eq(self.TRANSMIT_COMMAND),
                     self.tx_ready.eq(0),
 
@@ -585,7 +593,6 @@ class ULPITransmitTranslator(Module):
                         NextState("TRANSMIT")
                     )
                 ).Else(
-                    self.ulpi_out_req.eq(1),
                     self.ulpi_data_out.eq(self.TRANSMIT_COMMAND | self.tx_data[0:4]),
                     self.tx_ready.eq(self.ulpi_nxt),
 
@@ -603,7 +610,6 @@ class ULPITransmitTranslator(Module):
             self.ulpi_stp.eq(0),
 
             If(~self.tx_valid,
-                self.ulpi_out_req.eq(0),
                 self.ulpi_stp.eq(1),
 
                 If(bit_stuffing_disabled,
@@ -795,8 +801,7 @@ class UTMITranslator(Module):
             elif hasattr(self.ulpi.clk, 'o'):
                 self.comb += self.ulpi.clk.o.eq(ClockSignal(raw_clock_domain))
             elif hasattr(self.ulpi.clk, 'i'):
-                # Note: Clock signal assignment in migen is different
-                pass
+                self.comb += ClockSignal(raw_clock_domain).eq(self.ulpi.clk.i)
             else:
                 raise TypeError(f"ULPI `clk` was an unexpected type {type(self.ulpi.clk)}." \
                     " You may need to handle clocking manually.")

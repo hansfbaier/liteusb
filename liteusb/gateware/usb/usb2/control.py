@@ -187,7 +187,7 @@ class USBControlEndpoint(Module):
         #
         endpoint_targeted = (self.interface.tokenizer.endpoint == self._endpoint_number)
 
-        self.submodules.fsm = fsm = FSM(reset_state="SETUP")
+        self.submodules.fsm = fsm = ClockDomainsRenamer("usb")(FSM(reset_state="SETUP"))
 
         # SETUP -- The "SETUP" phase of a control request. We'll wait here
         # until the SetupDetector detects a valid setup packet for us.

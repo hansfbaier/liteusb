@@ -193,8 +193,11 @@ class USBEndpointMultiplexer(Module):
             condition = get_signal(interface, when)
             self.comb += _mux_enc.i[i].eq(condition)
 
-        # Use the encoded value to select the interface
-        self.comb += Case(_mux_enc.o, cases)
+        # Use the encoded value to select the interface, but only when one is active.
+        # When no interface is active, leave the shared outputs latched.
+        self.comb += If(~_mux_enc.n,
+            Case(_mux_enc.o, cases)
+        )
 
 
     def or_join_interface_signals(self, signal_for_interface):
@@ -304,12 +307,18 @@ class USBEndpointMultiplexer(Module):
         self.or_join_interface_signals(lambda interface : interface.clear_endpoint_halt_out.number)
 
         # Finally, connect up our transmit PID select.
-        conditional = If
-
         # We'll connect our PID toggle to whichever interface has a valid transmission going.
         past_valid  = Signal(len(self._interfaces))
-        self.sync += past_valid.eq(Cat(interface.tx.valid for interface in self._interfaces))
+        self.sync.usb += past_valid.eq(Cat(interface.tx.valid for interface in self._interfaces))
+
+        tx_pid_toggle_select = None
         for i, interface in enumerate(self._interfaces):
-            self.comb += If(interface.tx.valid | past_valid[i],
-                shared.tx_pid_toggle.eq(interface.tx_pid_toggle)
-            )
+            condition = interface.tx.valid | past_valid[i]
+            stmt = shared.tx_pid_toggle.eq(interface.tx_pid_toggle)
+            if tx_pid_toggle_select is None:
+                tx_pid_toggle_select = If(condition, stmt)
+            else:
+                tx_pid_toggle_select = tx_pid_toggle_select.Elif(condition, stmt)
+
+        if tx_pid_toggle_select is not None:
+            self.comb += tx_pid_toggle_select

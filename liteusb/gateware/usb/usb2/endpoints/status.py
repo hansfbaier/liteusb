@@ -126,7 +126,7 @@ class USBSignalInEndpoint(Module):
         is_last_byte = Signal()
         self.comb += is_last_byte.eq(bytes_transmitted + 1 == bytes_in_signal)
 
-        self.submodules.fsm = fsm = FSM(reset_state="IDLE")
+        self.submodules.fsm = fsm = ClockDomainsRenamer("usb")(FSM(reset_state="IDLE"))
 
         # IDLE -- we've not yet gotten a token requesting data. Wait for one.
         fsm.act("IDLE",

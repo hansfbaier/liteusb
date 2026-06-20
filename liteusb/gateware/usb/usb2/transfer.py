@@ -167,22 +167,37 @@ class USBInTransferManager(Module):
         buffer_fill_count = [
             Signal(max=self._max_packet_size + 1, name=f"fill_count_{i}") for i in range(2)
         ]
-        buffer_stream_ended = [
-            Signal(name=f"stream_ended_in_buffer{i}") for i in range(2)
-        ]
+        stream_ended_in_buffer0 = Signal(name="stream_ended_in_buffer0")
+        stream_ended_in_buffer1 = Signal(name="stream_ended_in_buffer1")
+        buffer_stream_ended = [stream_ended_in_buffer0, stream_ended_in_buffer1]
 
         # Create values equivalent to the buffer numbers for our read and write buffer; which switch
         # whenever we swap our two buffers.
-        write_buffer_number = self.buffer_toggle
-        read_buffer_number = ~self.buffer_toggle
+        # Capture the current value of buffer_toggle for buffer selection. A separate registered
+        # copy (prev_toggle) is used when the same sync statement also toggles buffer_toggle,
+        # so that stream-ended flag updates are resolved with the pre-toggle value.
+        current_toggle = Signal()
+        self.comb += current_toggle.eq(self.buffer_toggle)
+        prev_toggle = Signal()
+        self.sync.usb += prev_toggle.eq(self.buffer_toggle)
+
+        write_buffer_number = current_toggle
+        read_buffer_number = ~current_toggle
 
         # Create shortcuts to active fill_count / stream_ended signals for the buffer being written.
         write_fill_count = Array(buffer_fill_count)[write_buffer_number]
-        write_stream_ended = Array(buffer_stream_ended)[write_buffer_number]
+        write_stream_ended = Mux(current_toggle, stream_ended_in_buffer1, stream_ended_in_buffer0)
 
         # Create shortcuts to the fill_count / stream_ended signals for the packet being sent.
         read_fill_count = Array(buffer_fill_count)[read_buffer_number]
-        read_stream_ended = Array(buffer_stream_ended)[read_buffer_number]
+        read_stream_ended = Mux(current_toggle, stream_ended_in_buffer0, stream_ended_in_buffer1)
+
+        self.debug_stream_ended_0 = stream_ended_in_buffer0
+        self.debug_stream_ended_1 = stream_ended_in_buffer1
+        self.debug_fill_count_0 = buffer_fill_count[0]
+        self.debug_fill_count_1 = buffer_fill_count[1]
+        self.debug_read_fill_count = read_fill_count
+        self.debug_read_stream_ended = read_stream_ended
 
         # Keep track of our current send position; which determines where we are in the packet.
         send_position = Signal(max=self._max_packet_size + 1)
@@ -191,28 +206,40 @@ class USBInTransferManager(Module):
         in_stream = self.transfer_stream
         out_stream = self.packet_stream
 
-        # Set both fill counts to zero when we discard data.
-        self.sync.usb += If(self.discard,
-            write_fill_count.eq(0),
-            write_stream_ended.eq(0),
-            read_fill_count.eq(0),
-            read_stream_ended.eq(0),
-        )
+        self.debug_last_and_toggle = Signal()
+        self.sync.usb += If(in_stream.last & self.buffer_toggle, self.debug_last_and_toggle.eq(1))
+        self.debug_comb_last_and_toggle = Signal()
+        self.comb += self.debug_comb_last_and_toggle.eq(in_stream.last & self.buffer_toggle)
+        self.debug_wfd_set_se1 = Signal()
+        self.debug_wfd_clear_se0 = Signal()
+        self.debug_wfd_clear_se1 = Signal()
+        self.debug_prev_toggle = Signal()
+        self.comb += self.debug_prev_toggle.eq(prev_toggle)
+        self.debug_wfd_comb = Signal()
+        self.debug_se1_test = Signal()
+        # will assign below after fsm defined
 
         # Create write enable signal
-        buffer_0_we = in_stream.valid & in_stream.ready & ~self.buffer_toggle
-        buffer_1_we = in_stream.valid & in_stream.ready & self.buffer_toggle
+        buffer_0_we = in_stream.valid & in_stream.ready & ~current_toggle
+        buffer_1_we = in_stream.valid & in_stream.ready & current_toggle
+
+        # Set both fill counts and stream-ended flags to zero when we discard data.
+        self.sync.usb += If(self.discard,
+            buffer_fill_count[0].eq(0),
+            buffer_fill_count[1].eq(0),
+            buffer_stream_ended[0].eq(0),
+            buffer_stream_ended[1].eq(0),
+        )
 
         # Increment our fill count whenever we accept new data.
-        self.sync.usb += If(~self.discard & (buffer_0_we | buffer_1_we),
-            write_fill_count.eq(write_fill_count + 1)
-        )
-
-        # If the stream ends while we're adding data to the buffer, mark this as an ended stream.
-        self.sync.usb += If(in_stream.last & (buffer_0_we | buffer_1_we),
-            write_stream_ended.eq(1)
-        )
-
+        self.sync.usb += [
+            If(~self.discard & buffer_0_we,
+                buffer_fill_count[0].eq(buffer_fill_count[0] + 1)
+            ),
+            If(~self.discard & buffer_1_we,
+                buffer_fill_count[1].eq(buffer_fill_count[1] + 1)
+            )
+        ]
 
         # Use our memory's two ports to capture data from our transfer stream; and two emit packets
         # into our packet stream. Since we'll never receive to anywhere else, or transmit to anywhere else,
@@ -231,8 +258,8 @@ class USBInTransferManager(Module):
             # We're ready to receive data iff we have space in the buffer we're currently filling.
             in_stream.ready.eq((write_fill_count != self._max_packet_size) & ~write_stream_ended),
             # Drive write enable for both ports - only the active buffer will actually write
-            buffer_write_ports[0].we.eq(in_stream.valid & in_stream.ready & ~self.buffer_toggle),
-            buffer_write_ports[1].we.eq(in_stream.valid & in_stream.ready & self.buffer_toggle)
+            buffer_write_ports[0].we.eq(in_stream.valid & in_stream.ready & ~current_toggle),
+            buffer_write_ports[1].we.eq(in_stream.valid & in_stream.ready & current_toggle)
         ]
 
         # A packet is completing when:
@@ -272,7 +299,11 @@ class USBInTransferManager(Module):
 
             # If we've just finished a packet, we now have data we can send!
             If(packet_ready,
-                NextState("WAIT_TO_SEND")
+                NextState("WAIT_TO_SEND"),
+
+                # Swap read/write buffers and toggle the data PID.
+                NextValue(self.buffer_toggle, ~self.buffer_toggle),
+                NextValue(self.data_pid[0], ~self.data_pid[0])
             )
         )
 
@@ -373,12 +404,6 @@ class USBInTransferManager(Module):
         # Synchronous updates based on FSM state - these need to be in sync.usb domain
         # (In Amaranth, these were m.d.usb += inside the FSM states)
         #
-        # Note: In sync blocks that also toggle buffer_toggle, use write_stream_ended
-        # (not read_stream_ended) to clear stream_ended. Migen's ArrayProxy in sync
-        # uses post-commit index values, so after buffer_toggle flips, write_stream_ended
-        # points to the old read buffer — the one whose stream_ended should be cleared.
-        # In amaranth, read_stream_ended.eq(0) achieves the same because amaranth uses
-        # pre-commit index values.
 
         # WAIT_FOR_ACK: On ACK, clear read_fill_count and handle ZLP/data-ready.
         # All logic in one sync block so the ZLP condition is evaluated using
@@ -390,16 +415,8 @@ class USBInTransferManager(Module):
                 self.data_pid[0].eq(~self.data_pid[0])
             ).Elif(~in_stream.ready | packet_ready,
                 self.buffer_toggle.eq(~self.buffer_toggle),
-                self.data_pid[0].eq(~self.data_pid[0]),
-                read_stream_ended.eq(0)
+                self.data_pid[0].eq(~self.data_pid[0])
             )
-        )
-
-        # WAIT_FOR_DATA: When packet_ready, toggle buffer and data_pid
-        self.sync.usb += If(fsm.ongoing("WAIT_FOR_DATA") & packet_ready,
-            self.buffer_toggle.eq(~self.buffer_toggle),
-            self.data_pid[0].eq(~self.data_pid[0]),
-            read_stream_ended.eq(0)
         )
 
         # WAIT_TO_SEND: When discarding, undo data_pid toggle
@@ -412,7 +429,68 @@ class USBInTransferManager(Module):
             self.data_pid.eq(self.start_with_data1)
         )
 
-        # WAIT_TO_SEND: When sending ZLP, clear stream_ended
-        self.sync.usb += If(fsm.ongoing("WAIT_TO_SEND") & in_token_received & ~read_fill_count,
-            read_stream_ended.eq(0)
-        )
+        # Capture whether a byte was accepted into each buffer, and whether it was the LAST
+        # byte of the stream. We set the stream-ended flag one cycle later, after any
+        # WAIT_FOR_DATA buffer toggle has taken effect. This avoids Migen simulation ordering
+        # issues where the flag would otherwise be written into the wrong buffer.
+        buffer_0_we_r = Signal()
+        buffer_1_we_r = Signal()
+        in_last_r = Signal()
+        self.sync.usb += [
+            buffer_0_we_r.eq(buffer_0_we),
+            buffer_1_we_r.eq(buffer_1_we),
+            in_last_r.eq(in_stream.last)
+        ]
+
+        # Compute set/clear for each stream-ended bit and update the whole register at once.
+        # Updating the full 2-bit register avoids Migen bit-slice simulation problems.
+        set_ended = Signal(2)
+        clear_ended = Signal(2)
+        self.comb += [
+            set_ended[0].eq(in_last_r & buffer_0_we_r),
+            set_ended[1].eq(in_last_r & buffer_1_we_r),
+            clear_ended[0].eq(self.discard |
+                (fsm.ongoing("WAIT_FOR_ACK") & self.handshakes_in.ack & (~in_stream.ready | packet_ready) &
+                 ~(self.generate_zlps & (read_fill_count == self._max_packet_size) & read_stream_ended) &
+                 current_toggle) |
+                (fsm.ongoing("WAIT_TO_SEND") & in_token_received & ~read_fill_count & current_toggle)),
+            clear_ended[1].eq(self.discard |
+                (fsm.ongoing("WAIT_FOR_ACK") & self.handshakes_in.ack & (~in_stream.ready | packet_ready) &
+                 ~(self.generate_zlps & (read_fill_count == self._max_packet_size) & read_stream_ended) &
+                 ~current_toggle) |
+                (fsm.ongoing("WAIT_TO_SEND") & in_token_received & ~read_fill_count & ~current_toggle)),
+        ]
+        # Set/clear stream-ended flags in a single sync block using separate signals. This
+        # avoids Migen's simulator issues with multiple drivers or read-modify-write on a
+        # multi-bit register.
+        clear_ended0 = self.discard | \
+            (fsm.ongoing("WAIT_FOR_ACK") & self.handshakes_in.ack & (~in_stream.ready | packet_ready) &
+             ~(self.generate_zlps & (read_fill_count == self._max_packet_size) & read_stream_ended) &
+             current_toggle) | \
+            (fsm.ongoing("WAIT_TO_SEND") & in_token_received & ~read_fill_count & current_toggle)
+        clear_ended1 = self.discard | \
+            (fsm.ongoing("WAIT_FOR_ACK") & self.handshakes_in.ack & (~in_stream.ready | packet_ready) &
+             ~(self.generate_zlps & (read_fill_count == self._max_packet_size) & read_stream_ended) &
+             ~current_toggle) | \
+            (fsm.ongoing("WAIT_TO_SEND") & in_token_received & ~read_fill_count & ~current_toggle)
+
+        self.sync.usb += [
+            stream_ended_in_buffer0.eq((stream_ended_in_buffer0 | set_ended[0]) & ~clear_ended0),
+            stream_ended_in_buffer1.eq((stream_ended_in_buffer1 | set_ended[1]) & ~clear_ended1)
+        ]
+        self.debug_set_ended = Signal(2)
+        self.debug_clear_ended = Signal(2)
+        self.debug_buf_we_r = Signal(2)
+        self.debug_in_last_r = Signal()
+        self.comb += [
+            self.debug_set_ended.eq(set_ended),
+            self.debug_clear_ended.eq(clear_ended),
+            self.debug_se1_test.eq(set_ended[0]),
+            self.debug_wfd_set_se1.eq(set_ended[1]),
+            self.debug_buf_we_r.eq(Cat(buffer_0_we_r, buffer_1_we_r)),
+            self.debug_in_last_r.eq(in_last_r)
+        ]
+
+        self.comb += self.debug_wfd_comb.eq(fsm.ongoing("WAIT_FOR_DATA") & packet_ready & in_stream.last & prev_toggle)
+
+
