@@ -166,7 +166,7 @@ class USBACMSerialDevice(Module):
                 i.bInterfaceNumber   = 0
 
                 i.bInterfaceClass    = 0x02 # CDC
-                i.bInterfaceSubClass = 0x02 # ACM
+                i.bInterfaceSubclass = 0x02 # ACM
                 i.bInterfaceProtocol = 0x01 # AT commands / UART
 
                 # Provide the default CDC version.
@@ -195,7 +195,7 @@ class USBACMSerialDevice(Module):
             with c.InterfaceDescriptor() as i:
                 i.bInterfaceNumber   = 1
                 i.bInterfaceClass    = 0x0a # CDC data
-                i.bInterfaceSubClass = 0x00
+                i.bInterfaceSubclass = 0x00
                 i.bInterfaceProtocol = 0x00
 
                 # Data IN to host (tx, from our side)
@@ -259,14 +259,12 @@ class USBACMSerialDevice(Module):
         self.submodules.tx_fifo = tx_fifo = SyncFIFO(
             width=8, 
             depth=self._max_packet_size * 2,
-            name="tx_fifo"
         )
         
         # RX FIFO: USB RX endpoint -> LiteX source  
         self.submodules.rx_fifo = rx_fifo = SyncFIFO(
             width=8,
             depth=self._max_packet_size * 2,
-            name="rx_fifo"
         )
 
         # Create LiteUSB StreamInterface adapters

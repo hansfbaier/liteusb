@@ -16,7 +16,7 @@ from migen.genlib.fsm import FSM, NextState
 
 from ..endpoint     import EndpointInterface
 from ...stream      import USBOutStreamBoundaryDetector
-from ..stream       import USBInStreamInterface
+from ...stream      import USBInStreamInterface
 from ...stream      import StreamInterface
 from ....memory     import TransactionalizedFIFO
 
