@@ -12,7 +12,7 @@ import functools
 
 from migen import *
 from migen.genlib.record import Record, DIR_M_TO_S, DIR_S_TO_M
-from migen.genlib.fsm import FSM
+from migen.genlib.fsm import FSM, NextState, NextValue
 
 from . import USBSpeed, USBPacketID
 from ...interface.utmi import UTMITransmitInterface
@@ -327,10 +327,12 @@ class USBTokenDetector(Module):
         self.comb += token_applicable.eq(token_data[0:7] == self.address)
 
         # Main FSM
-        self.submodules.fsm = fsm = FSM()
+        fsm = FSM()
+        fsm = ClockDomainsRenamer("usb")(fsm)
+        self.submodules.fsm = fsm
 
         # Keep our strobes un-asserted unless otherwise specified.
-        self.sync += [
+        self.sync.usb += [
             self.interface.new_frame.eq(0),
             self.interface.new_token.eq(0)
         ]
@@ -478,14 +480,16 @@ class USBHandshakeDetector(Module):
         active_pid = Signal(4)
 
         # Keep our strobes un-asserted unless otherwise specified.
-        self.sync += [
+        self.sync.usb += [
             self.detected.ack.eq(0),
             self.detected.nak.eq(0),
             self.detected.stall.eq(0),
             self.detected.nyet.eq(0),
         ]
 
-        self.submodules.fsm = fsm = FSM()
+        fsm = FSM()
+        fsm = ClockDomainsRenamer("usb")(fsm)
+        self.submodules.fsm = fsm
 
         # IDLE -- waiting for a packet to be presented
         fsm.act("IDLE",
@@ -590,7 +594,7 @@ class USBDataPacketCRC(Module):
 
         # If we're clearing our CRC in progress, move our holding register back to
         # our initial value.
-        self.sync += [
+        self.sync.usb += [
             If(self._clear_internal,
                 self._crc.eq(self._initial_value)
             ).Elif(self.rx_valid,
@@ -766,7 +770,7 @@ class USBDataPacketReceiver(Module):
         data_pipeline     = Signal(16)
 
         # Keep our control signals + strobes un-asserted unless otherwise specified.
-        self.sync += [
+        self.sync.usb += [
             self.packet_complete.eq(0),
             self.crc_mismatch.eq(0),
         ]
@@ -776,7 +780,9 @@ class USBDataPacketReceiver(Module):
         ]
 
 
-        self.submodules.fsm = fsm = FSM()
+        fsm = FSM()
+        fsm = ClockDomainsRenamer("usb")(fsm)
+        self.submodules.fsm = fsm
 
         # IDLE -- waiting for a packet to be presented
         fsm.act("IDLE",
@@ -972,10 +978,12 @@ class USBDataPacketDeserializer(Module):
         is_valid_pid = Signal()
 
         # Keep our control signals + strobes un-asserted unless otherwise specified.
-        self.sync += self.new_packet.eq(0)
+        self.sync.usb += self.new_packet.eq(0)
         self.comb += self.data_crc.start.eq(0)
 
-        self.submodules.fsm = fsm = FSM()
+        fsm = FSM()
+        fsm = ClockDomainsRenamer("usb")(fsm)
+        self.submodules.fsm = fsm
 
         # IDLE -- waiting for a packet to be presented
         fsm.act("IDLE",
@@ -1118,7 +1126,9 @@ class USBDataPacketGenerator(Module):
                 crc_gen.tx_valid.eq(self.tx.ready)
             ]
 
-        self.submodules.fsm = fsm = FSM()
+        fsm = FSM()
+        fsm = ClockDomainsRenamer("usb")(fsm)
+        self.submodules.fsm = fsm
 
         # IDLE -- waiting for an active transmission to start.
         fsm.act("IDLE",
@@ -1239,7 +1249,9 @@ class USBHandshakeGenerator(Module):
 
         self.tx           = UTMITransmitInterface()
 
-        self.submodules.fsm = fsm = FSM()
+        fsm = FSM()
+        fsm = ClockDomainsRenamer("usb")(fsm)
+        self.submodules.fsm = fsm
 
         # IDLE -- we haven't yet received a request to transmit
         fsm.act("IDLE",
@@ -1350,9 +1362,9 @@ class USBInterpacketTimer(Module):
         self.speed = Signal(2)
 
         # Internal signals representing each of our timeouts.
-        rx_to_tx_at_min  = Signal()
-        rx_to_tx_at_max  = Signal()
-        tx_to_rx_timeout = Signal()
+        self._rx_to_tx_at_min  = Signal()
+        self._rx_to_tx_at_max  = Signal()
+        self._tx_to_rx_timeout = Signal()
 
         # Create a counter that will track our interpacket delays.
         # This should be able to count up to our longest delay. We'll allow our
@@ -1361,14 +1373,12 @@ class USBInterpacketTimer(Module):
         counter = Signal(max=self._counter_max + 2)
 
         # Reset our timer whenever any of our interfaces request a timer start.
-        reset_signals = [interface.start for interface in self._interfaces]
-        any_reset = Signal()
-        if reset_signals:
-            self.comb += any_reset.eq(functools.reduce(operator.__or__, reset_signals))
+        # Note: self._interfaces is empty here; _any_reset is connected in do_finalize()
+        self._any_reset = Signal()
 
         # When a reset is requested, start the counter from 0.
-        self.sync += [
-            If(any_reset,
+        self.sync.usb += [
+            If(self._any_reset,
                 counter.eq(0)
             ).Elif(counter < self._counter_max + 1,
                 counter.eq(counter + 1)
@@ -1382,27 +1392,19 @@ class USBInterpacketTimer(Module):
         #
         self.comb += [
             If(self.speed == USBSpeed.HIGH,
-                rx_to_tx_at_min.eq(counter == self._hs_rx_to_tx_delay[0]) if not self._fs_only else rx_to_tx_at_min.eq(0),
-                rx_to_tx_at_max.eq(counter == self._hs_rx_to_tx_delay[1]) if not self._fs_only else rx_to_tx_at_max.eq(0),
-                tx_to_rx_timeout.eq(counter == self._hs_tx_to_rx_timeout) if not self._fs_only else tx_to_rx_timeout.eq(0)
+                self._rx_to_tx_at_min.eq(counter == self._hs_rx_to_tx_delay[0]) if not self._fs_only else self._rx_to_tx_at_min.eq(0),
+                self._rx_to_tx_at_max.eq(counter == self._hs_rx_to_tx_delay[1]) if not self._fs_only else self._rx_to_tx_at_max.eq(0),
+                self._tx_to_rx_timeout.eq(counter == self._hs_tx_to_rx_timeout) if not self._fs_only else self._tx_to_rx_timeout.eq(0)
             ).Elif(self.speed == USBSpeed.FULL,
-                rx_to_tx_at_min.eq(counter == self._fs_rx_to_tx_delay[0]),
-                rx_to_tx_at_max.eq(counter == self._fs_rx_to_tx_delay[1]),
-                tx_to_rx_timeout.eq(counter == self._fs_tx_to_rx_timeout)
+                self._rx_to_tx_at_min.eq(counter == self._fs_rx_to_tx_delay[0]),
+                self._rx_to_tx_at_max.eq(counter == self._fs_rx_to_tx_delay[1]),
+                self._tx_to_rx_timeout.eq(counter == self._fs_tx_to_rx_timeout)
             ).Else(
-                rx_to_tx_at_min.eq(counter == self._ls_rx_to_tx_delay[0]) if not self._fs_only else rx_to_tx_at_min.eq(0),
-                rx_to_tx_at_max.eq(counter == self._ls_rx_to_tx_delay[1]) if not self._fs_only else rx_to_tx_at_max.eq(0),
-                tx_to_rx_timeout.eq(counter == self._ls_tx_to_rx_timeout) if not self._fs_only else tx_to_rx_timeout.eq(0)
+                self._rx_to_tx_at_min.eq(counter == self._ls_rx_to_tx_delay[0]) if not self._fs_only else self._rx_to_tx_at_min.eq(0),
+                self._rx_to_tx_at_max.eq(counter == self._ls_rx_to_tx_delay[1]) if not self._fs_only else self._rx_to_tx_at_max.eq(0),
+                self._tx_to_rx_timeout.eq(counter == self._ls_tx_to_rx_timeout) if not self._fs_only else self._tx_to_rx_timeout.eq(0)
             )
         ]
-
-        # Tie our strobes to each of our consumers.
-        for interface in self._interfaces:
-            self.comb += [
-                interface.tx_allowed.eq(rx_to_tx_at_min),
-                interface.tx_timeout.eq(rx_to_tx_at_max),
-                interface.rx_timeout.eq(tx_to_rx_timeout)
-            ]
 
 
     def add_interface(self, interface):
@@ -1416,3 +1418,21 @@ class USBInterpacketTimer(Module):
             The interface to add.
         """
         self._interfaces.append(interface)
+
+    def do_finalize(self):
+        # Connect _any_reset and interface strobes.
+        # This must be done in do_finalize() because interfaces are added
+        # after __init__() via add_interface().
+        if self._interfaces:
+            reset_signals = [interface.start for interface in self._interfaces]
+            self.comb += self._any_reset.eq(functools.reduce(operator.__or__, reset_signals))
+        else:
+            self.comb += self._any_reset.eq(0)
+
+        # Tie our strobes to each of our consumers.
+        for interface in self._interfaces:
+            self.comb += [
+                interface.tx_allowed.eq(self._rx_to_tx_at_min),
+                interface.tx_timeout.eq(self._rx_to_tx_at_max),
+                interface.rx_timeout.eq(self._tx_to_rx_timeout)
+            ]

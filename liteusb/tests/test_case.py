@@ -123,10 +123,21 @@ class LiteUSBTestCase(unittest.TestCase):
     def simulate(self, *, vcd_suffix=None):
         """ Runs our core simulation. """
         
+        # Determine the active domain's frequency
+        if self.domain == 'usb':
+            active_freq = self.USB_CLOCK_FREQUENCY
+        elif self.domain == 'fast':
+            active_freq = self.FAST_CLOCK_FREQUENCY
+        else:
+            active_freq = self.SYNC_CLOCK_FREQUENCY
+
         # Build clocks dict for migen simulation
         clocks = {}
-        # Always add 'sys' clock (required by migen)
-        clocks['sys'] = 1 / (self.SYNC_CLOCK_FREQUENCY or 1e6)
+        # Always add 'sys' clock (required by migen).
+        # If no sync frequency, use the active domain's frequency so that
+        # any self.sync code runs at the same speed as the active domain.
+        sys_freq = self.SYNC_CLOCK_FREQUENCY or active_freq or 1e6
+        clocks['sys'] = 1 / sys_freq
         if self.SYNC_CLOCK_FREQUENCY:
             clocks['sync'] = 1 / self.SYNC_CLOCK_FREQUENCY
         if self.USB_CLOCK_FREQUENCY:
@@ -142,10 +153,18 @@ class LiteUSBTestCase(unittest.TestCase):
                 vcd_name = "{}_{}".format(vcd_name, vcd_suffix)
             vcd_name += ".vcd"
         
-        # Run simulation using migen's run_simulation
+        # Map domain name to migen clock domain.
+        # In amaranth, 'sync' is the default sync domain; in migen, 'sys' is.
+        gen_domain = self.domain
+        if gen_domain == 'sync':
+            gen_domain = 'sys'
+
+        # Run simulation using migen's run_simulation.
+        # Pass generators in the correct domain so they advance in lockstep
+        # with the DUT's FSM (e.g. usb domain).
         run_simulation(
             self.dut,
-            self._sync_processes,
+            {gen_domain: self._sync_processes},
             clocks=clocks,
             vcd_name=vcd_name
         )

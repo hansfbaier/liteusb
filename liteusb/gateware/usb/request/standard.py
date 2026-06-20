@@ -43,7 +43,7 @@ class StandardRequestHandler(ControlRequestHandler):
 
      """
 
-    def __init__(self, descriptors: DeviceDescriptorCollection, max_packet_size=64, avoid_blockram=None, blacklist: Iterable[Callable[[SetupPacket], Value]] = (), skiplist: Iterable[Callable[[SetupPacket], Value]] = ()):
+    def __init__(self, descriptors: DeviceDescriptorCollection, max_packet_size=64, avoid_blockram=None, blacklist: Iterable[Callable[[SetupPacket], "_Value"]] = (), skiplist: Iterable[Callable[[SetupPacket], "_Value"]] = ()):
         self.descriptors      = descriptors
         self._max_packet_size = max_packet_size
         self._avoid_blockram  = avoid_blockram

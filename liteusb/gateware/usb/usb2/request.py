@@ -10,7 +10,7 @@
 import functools
 import operator
 
-from migen import Signal, Module, Cat, If
+from migen import Signal, Module, Cat, If, ClockDomainsRenamer
 from migen.genlib.fsm import FSM, NextState, NextValue
 from migen.genlib.coding import Encoder
 from migen.genlib.record import Record
@@ -208,12 +208,14 @@ class USBSetupDecoder(Module):
         self.comb += self.timer.start.eq(data_handler.new_packet)
 
         # Keep our output signals de-asserted unless specified.
-        self.sync += [
+        self.sync.usb += [
             self.packet.received  .eq(0),
         ]
 
         # Create FSM
-        self.submodules.fsm = fsm = FSM()
+        fsm = FSM()
+        fsm = ClockDomainsRenamer("usb")(fsm)
+        self.submodules.fsm = fsm
 
         pid_matches     = (self.tokenizer.pid     == self.SETUP_PID)
 
@@ -247,7 +249,7 @@ class USBSetupDecoder(Module):
                     NextValue(self.packet.index,        Cat(data_handler.packet[4], data_handler.packet[5])),
                     NextValue(self.packet.length,       Cat(data_handler.packet[6], data_handler.packet[7])),
                     # ... and indicate that we have new data.
-                    self.packet.received.eq(1),
+                    NextValue(self.packet.received, 1),
                     # We'll now need to wait a receive-transmit delay before initiating our ACK.
                     # Per the USB 2.0 and ULPI 1.1 specifications:
                     #   - A HS device needs to wait 8 HS bit periods before transmitting [USB2, 7.1.18.2].

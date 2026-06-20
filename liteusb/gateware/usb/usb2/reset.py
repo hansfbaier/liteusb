@@ -185,6 +185,7 @@ class USBResetSequencer(Module):
         # Core reset sequences.
         #
         fsm = FSM(reset_state="INITIALIZE")
+        fsm = ClockDomainsRenamer("usb")(fsm)
         self.submodules.fsm = fsm
 
         # INITIALIZE -- we're immediately post-reset; we'll perform some minor setup

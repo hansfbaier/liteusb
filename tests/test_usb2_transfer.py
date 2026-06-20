@@ -170,9 +170,11 @@ class USBInTransferManagerTest(LiteUSBUSBTestCase):
         yield transfer_stream.payload.eq(0x88)
         yield transfer_stream.last.eq(1)
         yield
+        yield
 
         yield transfer_stream.last.eq(0)
         yield transfer_stream.valid.eq(0)
+        yield
 
         # ... we should emit the relevant data packet...
         yield from self.pulse(dut.tokenizer.ready_for_response)
@@ -197,6 +199,7 @@ class USBInTransferManagerTest(LiteUSBUSBTestCase):
         yield transfer_stream.payload.eq(0xDD)
         yield transfer_stream.last.eq(1)
 
+        yield
         yield
         yield transfer_stream.last.eq(0)
         yield transfer_stream.valid.eq(0)

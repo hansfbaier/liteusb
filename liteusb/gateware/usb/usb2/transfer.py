@@ -11,7 +11,7 @@ Its components facilitate data transfer longer than a single packet.
 """
 
 from migen import *
-from migen.genlib.fsm import FSM, NextState
+from migen.genlib.fsm import FSM, NextState, NextValue
 from migen.genlib.record import Record
 
 from .packet import HandshakeExchangeInterface, TokenDetectorInterface
@@ -171,6 +171,11 @@ class USBInTransferManager(Module):
             Signal(name=f"stream_ended_in_buffer{i}") for i in range(2)
         ]
 
+        # Create values equivalent to the buffer numbers for our read and write buffer; which switch
+        # whenever we swap our two buffers.
+        write_buffer_number = self.buffer_toggle
+        read_buffer_number = ~self.buffer_toggle
+
         # Create shortcuts to active fill_count / stream_ended signals for the buffer being written.
         write_fill_count = Array(buffer_fill_count)[write_buffer_number]
         write_stream_ended = Array(buffer_stream_ended)[write_buffer_number]
@@ -274,7 +279,7 @@ class USBInTransferManager(Module):
         # WAIT_TO_SEND -- we now have at least a buffer full of data to send; we'll
         # need to wait for an IN token to send it.
         fsm.act("WAIT_TO_SEND",
-            send_position.eq(0),
+            NextValue(send_position, 0),
 
             # If discarding data, go back to waiting for new data.
             If(self.discard,
@@ -289,7 +294,7 @@ class USBInTransferManager(Module):
                 # If we have a packet to send, send it.
                 If(read_fill_count,
                     NextState("SEND_PACKET"),
-                    out_stream.first.eq(1)
+                    NextValue(out_stream.first, 1)
 
                 # Otherwise, we entered a transmit path without any data in the buffer.
                 ).Else(
@@ -310,8 +315,8 @@ class USBInTransferManager(Module):
 
             # Once our transmitter accepts our data...
             If(out_stream.ready,
-                send_position.eq(send_position + 1),
-                out_stream.first.eq(0),
+                NextValue(send_position, send_position + 1),
+                NextValue(out_stream.first, 0),
 
                 # If we've just sent our last packet, we're now ready to wait for a
                 # response from our host.
@@ -321,7 +326,7 @@ class USBInTransferManager(Module):
             )
         )
 
-        # Need to update buffer_read.adr combinatorially when sending
+        # Pre-fetch the next byte while sending.
         self.comb += If(fsm.ongoing("SEND_PACKET") & out_stream.ready,
             buffer_read.adr.eq(send_position + 1)
         )
@@ -336,7 +341,7 @@ class USBInTransferManager(Module):
             # If the host does ACK...
             ).Elif(self.handshakes_in.ack,
                 # ... clear the data we've sent from our buffer.
-                read_fill_count.eq(0),
+                NextValue(read_fill_count, 0),
 
                 # Figure out if we'll need to follow up with a ZLP. If we have ZLP generation enabled,
                 # we'll make sure we end on a short packet. If this is max-packet-size packet _and_ our
@@ -357,51 +362,53 @@ class USBInTransferManager(Module):
                 # We'll wait for enough data to transmit.
                 ).Else(
                     NextState("WAIT_FOR_DATA")
-                ),
-
-                # If the host starts a new packet without ACK'ing, we'll need to retransmit, unless discarding.
-                # We'll move back to our "wait for token" state without clearing our buffer.
-                If(self.tokenizer.new_token & ~self.discard,
-                    NextState("WAIT_TO_SEND")
                 )
+            ),
+
+            # If the host starts a new packet without ACK'ing, we'll need to retransmit, unless discarding.
+            # We'll move back to our "wait for token" state without clearing our buffer.
+            If(self.tokenizer.new_token & ~self.discard,
+                NextState("WAIT_TO_SEND")
             )
         )
 
         #
-        # Synchronous updates based on FSM state - these need to be in sync.usb domain
-        # (In Amaranth, these were m.d.usb += inside the FSM states)
+        # Synchronous updates based on FSM state.
+        # Use fsm.before_leaving strobes to avoid stale fsm.ongoing() in migen's
+        # simulator where comb is evaluated after sync (unlike amaranth where comb
+        # is before sync). This prevents double-triggering of buffer toggles.
         #
 
-        # WAIT_FOR_DATA: When packet_ready, toggle buffer and data_pid
-        self.sync.usb += If(fsm.ongoing("WAIT_FOR_DATA") & packet_ready,
+        # WAIT_FOR_DATA -> WAIT_TO_SEND: toggle buffer and data_pid
+        self.sync.usb += If(fsm.before_leaving("WAIT_FOR_DATA"),
             self.buffer_toggle.eq(~self.buffer_toggle),
             self.data_pid[0].eq(~self.data_pid[0]),
             read_stream_ended.eq(0)
         )
 
-        # WAIT_TO_SEND: When discarding, undo data_pid toggle
-        self.sync.usb += If(fsm.ongoing("WAIT_TO_SEND") & self.discard,
+        # WAIT_TO_SEND -> WAIT_FOR_DATA (discard): undo data_pid toggle
+        self.sync.usb += If(fsm.before_leaving("WAIT_TO_SEND") & self.discard,
             self.data_pid[0].eq(~self.data_pid[0])
         )
 
-        # WAIT_TO_SEND: When reset_sequence, reset to initial PID
+        # WAIT_TO_SEND: reset_sequence (stays in WAIT_TO_SEND, use ongoing)
         self.sync.usb += If(fsm.ongoing("WAIT_TO_SEND") & self.reset_sequence,
             self.data_pid.eq(self.start_with_data1)
         )
 
-        # WAIT_TO_SEND: When sending ZLP, clear stream_ended
-        self.sync.usb += If(fsm.ongoing("WAIT_TO_SEND") & in_token_received & ~read_fill_count,
+        # WAIT_TO_SEND -> WAIT_FOR_ACK (ZLP): clear stream_ended
+        self.sync.usb += If(fsm.before_leaving("WAIT_TO_SEND") & in_token_received & ~read_fill_count,
             read_stream_ended.eq(0)
         )
 
-        # WAIT_FOR_ACK: When ACK and following with ZLP, toggle data_pid
-        self.sync.usb += If(fsm.ongoing("WAIT_FOR_ACK") & self.handshakes_in.ack &
+        # WAIT_FOR_ACK -> WAIT_TO_SEND (ZLP follow-up): toggle data_pid
+        self.sync.usb += If(fsm.before_leaving("WAIT_FOR_ACK") & self.handshakes_in.ack &
                           self.generate_zlps & (read_fill_count == self._max_packet_size) & read_stream_ended,
             self.data_pid[0].eq(~self.data_pid[0])
         )
 
-        # WAIT_FOR_ACK: When ACK and moving to WAIT_TO_SEND with data ready, toggle buffer and data_pid
-        self.sync.usb += If(fsm.ongoing("WAIT_FOR_ACK") & self.handshakes_in.ack &
+        # WAIT_FOR_ACK -> WAIT_TO_SEND (data ready): toggle buffer and data_pid
+        self.sync.usb += If(fsm.before_leaving("WAIT_FOR_ACK") & self.handshakes_in.ack &
                           (~in_stream.ready | packet_ready) &
                           ~(self.generate_zlps & (read_fill_count == self._max_packet_size) & read_stream_ended),
             self.buffer_toggle.eq(~self.buffer_toggle),

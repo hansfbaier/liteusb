@@ -55,10 +55,13 @@ class USBDescriptorStreamGenerator(Module):
 
         # FSM for stream generation
         fsm = FSM(reset_state="IDLE")
+        fsm = ClockDomainsRenamer("usb")(fsm)
         self.submodules += fsm
 
         fsm.act("IDLE",
             rom_read_port.adr.eq(self.start_position),
+            NextValue(position_in_stream, self.start_position),
+            NextValue(bytes_sent, 0),
             If(self.start,
                 If(self.max_length > 0,
                     NextState("STREAMING")
@@ -77,8 +80,8 @@ class USBDescriptorStreamGenerator(Module):
 
             If(self.stream.ready,
                 If(~on_last_packet,
-                    position_in_stream.eq(position_in_stream + 1),
-                    bytes_sent.eq(bytes_sent + 1),
+                    NextValue(position_in_stream, position_in_stream + 1),
+                    NextValue(bytes_sent, bytes_sent + 1),
                     rom_read_port.adr.eq(position_in_stream + 1)
                 ).Else(
                     NextState("DONE")
@@ -365,7 +368,7 @@ class GetDescriptorHandlerBlock(Module):
         # Upper 16 bits = count, lower 16 bits = pointer
         rom_element_count = rom_read_port.dat_r[16:32]
         # Pointer is in bytes, but we need word address for Memory port
-        rom_element_pointer = rom_read_port.dat_r[2:18]  # Skip lower 2 bits (byte to word conversion)
+        rom_element_pointer = rom_read_port.dat_r[2:2+len(rom_read_port.adr)]
 
         #
         # Maximum length calculation
@@ -433,10 +436,12 @@ class GetDescriptorHandlerBlock(Module):
         # FSM
         #
         fsm = FSM(reset_state="IDLE")
+        # Explicitly place FSM in the usb domain to match the test clock
+        fsm = ClockDomainsRenamer(self._domain)(fsm)
         self.submodules += fsm
 
         fsm.act("IDLE",
-            bytes_sent.eq(0),
+            NextValue(bytes_sent, 0),
             rom_read_port.adr.eq(type_number),
             If(self.start,
                 NextState("START")
@@ -445,7 +450,7 @@ class GetDescriptorHandlerBlock(Module):
 
         fsm.act("START",
             rom_read_port.adr.eq(type_number),
-            position_in_stream.eq(self.start_position),
+            NextValue(position_in_stream, self.start_position),
             If(type_number <= max_type_index,
                 NextState("LOOKUP_TYPE")
             ).Else(
@@ -470,8 +475,8 @@ class GetDescriptorHandlerBlock(Module):
 
         fsm.act("LOOKUP_DESCRIPTOR",
             rom_read_port.adr.eq((rom_read_port.dat_r + position_in_stream) >> 2),
-            descriptor_data_base_address.eq(rom_element_pointer),
-            descriptor_length.eq(rom_element_count),
+            NextValue(descriptor_data_base_address, rom_element_pointer),
+            NextValue(descriptor_length, rom_element_count),
             If(position_in_stream >= rom_element_count,
                 NextState("SEND_ZLP")
             ).Else(
@@ -497,12 +502,12 @@ class GetDescriptorHandlerBlock(Module):
 
             If(self.tx.ready,
                 If(~on_last_packet,
-                    position_in_stream.eq(position_in_stream + 1),
-                    bytes_sent.eq(bytes_sent + 1),
+                    NextValue(position_in_stream, position_in_stream + 1),
+                    NextValue(bytes_sent, bytes_sent + 1),
                     rom_read_port.adr.eq(descriptor_data_base_address + ((position_in_stream + 1) >> 2))
                 ).Else(
-                    descriptor_length.eq(0),
-                    descriptor_data_base_address.eq(0),
+                    NextValue(descriptor_length, 0),
+                    NextValue(descriptor_data_base_address, 0),
                     NextState("IDLE")
                 )
             )
@@ -570,14 +575,15 @@ class GetDescriptorHandlerMux(Module):
                     )
                 ]
             else:
-                getattr(self, f"_{self._domain}").append(
+                domain_sync = getattr(self.sync, self._domain)
+                domain_sync += [
                     If(self.start | self.stall,
                         stall_latch.eq(0)
                     ),
                     If(handler.stall & ~self.stall,
                         stall_latch.eq(1)
                     )
-                )
+                ]
 
         # Create transmit multiplexer
         self.submodules.tx_mux = tx_mux = OneHotMultiplexer(
