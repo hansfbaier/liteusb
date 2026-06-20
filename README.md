@@ -1,10 +1,10 @@
 # LiteUSB
 
 ```
-              Copyright 2020-2025 / Great Scott Gadgets & Enjoy-Digital
+              Copyright (c) 2020-2024 Great Scott Gadgets
+              Copyright (c) 2025-2026 Hans Baier
 ```
 
-[![](https://github.com/enjoy-digital/liteusb/workflows/ci/badge.svg)](https://github.com/enjoy-digital/liteusb/actions)
 ![License](https://img.shields.io/badge/License-BSD%203--Clause-orange.svg)
 
 ## Overview
@@ -63,7 +63,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/enjoy-digital/liteusb.git
+git clone https://github.com/hansfbaier/liteusb.git
 cd liteusb
 
 # Install dependencies and liteusb
@@ -219,8 +219,8 @@ For more detailed documentation, examples, and API reference, visit the [LiteUSB
 This project is licensed under the **BSD 3-Clause License**. See the LICENSE file for details.
 
 ```
-Copyright (c) 2020-2025 Great Scott Gadgets <info@greatscottgadgets.com>
-Copyright (c) 2020-2025 Florent Kermarrec <florent@enjoy-digital.fr>
+Copyright (c) 2020-2024 Great Scott Gadgets <info@greatscottgadgets.com>
+Copyright (c) 2025-2026 Hans Baier <foss@hans-baier.de>
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -251,5 +251,4 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## Contact
 
 - **Issues**: [GitHub Issues](https://github.com/enjoy-digital/liteusb/issues)
-- **Email**: florent@enjoy-digital.fr
-- **LiteX Discord**: [Join Discord](https://discord.gg/PkJwjDbxeG)
+- **Email**: foss@hans-baier.de

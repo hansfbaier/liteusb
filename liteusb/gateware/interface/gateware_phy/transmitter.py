@@ -4,7 +4,7 @@
 #
 # Copyright (c) 2020, Great Scott Gadgets <ktemkin@greatscottgadgets.com>
 # Copyright (c) 2018, Luke Valenty
-# Copyright (c) 2025, Hans Baier <foss@hans-baier.de>
+# Copyright (c) 2026 Hans Baier <foss@hans-baier.de>
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without

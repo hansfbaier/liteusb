@@ -2,7 +2,7 @@
 # This file is part of LiteUSB.
 #
 # Copyright (c) 2020 Great Scott Gadgets <info@greatscottgadgets.com>
-# Copyright (c) 2025 Hans Baier <foss@hans-baier.de>
+# Copyright (c) 2026 Hans Baier <foss@hans-baier.de>
 # SPDX-License-Identifier: BSD-3-Clause
 """ Request components shared between USB2 and USB3. """
 

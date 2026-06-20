@@ -2,7 +2,7 @@
 # This file is part of LiteUSB.
 #
 # Copyright (c) 2024 Great Scott Gadgets <info@greatscottgadgets.com>
-# Copyright (c) 2025 Hans Baier <foss@hans-baier.de>
+# Copyright (c) 2026 Hans Baier <foss@hans-baier.de>
 # SPDX-License-Identifier: BSD-3-Clause
 from liteusb.tests.test_case import LiteUSBTestCase, usb_domain_test_case
 from liteusb.tests.test_usb2_packet import USBPacketizerTest

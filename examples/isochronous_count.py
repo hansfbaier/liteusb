@@ -3,7 +3,7 @@
 # This file is part of LiteUSB.
 #
 # Copyright (c) 2020-2024 Great Scott Gadgets <info@greatscottgadgets.com>
-# Copyright (c) 2025 Hans Baier <foss@hans-baier.de>
+# Copyright (c) 2026 Hans Baier <foss@hans-baier.de>
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Example: isochronous IN endpoint that sends a memory-like counter."""
