@@ -398,9 +398,8 @@ class USBDevice(Module):
                 # If this is a new frame, our microframe count should be zero.
                 If(self.new_frame,
                     self.microframe_number.eq(0)
-                ),
-                # Otherwise, this SOF indicates a new _microframe_ [USB 2.0: 8.4.3.1].
-                Else(
+                ).Else(
+                    # Otherwise, this SOF indicates a new _microframe_ [USB 2.0: 8.4.3.1].
                     self.microframe_number.eq(self.microframe_number + 1)
                 )
             )

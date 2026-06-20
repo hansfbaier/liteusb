@@ -393,7 +393,7 @@ class USBRequestHandlerMultiplexer(Module):
         #
 
         def _connect_interface_outputs(interface):
-            self.comb += [
+            return [
                 shared.tx.stream_eq(interface.tx),
 
                 shared.tx_data_pid.eq(interface.tx_data_pid),

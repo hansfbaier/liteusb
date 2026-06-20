@@ -6,10 +6,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """ Low-level USB transciever gateware -- control transfer components. """
 
-from migen import Signal, Module, Cat
-from migen.fhdl.specials import Memory
+from migen import *
 from migen.genlib.record import Record
-from migen.genlib.fsm import FSM, NextState, NextValue
 
 from usb_protocol.emitters import DeviceDescriptorCollection
 from usb_protocol.types    import USBRequestType

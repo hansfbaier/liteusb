@@ -112,7 +112,7 @@ class SimpleUSBDevice(Module):
         with descriptors.DeviceDescriptor() as d:
             d.idVendor           = 0x1209   # Generic vendor ID (pid.codes)
             d.idProduct          = 0x0001   # Test product
-            d.bcdDevice          = 0x0100   # Device version 1.0
+            d.bcdDevice          = 1.00    # Device version 1.0
             
             d.iManufacturer      = "LiteUSB"
             d.iProduct           = "Simple Device Example"
@@ -132,7 +132,7 @@ class SimpleUSBDevice(Module):
                 i.bInterfaceNumber   = 0
                 i.bAlternateSetting  = 0
                 i.bInterfaceClass    = 0xFF  # Vendor specific
-                i.bInterfaceSubClass = 0x00
+                i.bInterfaceSubclass  = 0x00
                 i.bInterfaceProtocol = 0x00
                 i.iInterface         = "LiteUSB Interface"
                 
@@ -175,7 +175,7 @@ class SimpleUSBDeviceWithPlatform(Module):
             # For simulation or platforms without USB resource,
             # create a mock PHY interface
             from liteusb.gateware.interface.utmi import UTMIInterface
-            phy = UTMIInterface(pads=None)
+            phy = UTMIInterface()
         
         # Create the USB device
         self.submodules.simple_device = SimpleUSBDevice(phy)
@@ -243,7 +243,7 @@ Examples:
     from migen.fhdl.verilog import convert
     
     # Create the USB device module
-    dut = SimpleUSBDevice(UTMIInterface(pads=None))
+    dut = SimpleUSBDevice(UTMIInterface())
     
     if args.build:
         # Generate Verilog

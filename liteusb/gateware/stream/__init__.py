@@ -81,11 +81,12 @@ class StreamInterface(Record):
 
 
         # Create each of our assignments.
+        # migen Records use attribute access (getattr), not subscript notation.
         for field in rhs_fields:
-            assignment = interface[field].eq(self[field])
+            assignment = getattr(interface, field).eq(getattr(self, field))
             assignments.append(assignment)
         for field in lhs_fields:
-            assignment = self[field].eq(interface[field])
+            assignment = getattr(self, field).eq(getattr(interface, field))
             assignments.append(assignment)
 
         return assignments
