@@ -132,9 +132,7 @@ class USBHandshakeDetectorTest(USBPacketizerTest):
     @usb_domain_test_case
     def test_ack(self):
         yield from self.provide_packet(0b11010010)
-        ack = (yield self.dut.detected.ack)
-        print(f"DEBUG ACK: {ack}")
-        self.assertEqual(ack, 1)
+        self.assertEqual((yield self.dut.detected.ack), 1)
 
     @usb_domain_test_case
     def test_nak(self):

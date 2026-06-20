@@ -69,8 +69,6 @@ class USBInTransferManagerTest(LiteUSBUSBTestCase):
             yield
 
         # Once we've filled up -both- buffers, our data should no longer be ready.
-        # Note: For Migen, we need to yield once to commit the last byte write,
-        # then wait for the FSM to process it
         yield
         self.assertEqual((yield transfer_stream.ready), 0)
 
@@ -78,8 +76,6 @@ class USBInTransferManagerTest(LiteUSBUSBTestCase):
         yield from self.pulse(dut.tokenizer.ready_for_response)
 
         # ... we should start transmitting...
-        # Note: +1 cycle delay for Migen simulation timing vs Amaranth
-        yield
         self.assertEqual((yield packet_stream.valid), 1)
 
         # ... we should see the full packet be emitted...
@@ -149,22 +145,14 @@ class USBInTransferManagerTest(LiteUSBUSBTestCase):
 
         # If we're sent a full packet _without the transfer stream ending_...
         yield transfer_stream.valid.eq(1)
-        for i, value in enumerate([0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88]):
+        for value in [0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88]:
             yield transfer_stream.payload.eq(value)
             yield
-        
         yield transfer_stream.valid.eq(0)
 
 
-        # Wait for FSM to process the completed packet and move to WAIT_TO_SEND state
-        yield
-        
         # ... we should receive that data packet without a ZLP.
         yield from self.pulse(dut.tokenizer.ready_for_response)
-        
-        # Note: +1 cycle delay for Migen simulation timing vs Amaranth (memory read latency)
-        yield
-        
         for value in [0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88]:
             self.assertEqual((yield packet_stream.payload), value)
             yield
@@ -182,15 +170,14 @@ class USBInTransferManagerTest(LiteUSBUSBTestCase):
         yield transfer_stream.payload.eq(0x88)
         yield transfer_stream.last.eq(1)
         yield
+        yield
 
         yield transfer_stream.last.eq(0)
         yield transfer_stream.valid.eq(0)
+        yield
 
         # ... we should emit the relevant data packet...
         yield from self.pulse(dut.tokenizer.ready_for_response)
-        # Note: +2 cycle delay for Migen simulation timing vs Amaranth (memory read latency)
-        yield
-        yield
         for value in [0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88]:
             self.assertEqual((yield packet_stream.payload), value)
             yield
@@ -213,14 +200,12 @@ class USBInTransferManagerTest(LiteUSBUSBTestCase):
         yield transfer_stream.last.eq(1)
 
         yield
+        yield
         yield transfer_stream.last.eq(0)
         yield transfer_stream.valid.eq(0)
 
         # ... we should emit the relevant short packet...
         yield from self.pulse(dut.tokenizer.ready_for_response)
-        # Note: +2 cycle delay for Migen simulation timing vs Amaranth (memory read latency)
-        yield
-        yield
         for value in [0xAA, 0xBB, 0xCC, 0xDD]:
             self.assertEqual((yield packet_stream.payload), value)
             yield
@@ -256,16 +241,10 @@ class USBInTransferManagerTest(LiteUSBUSBTestCase):
             yield
         yield transfer_stream.valid.eq(0)
 
-        # Wait for the FSM to transition and buffer toggle to complete
-        # (needed because Migen simulation shows state changes with one cycle delay)
-        yield
-
         # Once we do see an IN token...
         yield from self.pulse(dut.tokenizer.ready_for_response)
 
         # ... we should start transmitting...
-        # Note: +1 cycle delay for Migen simulation timing vs Amaranth
-        yield
         self.assertEqual((yield packet_stream.valid), 1)
 
         # ... and should see the full packet be emitted...
@@ -305,8 +284,6 @@ class USBInTransferManagerTest(LiteUSBUSBTestCase):
         yield from self.pulse(dut.tokenizer.ready_for_response)
 
         # ... we should start transmitting...
-        # Note: +1 cycle delay for Migen simulation timing vs Amaranth
-        yield
         self.assertEqual((yield packet_stream.valid), 1)
 
         # ... and should see the full packet be emitted...

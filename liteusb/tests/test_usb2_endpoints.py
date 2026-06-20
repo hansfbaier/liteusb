@@ -174,41 +174,29 @@ class USBIsochronousStreamOutEndpointTest(LiteUSBUSBTestCase):
 
         # ... which should have taken len(data) - 1 cycles because we already sent the first byte.
         self.assertEqual(clocks, len(data) - 1)
-        # Note: This assertion is skipped due to Amaranth vs Migen simulation behavior differences
-        # The payload signal value persistence between yields differs between the two frameworks
-        # self.assertEqual((yield producer.payload), data[-1])
+        self.assertEqual((yield producer.payload), data[-1])
 
-        # Skip these assertions due to Amaranth vs Migen timing differences
-        # In Amaranth, the FIFO read data is visible immediately after write
-        # In Migen, there's additional latency in the TransactionalizedFIFO read path
-        # The functional behavior is correct - just the timing of visibility differs
-        # yield
-        # self.assertEqual((yield consumer.valid), 0)
-        # self.assertEqual((yield consumer.p.first), 1)
-        # self.assertEqual((yield consumer.p.data), data[0])
+        # By now the consumer stream would also have picked up the first byte ...
+        self.assertEqual((yield consumer.valid), 0)
+        self.assertEqual((yield consumer.p.first), 1)
+        self.assertEqual((yield consumer.p.data), data[0])
 
         # ... but the stream still won't advance ...
         yield
         self.assertEqual((yield consumer.valid), 0)
-        # Skipped due to Amaranth vs Migen timing differences - see above
-        # self.assertEqual((yield consumer.p.first), 1)
-        # self.assertEqual((yield consumer.p.data), data[0])
+        self.assertEqual((yield consumer.p.first), 1)
+        self.assertEqual((yield consumer.p.data), data[0])
 
         # ... until we finally mark the packet as complete and invalidate the producer stream.
-        # Assert rx_complete while stream is still valid, then end the stream
         yield dut.interface.rx_complete.eq(1)
-        yield
-        yield
         yield producer.valid.eq(0)
         yield producer.next.eq(0)
         yield
-        yield dut.interface.rx_complete.eq(0)
+
+        # After three clock cycles delay our stream goes finally valid ...
         yield
-
-        # Wait for boundary detector to output complete_out and FIFO to commit
-        for _ in range(5):
-            yield
-
+        yield
+        yield
         self.assertEqual((yield consumer.valid), 1)
 
         # ... and we can now receive the packet.

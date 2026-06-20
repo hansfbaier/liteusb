@@ -64,7 +64,8 @@ class GetDescriptorHandlerBlockTest(LiteUSBUSBTestCase):
         yield
 
         # Set up request
-        yield self.dut.value.eq((type_number << 8) | index)
+        yield self.dut.value[8:16].eq(type_number)  # Type
+        yield self.dut.value[0:8].eq(index)  # Index
         yield self.dut.length.eq(max_length)
         yield self.dut.start_position.eq(start_position)
         yield self.dut.tx.ready.eq(1 if delay_ready == 0 else 0)
@@ -106,7 +107,8 @@ class GetDescriptorHandlerBlockTest(LiteUSBUSBTestCase):
     def _test_stall(self, type_number, index, start_position, max_length):
         """ Triggers a read and checks if correctly stalled. """
 
-        yield self.dut.value.eq((type_number << 8) | index)
+        yield self.dut.value[8:16].eq(type_number)  # Type
+        yield self.dut.value[0:8].eq(index)  # Index
         yield self.dut.length.eq(max_length)
         yield self.dut.start_position.eq(start_position)
         yield self.dut.tx.ready.eq(1)

@@ -52,18 +52,12 @@ class USBSetupDecoderTest(USBPacketizerTest):
         # Simulate the host sending basic setup data.
         yield from self.provide_reference_setup_transaction()
 
-        # Wait for the transaction to complete and data to be captured
-        yield
-        yield
+        # We're high speed, so we should be ACK'ing immediately.
+        self.assertEqual((yield dut.ack), 1)
 
-        # Validate that setup packet values are as we expect.
-        self.assertEqual((yield dut.packet.is_in_request), 0       )
-        self.assertEqual((yield dut.packet.type),          0b10    )
-        self.assertEqual((yield dut.packet.recipient),     0b00010 )
-        self.assertEqual((yield dut.packet.request),       12      )
-        self.assertEqual((yield dut.packet.value),         0xabcd  )
-        self.assertEqual((yield dut.packet.index),         0x0123  )
-        self.assertEqual((yield dut.packet.length),        0x5678  )
+        # We now should have received a new setup request.
+        yield
+        self.assertEqual((yield dut.packet.received), 1)
 
         # Validate that its values are as we expect.
         self.assertEqual((yield dut.packet.is_in_request), 0       )
@@ -88,18 +82,13 @@ class USBSetupDecoderTest(USBPacketizerTest):
         # Simulate the host sending basic setup data.
         yield from self.provide_reference_setup_transaction()
 
-        # Wait for the transaction to complete
+        # We shouldn't ACK immediately; we'll need to wait our interpacket delay.
         yield
-        yield
+        self.assertEqual((yield dut.ack), 0)
 
-        # Validate that setup packet values are as we expect.
-        self.assertEqual((yield dut.packet.is_in_request), 0       )
-        self.assertEqual((yield dut.packet.type),          0b10    )
-        self.assertEqual((yield dut.packet.recipient),     0b00010 )
-        self.assertEqual((yield dut.packet.request),       12      )
-        self.assertEqual((yield dut.packet.value),         0xabcd  )
-        self.assertEqual((yield dut.packet.index),         0x0123  )
-        self.assertEqual((yield dut.packet.length),        0x5678  )
+        # After our minimum interpacket delay, we should see an ACK.
+        yield from self.advance_cycles(10)
+        self.assertEqual((yield dut.ack), 1)
 
 
 
