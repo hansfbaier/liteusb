@@ -4,8 +4,8 @@
 This code of conduct only applies to project related communications
 on the platforms where the code is maintained and where the official communication happens
 (ie. GitHub, GitLab, etc.)
-What happens on the participants private social media account is up to them,
-if you do not agree, there is no need to follow them.
+What happens on the participants' private social media accounts is up to them, so
+if you do not agree with their stance there, there is no need to follow them.
 
 ## Rules
 
