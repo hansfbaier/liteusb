@@ -15,21 +15,21 @@ from migen.genlib.record import Record
 
 
 class ULPIInterface(Record):
-    """ Record that represents a standard ULPI interface. """
+    """ Record that represents a standard ULPI interface.
+
+    The ``data`` bus is a ``TSTriple(8)`` providing ``.i``, ``.o``, and
+    ``.oe`` signals.  Use ``data.get_tristate(pad)`` in platform adapters.
+    """
 
     def __init__(self):
         super().__init__([
-            ("data", [
-                ("i", 8),
-                ("o", 8),
-                ("oe", 1),
-            ]),
             ("clk", 1),
             ("nxt", 1),
             ("stp", 1),
             ("dir", 1),
             ("rst", 1),
         ])
+        self.data = TSTriple(8)
 
 
 class ULPIRegisterWindow(Module):
