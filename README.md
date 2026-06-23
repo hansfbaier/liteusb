@@ -86,53 +86,60 @@ chmod +x litex_setup.py
 
 ## Quick Start
 
-### Basic Usage
+### Build the Examples
 
-```python
-from migen import *
-from liteusb import USBDevice
-from liteusb.gateware.interface.ulpi import ULPIInterface
+All examples can be built to Verilog using `--build`:
 
-# Create USB device with PHY
-phy = platform.request("usb")
-usb = USBDevice(bus=phy)
-
-# Add standard control endpoint with descriptors
-from usb_protocol.emitters import DeviceDescriptorCollection
-
-descriptors = DeviceDescriptorCollection()
-with descriptors.DeviceDescriptor() as d:
-    d.idVendor = 0x1209
-    d.idProduct = 0x0001
-    d.iManufacturer = "LiteUSB"
-    d.iProduct = "My Device"
-
-usb.add_standard_control_endpoint(descriptors)
+```bash
+python examples/simple_device.py --build
+python examples/counter_device.py --build
+python examples/vendor_request.py --build
+python examples/stream_out_device.py --build
+python examples/interrupt_device.py --build
+python examples/isochronous_count.py --build
+python examples/stress_test_device.py --build
+python examples/acm_serial.py --build
 ```
 
-### Complete Example
+### Basic Usage
 
-See [examples/simple_device.py](examples/simple_device.py) for a complete working example:
+See [examples/simple_device.py](examples/simple_device.py) for the complete working example:
 
 ```python
-#!/usr/bin/env python3
 from migen import *
-from liteusb import USBDevice
+from liteusb import USBDevice, UTMIInterface
 from usb_protocol.emitters import DeviceDescriptorCollection
 
 class MyUSBDevice(Module):
     def __init__(self, phy):
         self.submodules.usb = usb = USBDevice(bus=phy)
-        
+
         # Create descriptors
         descriptors = DeviceDescriptorCollection()
         with descriptors.DeviceDescriptor() as d:
-            d.idVendor = 0x1209
-            d.idProduct = 0x0001
-        
+            d.idVendor      = 0x1209
+            d.idProduct     = 0x0001
+            d.bcdDevice     = 1.00
+            d.iManufacturer = "LiteUSB"
+            d.iProduct      = "My Device"
+            d.iSerialNumber = "0001"
+            d.bNumConfigurations = 1
+
+        with descriptors.ConfigurationDescriptor() as c:
+            with c.InterfaceDescriptor() as i:
+                i.bInterfaceNumber = 0
+
+                with i.EndpointDescriptor() as e:
+                    e.bEndpointAddress = 0x01
+                    e.wMaxPacketSize   = 512
+
+                with i.EndpointDescriptor() as e:
+                    e.bEndpointAddress = 0x81
+                    e.wMaxPacketSize   = 512
+
         # Add control endpoint
         usb.add_standard_control_endpoint(descriptors)
-        
+
         # Connect device
         self.comb += usb.connect.eq(1)
 ```
@@ -166,47 +173,68 @@ builder.build()
 
 ## Available Modules
 
-### Core Modules
+### Core USB Stack
 
 | Module | Description |
 |--------|-------------|
-| `liteusb.USBDevice` | Main USB device class |
+| `liteusb.gateware.usb.device` | Main USB device class (`USBDevice`) |
 | `liteusb.gateware.usb.usb2.device` | USB 2.0 device implementation |
 | `liteusb.gateware.usb.usb2.control` | Control endpoint (EP0) |
+| `liteusb.gateware.usb.usb2.endpoint` | Endpoint multiplexer |
+| `liteusb.gateware.usb.usb2.packet` | Packet generators, detectors, tokenizers, CRCs |
+| `liteusb.gateware.usb.usb2.reset` | USB reset sequencer |
+| `liteusb.gateware.usb.usb2.transfer` | Transfer state machines |
+| `liteusb.gateware.usb.usb2.descriptor` | Descriptor generation (ROM-based) |
+| `liteusb.gateware.usb.stream` | USB stream interfaces |
 
 ### Endpoint Types
 
 | Module | Description |
 |--------|-------------|
-| `liteusb.gateware.usb.usb2.endpoints.stream` | Stream-based endpoints |
-| `liteusb.gateware.usb.usb2.endpoints.isochronous` | Isochronous endpoints |
-| `liteusb.gateware.usb.usb2.endpoints.status` | Status endpoints |
+| `liteusb.gateware.usb.usb2.endpoints.stream` | Bulk/Interrupt stream endpoints (IN and OUT) |
+| `liteusb.gateware.usb.usb2.endpoints.isochronous` | Isochronous memory-mapped IN endpoint |
+| `liteusb.gateware.usb.usb2.endpoints.isochronous_stream_in` | Isochronous stream IN endpoint |
+| `liteusb.gateware.usb.usb2.endpoints.isochronous_stream_out` | Isochronous stream OUT endpoint |
+| `liteusb.gateware.usb.usb2.endpoints.status` | Signal/status IN endpoint (interrupt) |
 
 ### PHY Interfaces
 
 | Module | Description |
 |--------|-------------|
-| `liteusb.gateware.interface.ulpi` | ULPI PHY interface |
-| `liteusb.gateware.interface.utmi` | UTMI PHY interface |
+| `liteusb.gateware.interface.ulpi` | ULPI PHY interface and translator |
+| `liteusb.gateware.interface.utmi` | UTMI/UTMI+ interface (simulation aid) |
+| `liteusb.gateware.interface.gateware_phy` | Pure gateware USB PHY (transmitter/receiver) |
 
 ### Request Handlers
 
 | Module | Description |
 |--------|-------------|
-| `liteusb.gateware.usb.request.standard` | Standard USB requests |
-| `liteusb.gateware.usb.request.interface` | Interface request handler |
+| `liteusb.gateware.usb.request.standard` | Standard USB request handler |
+| `liteusb.gateware.usb.request.control` | Control request handler base class |
+| `liteusb.gateware.usb.request.interface` | Request handler interface definitions |
+| `liteusb.gateware.usb.usb2.request` | Setup decoder, request handler multiplexer |
 
-### Utilities
+### Devices
+
+| Module | Description |
+|--------|-------------|
+| `liteusb.gateware.usb.devices.acm` | CDC-ACM USB serial device |
+
+### Utilities & Infrastructure
 
 | Module | Description |
 |--------|-------------|
 | `liteusb.gateware.utils.cdc` | Clock domain crossing |
-| `liteusb.gateware.utils.bus` | Bus utilities |
+| `liteusb.gateware.utils.bus` | Bus utilities (multiplexers) |
 | `liteusb.gateware.utils.io` | I/O utilities |
+| `liteusb.gateware.stream` | Stream interface definitions |
+| `liteusb.gateware.stream.generator` | StreamSerializer for data streaming |
+| `liteusb.gateware.stream.arbiter` | Stream arbiters |
+| `liteusb.gateware.memory` | Transactionalized FIFO |
 
 ## Documentation
 
-For more detailed documentation, examples, and API reference, visit the [LiteUSB Wiki](https://github.com/enjoy-digital/liteusb/wiki).
+For more detailed documentation, examples, and API reference, see the source tree and example files in [examples/](examples/).
 
 ### Related Projects
 
@@ -250,5 +278,5 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## Contact
 
-- **Issues**: [GitHub Issues](https://github.com/enjoy-digital/liteusb/issues)
+- **Issues**: [GitHub Issues](https://github.com/hansfbaier/liteusb/issues)
 - **Email**: foss@hans-baier.de
