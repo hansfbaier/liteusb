@@ -27,9 +27,7 @@ class ULPIInterface(Record):
             ("clk", 1),
             ("nxt", 1),
             ("stp", 1),
-            ("dir", [
-                ("i", 1),
-            ]),
+            ("dir", 1),
             ("rst", 1),
         ])
 
@@ -296,10 +294,10 @@ class ULPIRxEventDecoder(Module):
 
         # Create a delayed version of DIR
         direction_delayed = Signal()
-        self.sync.usb += direction_delayed.eq(self.ulpi.dir.i)
+        self.sync.usb += direction_delayed.eq(self.ulpi.dir)
 
         receiving = Signal()
-        self.comb += receiving.eq(direction_delayed & self.ulpi.dir.i)
+        self.comb += receiving.eq(direction_delayed & self.ulpi.dir)
 
         # Default our strobes to 0
         self.sync.usb += [
@@ -792,7 +790,7 @@ class UTMITranslator(Module):
             register_window.busy     | \
             transmit_translator.busy | \
             control_translator.busy  | \
-            self.ulpi.dir.i
+            self.ulpi.dir
 
         # If we're handling ULPI clocking, do so.
         if self.handle_clocking:
@@ -826,7 +824,7 @@ class UTMITranslator(Module):
         # Connect our ULPI control signals to each of our subcomponents.
         self.comb += [
             # Drive the bus whenever the target PHY isn't.
-            self.ulpi.data.oe.eq(~self.ulpi.dir.i),
+            self.ulpi.data.oe.eq(~self.ulpi.dir),
 
             # Generate our busy signal.
             self.busy.eq(any_busy),
@@ -838,7 +836,7 @@ class UTMITranslator(Module):
             # Connect our inputs to our transmit translator.
             transmit_translator.ulpi_nxt.eq(self.ulpi.nxt),
             transmit_translator.op_mode.eq(self.op_mode),
-            transmit_translator.bus_idle.eq(~control_translator.busy & ~self.ulpi.dir.i & phy_ready),
+            transmit_translator.bus_idle.eq(~control_translator.busy & ~self.ulpi.dir & phy_ready),
             transmit_translator.tx_data.eq(self.tx_data),
             transmit_translator.tx_valid.eq(self.tx_valid),
             self.tx_ready.eq(transmit_translator.tx_ready),
@@ -846,7 +844,7 @@ class UTMITranslator(Module):
             # Connect our inputs to our control translator / register window.
             control_translator.bus_idle.eq(~transmit_translator.busy & phy_ready),
             register_window.ulpi_data_in.eq(self.ulpi.data.i),
-            register_window.ulpi_dir.eq(self.ulpi.dir.i),
+            register_window.ulpi_dir.eq(self.ulpi.dir),
             register_window.ulpi_next.eq(self.ulpi.nxt),
         ]
 
@@ -872,13 +870,13 @@ class UTMITranslator(Module):
             self.comb += signal.eq(self.__dict__[signal_name])
 
         # RxActive handler
-        past_dir        = Signal.like(self.ulpi.dir.i)
-        dir_rising_edge = ~past_dir & self.ulpi.dir.i
+        past_dir        = Signal.like(self.ulpi.dir)
+        dir_rising_edge = ~past_dir & self.ulpi.dir
         dir_based_start = dir_rising_edge & self.ulpi.nxt
 
         self.sync.usb += [
-            past_dir.eq(self.ulpi.dir.i),
-            If(~self.ulpi.dir.i | rxevent_decoder.rx_stop,
+            past_dir.eq(self.ulpi.dir),
+            If(~self.ulpi.dir | rxevent_decoder.rx_stop,
                 self.rx_active.eq(0)
             ).Elif(dir_based_start | rxevent_decoder.rx_start,
                 self.rx_active.eq(1)
