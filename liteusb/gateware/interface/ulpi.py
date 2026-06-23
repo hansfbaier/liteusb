@@ -310,7 +310,7 @@ class ULPIRxEventDecoder(Module):
         # Sample the DATA lines whenever these conditions are met
         rx_active_bit = self.ulpi.data.i[4]
         self.sync.usb += [
-            If(receiving & ~self.ulpi.nxt.i & ~self.register_operation_in_progress,
+            If(receiving & ~self.ulpi.nxt & ~self.register_operation_in_progress,
                 self.last_rx_command.eq(self.ulpi.data.i),
 
                 If(~self.rx_active & rx_active_bit,
@@ -809,7 +809,7 @@ class UTMITranslator(Module):
         # Hook up our reset signal iff our ULPI bus has one.
         phy_ready = Signal()
         if hasattr(self.ulpi, 'rst'):
-            self.comb += self.ulpi.rst.o.eq(ResetSignal(raw_clock_domain))
+            self.comb += self.ulpi.rst.eq(ResetSignal(raw_clock_domain))
 
             # After reset, DIR may not be driven high immediately.
             # Before using the bus, wait for the minimum Tstart time.
