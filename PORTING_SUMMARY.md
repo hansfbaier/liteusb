@@ -13,7 +13,7 @@ This document summarizes the porting of LUNA (USB FPGA gateware) from Amaranth H
 
 ## Test Suite Status
 
-**44 tests discovered — 43 passing, 1 error**
+**44 tests discovered — 44 passing, 0 errors**
 
 | Test Module | Tests | Status |
 |-------------|-------|--------|
@@ -24,9 +24,7 @@ This document summarizes the porting of LUNA (USB FPGA gateware) from Amaranth H
 | `test_usb2_request` | 3 | All passing |
 | `test_usb2_reset` | 1 | Passing |
 | `test_usb_stream` | 1 | Passing |
-| `test_ulpi` | 8 | 7 passing, 1 error |
-
-The single remaining error is `test_ulpi.ULPIRxEventDecoderTest.test_decode`, which fails during DUT construction because `self.ulpi.dir` is a Migen `Record` field rather than a plain `Signal`, causing a `TypeError` in `do_finalize`. This is a pre-existing interface issue, not a logic bug.
+| `test_ulpi` | 8 | All passing |
 
 The `test_usb2_device` module contains enumeration tests that require the full USB device test harness; these are not discovered by the standard unittest runner and need the custom `run_tests.py` script.
 
@@ -301,15 +299,13 @@ GENERATE_VCDS=1 python3 -m unittest liteusb.tests.test_usb2_packet -v
 
 ## Known Issues
 
-1. **`test_ulpi.ULPIRxEventDecoderTest.test_decode`** — Fails during DUT construction because `self.ulpi.dir` is a Migen `Record` field, not a plain `Signal`. The `do_finalize` method in `ULPIRxEventDecoder` needs to extract the underlying signal from the Record before using it in a sync assignment.
+1. **`test_usb2_device`** — The full device enumeration tests (`test_enumeration`, `test_long_descriptor`, `test_descriptor_zlp`) are not discoverable by the standard unittest runner due to the custom test harness structure. They require the `run_tests.py` script or manual invocation.
 
-2. **`test_usb2_device`** — The full device enumeration tests (`test_enumeration`, `test_long_descriptor`, `test_descriptor_zlp`) are not discoverable by the standard unittest runner due to the custom test harness structure. They require the `run_tests.py` script or manual invocation.
+2. **Migen Array proxy in sync** — When a signal used as an `Array` index is also assigned in the same sync block, Migen's simulator may evaluate the index using the post-assignment value. The `USBInTransferManager` works around this by keeping set and clear operations in separate sync blocks that target different buffers.
 
-3. **Migen Array proxy in sync** — When a signal used as an `Array` index is also assigned in the same sync block, Migen's simulator may evaluate the index using the post-assignment value. The `USBInTransferManager` works around this by keeping set and clear operations in separate sync blocks that target different buffers.
+3. **VCD generation** — Requires the `GENERATE_VCDS` environment variable to be set.
 
-4. **VCD generation** — Requires the `GENERATE_VCDS` environment variable to be set.
-
-5. **Simulation speed** — Migen's simulator is slower than Amaranth's.
+4. **Simulation speed** — Migen's simulator is slower than Amaranth's.
 
 ## Credits
 
