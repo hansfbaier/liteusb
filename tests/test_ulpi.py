@@ -171,12 +171,8 @@ class ULPIRxEventDecoderTest(LiteUSBTestCase):
     def instantiate_dut(self):
 
         self.ulpi = Record([
-            ("dir", [
-                ("i", 1),
-            ]),
-            ("nxt", [
-                ("i", 1),
-            ]),
+            ("dir", 1),
+            ("nxt", 1),
             ("data", [
                 ("i", 8),
             ])
@@ -187,7 +183,7 @@ class ULPIRxEventDecoderTest(LiteUSBTestCase):
 
     def initialize_signals(self):
         yield self.ulpi.dir.eq(0)
-        yield self.ulpi.nxt.i.eq(0)
+        yield self.ulpi.nxt.eq(0)
         yield self.ulpi.data.i.eq(0)
         yield self.dut.register_operation_in_progress.eq(0)
 
@@ -201,14 +197,14 @@ class ULPIRxEventDecoderTest(LiteUSBTestCase):
         # First, set DIR and NXT at the same time, and verify that we
         # don't register an RxEvent.
         yield self.ulpi.dir.eq(1)
-        yield self.ulpi.nxt.i.eq(1)
+        yield self.ulpi.nxt.eq(1)
 
         yield from self.advance_cycles(5)
         self.assertEqual((yield self.dut.last_rx_command), 0x00)
 
         # Nothing should change when we drop DIR and NXT.
         yield self.ulpi.dir.eq(0)
-        yield self.ulpi.nxt.i.eq(0)
+        yield self.ulpi.nxt.eq(0)
         yield
         self.assertEqual((yield self.dut.last_rx_command), 0x00)
 
