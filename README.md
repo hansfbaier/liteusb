@@ -148,7 +148,7 @@ class MyUSBDevice(Module):
 
 ```python
 from litex_boards.platforms import my_platform
-from litex.build.generic_platform import Pins, IOStandard
+from litex.build.generic_platform import Pins, Subsignal, IOStandard
 
 # Create platform
 platform = my_platform.Platform()
