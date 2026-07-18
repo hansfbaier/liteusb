@@ -27,23 +27,25 @@ class ControlRequestHandler(USBRequestHandler):
         """
         interface = self.interface
 
-        # Provide a response to the STATUS stage.
-        If(interface.status_requested,
-            # If our stall condition is met, stall; otherwise, send a ZLP [USB 8.5.3].
-            If(stall_condition,
-                interface.handshakes_out.stall.eq(1)
-            ).Else(
-                *self.send_zlp()
-            )
-        ),
+        return [
+            # Provide a response to the STATUS stage.
+            If(interface.status_requested,
+                # If our stall condition is met, stall; otherwise, send a ZLP [USB 8.5.3].
+                If(stall_condition,
+                    interface.handshakes_out.stall.eq(1)
+                ).Else(
+                    *self.send_zlp()
+                )
+            ),
 
-        # Accept the relevant value after the packet is ACK'd...
-        If(interface.handshakes_in.ack,
-            write_strobe.eq(1),
-            new_value_signal.eq(interface.setup.value),
-            # ... and then return to idle.
-            NextState('IDLE')
-        )
+            # Accept the relevant value after the packet is ACK'd...
+            If(interface.handshakes_in.ack,
+                write_strobe.eq(1),
+                new_value_signal.eq(interface.setup.value),
+                # ... and then return to idle.
+                NextState('IDLE')
+            )
+        ]
 
     def handle_simple_data_request(self, fsm, transmitter, data, length=1):
         """ Fills in a given current state with a request that returns a given piece of data.
@@ -58,18 +60,20 @@ class ControlRequestHandler(USBRequestHandler):
         """
         interface = self.interface
 
-        # Connect our transmitter up to the output stream...
-        transmitter.stream.attach(interface.tx),
-        Cat(transmitter.data[0:length]).eq(data),
-        transmitter.max_length.eq(length),
+        return [
+            # Connect our transmitter up to the output stream...
+            *transmitter.stream.attach(interface.tx),
+            Cat(transmitter.data[0:length]).eq(data),
+            transmitter.max_length.eq(length),
 
-        # ... trigger it to respond when data's requested...
-        If(interface.data_requested,
-            transmitter.start.eq(1)
-        ),
+            # ... trigger it to respond when data's requested...
+            If(interface.data_requested,
+                transmitter.start.eq(1)
+            ),
 
-        # ... and ACK our status stage.
-        If(interface.status_requested,
-            interface.handshakes_out.ack.eq(1),
-            NextState('IDLE')
-        )
+            # ... and ACK our status stage.
+            If(interface.status_requested,
+                interface.handshakes_out.ack.eq(1),
+                NextState('IDLE')
+            )
+        ]

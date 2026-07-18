@@ -90,7 +90,7 @@ class StandardRequestHandler(ControlRequestHandler):
             return GetDescriptorHandlerBlock(self.descriptors, max_packet_length=self._max_packet_size)
 
 
-    def elaborate(self, platform):
+    def do_finalize(self):
         interface = self.interface
 
         # Create convenience aliases for our interface components.
@@ -121,8 +121,8 @@ class StandardRequestHandler(ControlRequestHandler):
         skiplisted = functools.reduce(operator.__or__, (f(setup) for f in self._skiplist), C(0))
         self.comb += interface.claim.eq((setup.type == USBRequestType.STANDARD) & ~skiplisted)
 
-        # FSM for handling standard requests
-        fsm = FSM(reset_state='IDLE')
+        # FSM for handling standard requests (runs in the USB clock domain)
+        fsm = ClockDomainsRenamer("usb")(FSM(reset_state='IDLE'))
         self.submodules += fsm
 
         # IDLE -- not handling any active request

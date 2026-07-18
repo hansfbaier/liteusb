@@ -39,8 +39,10 @@ class USBDescriptorStreamGenerator(Module):
         self.stream = USBInStreamInterface()
 
         # Create ROM to store descriptor data
+        # (sync read in the usb domain; FSM holds the address one cycle ahead.
+        #  The migen default "sys" domain would register dat_r on the wrong clock.)
         self.specials.rom = Memory(8, self._data_length, init=data)
-        rom_read_port = self.rom.get_port()
+        rom_read_port = self.rom.get_port(clock_domain="usb")
         self.specials += rom_read_port
 
         # Signals
@@ -361,7 +363,7 @@ class GetDescriptorHandlerBlock(Module):
         rom_content, descriptor_max_length, max_type_index, index_map = self.generate_rom_content()
 
         self.specials.rom = Memory(32, len(rom_content), init=rom_content)
-        rom_read_port = self.rom.get_port()
+        rom_read_port = self.rom.get_port(clock_domain="usb")
         self.specials += rom_read_port
 
         # Convenience aliases - ROM data format is (count, pointer) for metadata
@@ -492,11 +494,22 @@ class GetDescriptorHandlerBlock(Module):
             byte_in_stream.eq(position_in_stream[0:2])
         ]
 
+        # Byte select: big-endian byte order within the 32-bit word.
+        # Explicit mux: the LiteX verilog backend cannot emit variable part-selects.
+        payload_mux = If(byte_in_stream == 0,
+            self.tx.payload.eq(rom_read_port.dat_r[24:32])
+        ).Elif(byte_in_stream == 1,
+            self.tx.payload.eq(rom_read_port.dat_r[16:24])
+        ).Elif(byte_in_stream == 2,
+            self.tx.payload.eq(rom_read_port.dat_r[8:16])
+        ).Else(
+            self.tx.payload.eq(rom_read_port.dat_r[0:8])
+        )
+
         fsm.act("SEND_DESCRIPTOR",
             self.tx.valid.eq(1),
             rom_read_port.adr.eq(descriptor_data_base_address + word_in_stream),
-            # Byte select: reverse byte order within word using part()
-            self.tx.payload.eq(rom_read_port.dat_r.part((3 - byte_in_stream) * 8, 8)),
+            payload_mux,
             self.tx.first.eq(on_first_packet),
             self.tx.last.eq(on_last_packet),
 

@@ -241,7 +241,7 @@ class USBSetupDecoder(Module):
                 If(data_handler.length == 8,
                     # Collect the signals that make up our bmRequestType [USB2, 9.3].
                     # Use NextValue to store in registers so data persists after FSM exits this state
-                    NextValue(self.packet.recipient,    data_handler.packet[0][0:2]),
+                    NextValue(self.packet.recipient,    data_handler.packet[0][0:5]),
                     NextValue(self.packet.type,         data_handler.packet[0][5:7]),
                     NextValue(self.packet.is_in_request, data_handler.packet[0][7]),
                     NextValue(self.packet.request,      data_handler.packet[1]),

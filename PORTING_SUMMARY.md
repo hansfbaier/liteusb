@@ -165,6 +165,59 @@ The fix restructures the stream-ended flag handling so that the set and clear do
 
 **File:** `gateware/usb/usb2/transfer.py`
 
+### 7. Dead `elaborate()` in `StandardRequestHandler`
+
+`StandardRequestHandler` kept the Amaranth `def elaborate(self, platform)` signature. Migen only ever calls `do_finalize()` (no arguments), so the **entire handler body never executed**: no descriptor handler, no FSM, and `interface.claim` was never driven. The request multiplexer therefore fell back to `StallOnlyRequestHandler` and every control request was STALLed — enumeration was impossible. The handler FSM was also missing its `ClockDomainsRenamer("usb")`.
+
+**Fix:** rename to `do_finalize(self)` and wrap the FSM in `ClockDomainsRenamer("usb")`.
+
+**File:** `gateware/usb/request/standard.py`
+
+### 8. No-op helper methods in `ControlRequestHandler`
+
+`handle_register_write_request` and `handle_simple_data_request` built `If(...)` expressions into tuples but never added them to the module nor returned them. In Amaranth these helpers mutate the module via context managers; the port dropped the statements silently. `SET_ADDRESS`, `SET_CONFIGURATION`, `GET_STATUS` and `GET_CONFIGURATION` were empty states.
+
+**Fix:** both helpers now `return [...]` statement lists, spliced into the enclosing `fsm.act(...)` call.
+
+**File:** `gateware/usb/request/control.py`
+
+### 9. Descriptor ROM read port in the wrong clock domain
+
+`Memory.get_port()` defaults to `clock_domain="sys"`, registering `dat_r` on the system clock while all descriptor logic runs in the `usb` domain. With `sys != usb` (e.g. 50MHz vs 60MHz) descriptor data is corrupted. Simulation never caught it because the test bench uses a single clock.
+
+**Fix:** `self.rom.get_port(clock_domain="usb")` in both `USBDescriptorStreamGenerator` and `GetDescriptorHandlerBlock`.
+
+**File:** `gateware/usb/usb2/descriptor.py`
+
+### 10. `StreamSerializer` FSM domain and ArrayProxy payload
+
+Two issues in `gateware/stream/generator.py`:
+
+- The FSM was never renamed to the module's `domain` parameter (LUNA wraps the whole module in `DomainRenamer({"sync": self.domain})`), so it always ran in `sys`. Fixed with `ClockDomainsRenamer(self.domain)`.
+- `self.data[position_in_stream]` (an `ArrayProxy`) cannot be lowered by the LiteX verilog backend (`_Part` / proxy nodes are unsupported). Replaced with an explicit `If/Elif` mux chain.
+
+**File:** `gateware/stream/generator.py`
+
+### 11. Variable part-select `.part()` unsupported by LiteX backend
+
+The descriptor byte-select used `dat_r.part((3 - byte_in_stream) * 8, 8)` (Amaranth `word_select` equivalent). The LiteX verilog generator cannot emit `_Part` nodes. Replaced with a fixed 4-way `If/Elif` mux over `byte_in_stream`.
+
+**File:** `gateware/usb/usb2/descriptor.py`
+
+### 12. Miscellaneous protocol fixes
+
+- **Handshake generator priority** (`gateware/usb/usb2/packet.py`): `If/Elif/Elif` inverted LUNA's priority; restored three independent `If` statements so the last match wins (STALL > NAK > ACK).
+- **Setup packet recipient slice** (`gateware/usb/usb2/request.py`): `packet[0][0:2]` truncated the 5-bit recipient field; corrected to `[0:5]`.
+- **Combinational `new_frame`** (`gateware/usb/device.py`): the fix from section 3 had only been applied to `usb2/device.py`; the (live, duplicated) top-level `usb/device.py` still used the registered version. Now combinational in both.
+
+## Hardware Validation
+
+Validated on a **Terasic DECA (MAX10) + TUSB1210 ULPI PHY** target (`terasic_deca_counter.py`): full-speed connect, high-speed chirp, control-endpoint enumeration (`1209:0001`) and bulk-IN streaming all work.
+
+Integration note: the PHY's 60MHz CLOCK output only starts once it sees REFCLK (driven by the FPGA's usb clock). Gating the usb domain reset on PLL lock (LiteX `create_clkout(..., with_reset=True)` default) therefore **deadlocks**: the PHY is held in reset and the clock loop never bootstraps. Create the usb clock with `with_reset=False` and leave the PHY reset line deasserted at startup, as LUNA does.
+
+For board-level debugging, an `altsource_probe` (In-System Sources & Probes) instance reading PLL-lock/ULPI/UTMI state over JTAG proved invaluable (note: `jtag_uart` and ISSP cannot share the JTAG debug hub — use `uart_name="stub"`).
+
 ## Key Changes from Amaranth to Migen
 
 ### Import Statements
@@ -278,10 +331,11 @@ liteusb/
 ## Running Tests
 
 ```bash
-cd /home/jack/tmp/liteusb/liteusb
-export PYTHONPATH=/home/jack/tmp/liteusb/migen:/home/jack/tmp/liteusb/litex
+# Run the full suite via the custom runner (also runs the
+# device-level tests the plain unittest discovery misses)
+python3 run_tests.py
 
-# Run all tests
+# Or run modules individually
 python3 -m unittest liteusb.tests.test_usb2_packet liteusb.tests.test_usb2_endpoints \
   liteusb.tests.test_usb2_descriptor liteusb.tests.test_usb2_transfer \
   liteusb.tests.test_usb2_request liteusb.tests.test_usb2_reset \

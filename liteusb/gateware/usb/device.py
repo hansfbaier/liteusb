@@ -385,15 +385,16 @@ class USBDevice(Module):
         #
 
         # Handle each new SOF token as we receive them.
+        # new_frame is combinational so the microframe counter sees it in the same cycle.
+        self.comb += self.new_frame.eq(
+            token_detector.interface.new_frame &
+            (token_detector.interface.frame != self.frame_number)
+        )
+
         self.sync.usb += [
             If(token_detector.interface.new_frame,
                 # Update our knowledge of the current frame number.
                 self.frame_number.eq(token_detector.interface.frame),
-
-                # Check if we're receiving a new 1ms frame -- which occurs when the new SOF's
-                # frame number is different from the previous one's. This will always be the case
-                # on full speed links; and will be the case 1/8th of the time on High Speed links.
-                self.new_frame.eq(token_detector.interface.frame != self.frame_number),
 
                 # If this is a new frame, our microframe count should be zero.
                 If(self.new_frame,

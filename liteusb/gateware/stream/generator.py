@@ -475,7 +475,7 @@ class StreamSerializer(Module):
         #
         # Controller.
         #
-        fsm = FSM(reset_state="IDLE")
+        fsm = ClockDomainsRenamer(self.domain)(FSM(reset_state="IDLE"))
         self.submodules += fsm
 
         self.comb += self.stream.valid.eq(fsm.ongoing("STREAMING"))
@@ -492,9 +492,14 @@ class StreamSerializer(Module):
             )
         )
 
+        # Explicit payload mux: the LiteX verilog backend cannot lower ArrayProxy.
+        payload_mux = If(position_in_stream == 0, self.stream.payload.eq(self.data[0]))
+        for i in range(1, self.data_length):
+            payload_mux = payload_mux.Elif(position_in_stream == i, self.stream.payload.eq(self.data[i]))
+
         # STREAMING -- we're actively transmitting data
         fsm.act("STREAMING",
-            self.stream.payload.eq(self.data[position_in_stream]),
+            payload_mux,
 
             # If the current data byte is accepted, move past it.
             If(self.stream.ready,

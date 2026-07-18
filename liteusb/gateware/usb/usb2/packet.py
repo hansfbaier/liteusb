@@ -1260,13 +1260,16 @@ class USBHandshakeGenerator(Module):
             # Wait until we have an ACK, NAK, or STALL request;
             # Then set our data value to the appropriate PID,
             # in preparation for the next cycle.
+            # Independent Ifs, matching LUNA: last match wins (STALL > NAK > ACK).
             If(self.issue_ack,
                 NextValue(self.tx.data, self._PACKET_ACK),
                 NextState("TRANSMIT")
-            ).Elif(self.issue_nak,
+            ),
+            If(self.issue_nak,
                 NextValue(self.tx.data, self._PACKET_NAK),
                 NextState("TRANSMIT")
-            ).Elif(self.issue_stall,
+            ),
+            If(self.issue_stall,
                 NextValue(self.tx.data, self._PACKET_STALL),
                 NextState("TRANSMIT")
             )
