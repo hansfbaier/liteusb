@@ -111,7 +111,8 @@ High-speed enumeration (`1209:0001`) and counter streaming were verified on Linu
 ```bash
 python examples/terasic_deca_counter.py --with-usb-device --cpu-type=None --build
 # load build/terasic_deca/gateware/terasic_deca.sof via JTAG (quartus_pgm)
-lsusb -d 1209:0001
+$ lsusb -d 1209:0001
+Bus 005 Device 020: ID 1209:0001 Generic pid.codes Test PID
 ```
 
 The target also demonstrates two board-bringup tools: `--debug-leds` (sticky
