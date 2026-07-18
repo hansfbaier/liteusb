@@ -101,6 +101,25 @@ python examples/stress_test_device.py --build
 python examples/acm_serial.py --build
 ```
 
+### Verified on Hardware
+
+LiteUSB was validated on real hardware with [examples/terasic_deca_counter.py](examples/terasic_deca_counter.py):
+a LiteX SoC target for the **Terasic DECA** board (Intel MAX10 FPGA + TUSB1210 ULPI PHY)
+implementing a high-speed USB device with a bulk-IN endpoint streaming a monotonic counter.
+High-speed enumeration (`1209:0001`) and counter streaming were verified on Linux:
+
+```bash
+python examples/terasic_deca_counter.py --with-usb-device --cpu-type=None --build
+# load build/terasic_deca/gateware/terasic_deca.sof via JTAG (quartus_pgm)
+lsusb -d 1209:0001
+```
+
+The target also demonstrates two board-bringup tools: `--debug-leds` (sticky
+diagnostic LEDs) and `--with-issp` (In-System Sources & Probes readout of the
+USB state over JTAG). Note the PHY clocking gotcha documented in the file:
+the usb clock domain must be created with `with_reset=False`, otherwise the
+PLL-lock-gated reset holds the PHY in reset and the clock loop never starts.
+
 ### Basic Usage
 
 See [examples/simple_device.py](examples/simple_device.py) for the complete working example:
