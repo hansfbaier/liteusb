@@ -57,7 +57,7 @@ class DecaUSBCrg(LiteXModule):
     whole design then runs on a single clock net, which avoids CDC issues
     between sys-clocked logic (CPU, UART, ACM FIFOs) and the usb domain.
     """
-    def __init__(self, platform, sys_clk_freq, ulpi=None, clk60=None, sys_from_usb=False, with_por=True):
+    def __init__(self, platform, sys_clk_freq, ulpi=None, clk60=None, sys_from_usb=True, with_por=True):
         self.rst     = Signal()
         self.cd_sys  = ClockDomain()
         self.cd_usb  = ClockDomain()
@@ -89,7 +89,7 @@ class DecaUSBCrg(LiteXModule):
             # bootstraps (deadlock). LUNA leaves the PHY reset deasserted too.
             # usb domain clock: 60MHz from the PHY clkout, phase -120°
             # (same shift as the reference LUNA DECA design).
-            pll.create_clkout(self.cd_usb, 60e6, phase=-120, with_reset=False)
+            pll.create_clkout(self.cd_usb, 60e6, phase=int(__import__("os").getenv("USB_PLL_PHASE", "-120")), with_reset=False)
 
             # Power-on PHY reset pulse (~42ms, clocked by the raw 50MHz
             # oscillator which is always present — NOT by the usb clock,

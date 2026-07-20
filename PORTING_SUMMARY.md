@@ -8,12 +8,12 @@ This document summarizes the porting of LUNA (USB FPGA gateware) from Amaranth H
 
 - **Total Python files**: 86
 - **Gateware modules**: 39
-- **Test files**: 17
+- **Test files**: 20
 - **Lines of code**: ~15,600
 
 ## Test Suite Status
 
-**44 tests discovered — 44 passing, 0 errors**
+**47 tests discovered — 47 passing, 0 errors**
 
 | Test Module | Tests | Status |
 |-------------|-------|--------|
@@ -25,6 +25,9 @@ This document summarizes the porting of LUNA (USB FPGA gateware) from Amaranth H
 | `test_usb2_reset` | 1 | Passing |
 | `test_usb_stream` | 1 | Passing |
 | `test_ulpi` | 8 | All passing |
+| `test_usb2_loopback` | 1 | Passing (full-device OUT→IN loopback, 4 rounds, rx_valid gaps) |
+| `test_usb2_stream_out_gaps` | 1 | Passing (endpoint rx with PHY nxt pauses) |
+| `test_ulpi_rx_gaps` | 1 | Passing (ULPI translator rx with nxt pauses) |
 
 The `test_usb2_device` module contains enumeration tests that require the full USB device test harness; these are not discovered by the standard unittest runner and need the custom `run_tests.py` script.
 
@@ -210,9 +213,80 @@ The descriptor byte-select used `dat_r.part((3 - byte_in_stream) * 8, 8)` (Amara
 - **Setup packet recipient slice** (`gateware/usb/usb2/request.py`): `packet[0][0:2]` truncated the 5-bit recipient field; corrected to `[0:5]`.
 - **Combinational `new_frame`** (`gateware/usb/device.py`): the fix from section 3 had only been applied to `usb2/device.py`; the (live, duplicated) top-level `usb/device.py` still used the registered version. Now combinational in both.
 
+### 13. `USBOutStreamInterface.stream_eq` direction inverted
+
+**File:** `gateware/usb/stream.py` (+ `gateware/usb/usb2/endpoints/isochronous_stream_out.py`)
+
+`a.stream_eq(b)` must drive stream `b` from stream `a` (LUNA semantics). The
+port had it backwards (`self.valid.eq(other.valid)`), so the standard call
+site `interface.rx.stream_eq(boundary_detector.unprocessed_stream)` in
+`USBStreamOutEndpoint` drove `interface.rx` from the *undriven* detector
+input, clobbering the endpoint-mux rx broadcast. Symptom: bulk-OUT packets
+were ACKed but no data ever reached the endpoint FIFO — the
+`stream_out_device` loopback returned nothing and the `stress_test` IN
+endpoint STALLed/EPIPEd. The isochronous OUT endpoint had been written
+against the inverted semantics and its call site was swapped to match the
+fixed one. Covered by the new `test_usb2_loopback` integration test.
+
+### 14. Testbench CRC bugs (`tests/contrib/usb_packet.py`)
+
+The ported packet-generator library produced **wrong CRCs**, so every
+device-level simulation test failed at the token stage (and the classes in
+`test_usb2_device.py` were never wired into unittest discovery, hiding it):
+
+- `crc5_token` applied a bogus extra bit reflection; CRC-5/USB's reflected
+  bit-serial form already embodies `refin=refout=true`. Now matches LUNA's
+  reference vectors (`crc5_token(0,0) == 0x2`).
+- `crc16` used the non-reflected polynomial `0x8005` instead of the
+  reflected form `0xA001`.
+
+Doctests with LUNA's reference vectors added.
+
+### 15. Harness `set_address` rejected the ZLP status stage
+
+**File:** `tests/usb2.py`
+
+`control_request_out` returns the status-stage ZLP's *data PID* (DATA1),
+not a handshake ACK (LUNA harness semantics). The port checked
+`== USBPacketID.ACK`, so `self.address` was never updated and every
+subsequent token went to address 0 while the device sat at its new
+address — all post-enumeration device tests timed out.
+
 ## Hardware Validation
 
-Validated on a **Terasic DECA (MAX10) + TUSB1210 ULPI PHY** target (`terasic_deca_counter.py`): full-speed connect, high-speed chirp, control-endpoint enumeration (`1209:0001`) and bulk-IN streaming all work.
+Validated on a **Terasic DECA (MAX10) + TUSB1210 ULPI PHY** target: full-speed connect, high-speed chirp, control-endpoint enumeration and bulk streaming all work. Board support is factored into `examples/terasic_deca_common.py`; every example builds for the board with `--deca`.
+
+### Current hardware status (examples run on DECA via `--deca`)
+
+| Example | Host test | Result |
+|---------|-----------|--------|
+| `counter_device.py` | `test_counter_device.py` | PASS (bulk-IN monotonic stream) |
+| `interrupt_device.py` | `test_interrupt_device.py` | PASS |
+| `simple_device.py` | `test_simple_device.py` | PASS (enumeration, strings, EP0) |
+| `vendor_request.py` | `test_vendor_request.py` | PASS (vendor requests, LED control) |
+| `stream_out_device.py` | `test_stream_out_device.py` | loopback data corrupted (~every 6th byte), under debug |
+| `stress_test_device.py` | `test_stress_test_device.py` | EPIPE on first read (likely fixed by #13, needs retest) |
+| `isochronous_count.py` | `test_isochronous_count.py` | enumerates FS only (iso needs HS) |
+
+Known open issues:
+
+- **OUT-fifo stream corruption on hardware**: loopback echo loses/dups
+  roughly every 6th byte (device computes a valid CRC over the corrupted
+  payload, so it is a digital bug before CRC insertion). All simulation
+  tests — full-device loopback with rx_valid gaps, TX throttling,
+  ULPI-translator-level feeds — pass, so the trigger is not yet covered
+  by simulation. On the wire: host→device packets arrive intact;
+  corruption appears between the receiver/boundary stage and the FIFO.
+- **Autosuspend**: after ~2s of bus idle the host suspends the device and
+  resume does not recover (transfers fail until replug).
+- **Unclaimed control requests** NAK forever instead of STALLing (host
+  sees a timeout instead of a stall).
+- **HS chirp unreliable**: some bitstreams enumerate at High Speed, some
+  only Full Speed; the PHY clock/PLL phase has been ruled out, root cause
+  open.
+- **ISSP broken on MAX10**: instantiating `altsource_probe` prevents the
+  usb PLL from locking (Quartus 21.1); the `--with-issp` flag is
+  currently unusable.
 
 Integration note: the PHY's 60MHz CLOCK output only starts once it sees REFCLK (driven by the FPGA's usb clock). Gating the usb domain reset on PLL lock (LiteX `create_clkout(..., with_reset=True)` default) therefore **deadlocks**: the PHY is held in reset and the clock loop never bootstraps. Create the usb clock with `with_reset=False` and leave the PHY reset line deasserted at startup, as LUNA does.
 

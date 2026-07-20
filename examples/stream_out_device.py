@@ -8,6 +8,8 @@
 
 """Example: loopback device with bulk-OUT → bulk-IN stream."""
 
+import os
+
 from migen import *
 
 from usb_protocol.emitters import DeviceDescriptorCollection
@@ -69,6 +71,7 @@ class USBStreamLoopbackExample(Module):
             stream_out.ready   .eq(stream_in.ready),
 
             usb.connect        .eq(1),
+            usb.full_speed_only.eq(int(os.getenv('LITEUSB_FULL_SPEED', '0'))),
 
             self.tx_activity_led .eq(usb.tx_activity_led),
             self.rx_activity_led .eq(usb.rx_activity_led),
