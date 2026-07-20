@@ -162,17 +162,18 @@ class DecaUSBSoC(SoCCore):
         self.crg = DecaUSBCrg(platform, sys_clk_freq, ulpi=ulpi_plat, clk60=clk60,
             sys_from_usb=sys_from_usb, with_por=with_por)
 
-        # ULPI I/O timing per TUSB1210 datasheet (sec. 6.14):
-        #   FPGA -> PHY: setup 3.0ns, hold 1.5ns
-        #   PHY -> FPGA: output delay 1.2ns .. 6.0ns
+        # ULPI I/O timing per TUSB1210 datasheet (sec. 6.14), PHY in clock
+        # output mode (PHY generates the 60MHz, as wired on the DECA):
+        #   FPGA -> PHY: setup 6.0ns, hold 0ns
+        #   PHY -> FPGA: output delay 1.2ns .. 5.0ns
         # Constrain against the PHY's 60MHz clock (clk600 pin) so the fitter
         # must place/route the ULPI registers to meet them; without these,
         # NXT/data sampling vs the PHY is fit-dependent (byte dup/drop).
         platform.toolchain.additional_sdc_commands += [
-            "set_input_delay  -clock [get_clocks {clk600}] -max 6.0 [get_ports {ulpi0_dir ulpi0_nxt ulpi0_data[*]}]",
+            "set_input_delay  -clock [get_clocks {clk600}] -max 5.0 [get_ports {ulpi0_dir ulpi0_nxt ulpi0_data[*]}]",
             "set_input_delay  -clock [get_clocks {clk600}] -min 1.2 [get_ports {ulpi0_dir ulpi0_nxt ulpi0_data[*]}]",
-            "set_output_delay -clock [get_clocks {clk600}] -max 3.0 [get_ports {ulpi0_stp ulpi0_data[*]}]",
-            "set_output_delay -clock [get_clocks {clk600}] -min -1.5 [get_ports {ulpi0_stp ulpi0_data[*]}]",
+            "set_output_delay -clock [get_clocks {clk600}] -max 6.0 [get_ports {ulpi0_stp ulpi0_data[*]}]",
+            "set_output_delay -clock [get_clocks {clk600}] -min 0.0 [get_ports {ulpi0_stp ulpi0_data[*]}]",
         ]
         # The ULPI TX path is an 11-level comb chain (translator -> muxes ->
         # pin); help the fitter close it with physical synthesis.
