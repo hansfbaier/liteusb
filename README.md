@@ -110,10 +110,13 @@ LiteUSB was validated on real hardware on the **Terasic DECA** board
   counter; verified with `examples/test_counter_device.py`.
 - `interrupt_device.py` — enumerates and delivers interrupt-IN packets;
   verified with `examples/test_interrupt_device.py`.
+- `simple_device.py` — enumerates (descriptors, strings, EP0 control);
+  verified with `examples/test_simple_device.py`, observed at High Speed.
 
-Both were observed enumerating at Full Speed; High Speed (chirp) works
-for the counter example but is not yet reliable across bitstreams —
-the device always remains usable at FS.
+High Speed (chirp) is not yet reliable across examples/bitstreams —
+a device that comes up at Full Speed remains usable at FS. A known
+open issue: after ~2 s of bus idle the host autosuspends the device
+and resume does not recover (all further transfers fail) until replug.
 
 All examples can be built as DECA bitstreams with the `--deca` flag.
 Hardware-specific code (clocking, ULPI hookup, diagnostic LEDs)
