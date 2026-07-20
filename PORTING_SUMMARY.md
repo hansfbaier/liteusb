@@ -270,13 +270,20 @@ Validated on a **Terasic DECA (MAX10) + TUSB1210 ULPI PHY** target: full-speed c
 
 Known open issues:
 
-- **OUT-fifo stream corruption on hardware**: loopback echo loses/dups
-  roughly every 6th byte (device computes a valid CRC over the corrupted
-  payload, so it is a digital bug before CRC insertion). All simulation
-  tests — full-device loopback with rx_valid gaps, TX throttling,
-  ULPI-translator-level feeds — pass, so the trigger is not yet covered
-  by simulation. On the wire: host→device packets arrive intact;
-  corruption appears between the receiver/boundary stage and the FIFO.
+- **Long bulk-OUT reception corrupt on the DECA/TUSB1210 setup**:
+  loopback echo loses/dups bytes (device computes a valid CRC over the
+  corrupted payload, so it is digital, pre-CRC). **The original LUNA
+  `loopback.py` example built natively for the same board fails the same
+  way** (overflow/zero data), so this is NOT a liteusb port bug — it is
+  a LUNA-gateware/TUSB1210 interaction (or PHY-level issue) that only
+  shows for long bulk-OUT packets: control transfers, bulk/interrupt/iso
+  IN streaming, and the LUNA DECA audio interface (iso IN) all work on
+  the same board. All simulation tests — full-device loopback with
+  rx_valid gaps, TX throttling, ULPI-translator-level feeds — pass, so
+  the trigger is not yet covered by simulation. ULPI I/O timing per the
+  datasheet was analyzed (TX comb path ~11.5ns, ~5ns slower than the
+  LUNA reference build's fit) but phase sweeps, physical synthesis, and
+  output registration did not change the behavior.
 - **Autosuspend**: after ~2s of bus idle the host suspends the device and
   resume does not recover (transfers fail until replug).
 - **Unclaimed control requests** NAK forever instead of STALLing (host
