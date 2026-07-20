@@ -11,7 +11,7 @@ Flash isochronous_count.py (--deca), then run:
 
     python3 test_isochronous_count.py [num_reads]
 
-Expects the device at 1209:0001 with an isochronous-IN endpoint 0x81
+Expects the device at 1209:0005 with an isochronous-IN endpoint 0x81
 (up to 3x1024 bytes per microframe) streaming address-valued bytes
 (0,1,2,... mod 256).
 
@@ -24,7 +24,7 @@ import sys
 
 import usb1
 
-VID, PID, EP_IN = 0x1209, 0x0001, 0x81
+VID, PID, EP_IN = 0x1209, 0x0005, 0x81
 PACKET_SIZE      = 1024
 PACKETS_PER_READ = 3
 READ_SIZE        = PACKET_SIZE * PACKETS_PER_READ

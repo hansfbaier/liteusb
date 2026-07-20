@@ -11,7 +11,7 @@ Flash counter_device.py (--deca) or terasic_deca_counter.py, then run:
 
     python3 test_counter_device.py [num_reads]
 
-Expects the device at 1209:0001 with a bulk-IN endpoint 0x81 streaming
+Expects the device at 1209:0002 with a bulk-IN endpoint 0x81 streaming
 a monotonically incrementing 8-bit counter.
 """
 
@@ -21,7 +21,7 @@ import time
 import usb.core
 import usb.util
 
-VID, PID, EP_IN = 0x1209, 0x0001, 0x81
+VID, PID, EP_IN = 0x1209, 0x0002, 0x81
 
 
 def main():

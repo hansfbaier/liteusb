@@ -95,7 +95,7 @@ class USBVendorDeviceExample(Module):
 
         with descriptors.DeviceDescriptor() as d:
             d.idVendor           = 0x1209
-            d.idProduct          = 0x0001
+            d.idProduct          = 0x0007
             d.iManufacturer      = "LiteUSB"
             d.iProduct           = "Fancy USB-Controlled LEDs"
             d.iSerialNumber      = "1234"

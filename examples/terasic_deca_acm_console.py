@@ -60,7 +60,7 @@ class ACMConsoleSoC(DecaUSBSoC):
         self.submodules.acm = acm = USBACMSerialDevice(
             bus             = ulpi,
             idVendor        = 0x1209,
-            idProduct       = 0x0001,
+            idProduct          = 0x0008,
             handle_clocking = False,
         )
         self.usb = acm.usb

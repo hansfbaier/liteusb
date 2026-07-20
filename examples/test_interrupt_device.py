@@ -11,7 +11,7 @@ Flash interrupt_device.py (--deca), then run:
 
     python3 test_interrupt_device.py [num_polls]
 
-Expects the device at 1209:0001 with an interrupt-IN endpoint 0x81 that
+Expects the device at 1209:0003 with an interrupt-IN endpoint 0x81 that
 reports a free-running 32-bit counter (big endian) on every poll.
 """
 
@@ -21,7 +21,7 @@ import time
 import usb.core
 import usb.util
 
-VID, PID, EP_IN = 0x1209, 0x0001, 0x81
+VID, PID, EP_IN = 0x1209, 0x0003, 0x81
 
 
 def main():

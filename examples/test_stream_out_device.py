@@ -11,7 +11,7 @@ Flash stream_out_device.py (--deca), then run:
 
     python3 test_stream_out_device.py [num_rounds] [payload_size]
 
-Expects the device at 1209:0001 with bulk endpoints 0x01 (OUT) and
+Expects the device at 1209:0004 with bulk endpoints 0x01 (OUT) and
 0x81 (IN) echoing every byte back.
 
 NOTE: the device loops raw streams — every written packet comes back
@@ -25,7 +25,7 @@ import sys
 import usb.core
 import usb.util
 
-VID, PID = 0x1209, 0x0001
+VID, PID = 0x1209, 0x0004
 EP_OUT, EP_IN = 0x01, 0x81
 # Must match MAX_BULK_PACKET_SIZE in stream_out_device.py.
 MAX_PACKET = 64

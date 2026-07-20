@@ -66,7 +66,7 @@ class USBInterruptExample(Module):
 
         with descriptors.DeviceDescriptor() as d:
             d.idVendor           = 0x1209
-            d.idProduct          = 0x0001
+            d.idProduct          = 0x0003
             d.iManufacturer      = "LiteUSB"
             d.iProduct           = "Status interrupt mechanism"
             d.iSerialNumber      = "1234"

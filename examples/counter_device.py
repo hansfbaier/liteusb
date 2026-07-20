@@ -73,7 +73,7 @@ class USBCounterDeviceExample(Module):
 
         with descriptors.DeviceDescriptor() as d:
             d.idVendor           = 0x1209
-            d.idProduct          = 0x0001
+            d.idProduct          = 0x0002
             d.iManufacturer      = "LiteUSB"
             d.iProduct           = "Counter/Throughput Test"
             d.iSerialNumber      = "no serial"

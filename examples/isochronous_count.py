@@ -71,7 +71,7 @@ class USBIsochronousCounterDeviceExample(Module):
 
         with descriptors.DeviceDescriptor() as d:
             d.idVendor           = 0x1209
-            d.idProduct          = 0x0001
+            d.idProduct          = 0x0005
             d.iManufacturer      = "LiteUSB"
             d.iProduct           = "Isochronous IN Test"
             d.iSerialNumber      = "no serial"

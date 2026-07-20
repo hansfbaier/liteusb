@@ -11,7 +11,7 @@ Flash stress_test_device.py (--deca), then run:
 
     python3 test_stress_test_device.py [total_mib] [chunk_bytes]
 
-Expects the device at 1209:0001 with a bulk-IN endpoint 0x81 streaming
+Expects the device at 1209:0006 with a bulk-IN endpoint 0x81 streaming
 a constant byte (0x00) at maximum rate. Verifies the constant and
 reports throughput.
 """
@@ -22,7 +22,7 @@ import time
 import usb.core
 import usb.util
 
-VID, PID, EP_IN = 0x1209, 0x0001, 0x81
+VID, PID, EP_IN = 0x1209, 0x0006, 0x81
 CONSTANT = 0x00
 
 

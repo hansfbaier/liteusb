@@ -152,7 +152,7 @@ class USBStressTest(Module):
 
         with descriptors.DeviceDescriptor() as d:
             d.idVendor           = 0x1209
-            d.idProduct          = 0x0001
+            d.idProduct          = 0x0006
             d.iManufacturer      = "LiteUSB"
             d.iProduct           = "Stress Test"
             d.iSerialNumber      = "no serial"

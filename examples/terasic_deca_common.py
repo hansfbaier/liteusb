@@ -171,7 +171,7 @@ class DecaUSBSoC(SoCCore):
             # jtag_uart and ISSP both claim the MAX10 JTAG primitive
             # (Quartus Error 12143); ISSP wins, UART becomes a stub.
             kwargs["uart_name"] = "stub"
-        elif kwargs.get("uart_name", "serial") == "serial":
+        elif kwargs.get("uart_name", "stub") == "serial":
             kwargs["uart_name"] = "jtag_uart"
 
         SoCCore.__init__(self, platform, sys_clk_freq,
@@ -319,6 +319,9 @@ def deca_main(soc_cls, description):
     # CPU-less by default (overridable with --cpu-type; the ACM console
     # example overrides this with vexriscv itself).
     parser.set_defaults(cpu_type="None")
+    # No UART by default: these examples don't use one (the ACM console
+    # example provides its own); saves logic and JTAG-hub conflicts.
+    parser.set_defaults(uart_name="stub")
 
     parser.add_target_argument("--sys-clk-freq", default=50e6, type=float,
         help="System clock frequency.")
