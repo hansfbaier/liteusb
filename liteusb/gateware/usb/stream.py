@@ -85,11 +85,15 @@ class USBOutStreamInterface(Record):
 
 
     def stream_eq(self, other):
-        """ Generates a list of connections that connect this stream to the provided UTMIReceiveInterface. """
+        """ Connects this stream to ``other``; data flows self -> other.
+
+        Matches LUNA's stream_eq direction semantics: ``a.stream_eq(b)``
+        drives stream ``b`` from stream ``a``.
+        """
         return [
-            self.valid.eq(other.valid),
-            self.next.eq(other.next),
-            self.payload.eq(other.payload),
+            other.valid.eq(self.valid),
+            other.next.eq(self.next),
+            other.payload.eq(self.payload),
         ]
 
 

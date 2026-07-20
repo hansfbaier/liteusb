@@ -543,7 +543,9 @@ class USBDeviceTest:
         response_pid = yield from self.control_request_out(0,
             USBStandardRequests.SET_ADDRESS, value=new_address)
 
-        if update_address and (response_pid == USBPacketID.ACK):
+        # The status stage returns the ZLP's data PID (DATA1 on success),
+        # not a handshake ACK — match LUNA's harness semantics here.
+        if update_address and (response_pid == USBPacketID.DATA1):
             self.address = new_address
 
         return response_pid

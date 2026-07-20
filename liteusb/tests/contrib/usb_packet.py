@@ -39,28 +39,33 @@ def encode_pid(value):
 # CRC-5/USB polynomial: 0x05, init=0x1f, refin=true, refout=true, xorout=0x1f
 def crc5_token(addr, ep):
     """Calculate CRC5 for a token packet.
-    
+
     CRC5 covers the address (7 bits) and endpoint (4 bits).
+
+    >>> hex(crc5_token(0, 0))
+    '0x2'
+    >>> hex(crc5_token(92, 0))
+    '0x1c'
+    >>> hex(crc5_token(3, 0))
+    '0xa'
+    >>> hex(crc5_token(56, 4))
+    '0xb'
     """
-    # CRC5 polynomial: x^5 + x^2 + 1 (0x05)
-    # Initial value: 0x1f
-    # Input is reflected (LSB first)
-    
     crc = 0x1f
-    
+
     # Process address (7 bits, LSB first)
     for i in range(7):
         bit = (addr >> i) & 1
         crc = _crc5_bit(crc, bit)
-    
+
     # Process endpoint (4 bits, LSB first)
     for i in range(4):
         bit = (ep >> i) & 1
         crc = _crc5_bit(crc, bit)
-    
-    # Reflect output and XOR with 0x1f
-    crc = _reflect5(crc) ^ 0x1f
-    return crc
+
+    # NOTE: no output reflection here — the reflected bit-serial
+    # implementation above already embodies refin=refout=true.
+    return crc ^ 0x1f
 
 
 def _crc5_bit(crc, bit):
@@ -84,23 +89,26 @@ def _reflect5(val):
 
 def crc16(data):
     """Calculate CRC16 for data.
-    
-    CRC-16/USB polynomial: 0x8005, init=0xffff, refin=true, refout=true, xorout=0xffff
+
+    CRC-16/USB polynomial: 0x8005 (reflected: 0xA001),
+    init=0xffff, refin=true, refout=true, xorout=0xffff.
     Returns [low_byte, high_byte] (appended low byte first per USB spec).
+
+    >>> [hex(b) for b in crc16(b"123456789")]
+    ['0xc8', '0xb4']
     """
     crc = 0xffff
-    
+
     for byte in data:
         crc ^= byte
         for _ in range(8):
             if crc & 1:
-                crc = (crc >> 1) ^ 0x8005
+                crc = (crc >> 1) ^ 0xA001
             else:
                 crc = crc >> 1
-    
-    # Final XOR and reflect
+
     crc ^= 0xffff
-    
+
     # Return low byte first (USB convention)
     return [crc & 0xff, (crc >> 8) & 0xff]
 
