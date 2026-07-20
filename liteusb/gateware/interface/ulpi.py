@@ -687,7 +687,8 @@ class UTMITranslator(Module):
         return properties
 
 
-    def __init__(self, *, ulpi, use_platform_registers=True, handle_clocking=True):
+    def __init__(self, *, ulpi, use_platform_registers=True, handle_clocking=True,
+                 register_outputs=False):
         """ Params:
 
             ulpi                   -- The ULPI bus to communicate with.
@@ -706,6 +707,7 @@ class UTMITranslator(Module):
 
         self.use_platform_registers = use_platform_registers
         self.handle_clocking        = handle_clocking
+        self.register_outputs       = register_outputs
 
         #
         # I/O port
@@ -848,16 +850,34 @@ class UTMITranslator(Module):
             register_window.ulpi_next.eq(self.ulpi.nxt),
         ]
 
-        # Control our the source of our ULPI data output.
+        # Control the source of our ULPI data output.
+        out_data = Signal(8)
+        out_stp  = Signal()
         self.comb += [
             If(transmit_translator.ulpi_out_req,
-                self.ulpi.data.o.eq(transmit_translator.ulpi_data_out),
-                self.ulpi.stp.eq(transmit_translator.ulpi_stp)
+                out_data.eq(transmit_translator.ulpi_data_out),
+                out_stp.eq(transmit_translator.ulpi_stp)
             ).Else(
-                self.ulpi.data.o.eq(register_window.ulpi_data_out),
-                self.ulpi.stp.eq(register_window.ulpi_stop)
+                out_data.eq(register_window.ulpi_data_out),
+                out_stp.eq(register_window.ulpi_stop)
             )
         ]
+        if self.register_outputs:
+            # Register the TX outputs. This breaks the long combinatorial
+            # translator->mux->pin path (timing closure at 60MHz ULPI) at the
+            # cost of one clock of transmit latency, which the ULPI flow
+            # control absorbs transparently (the PHY's nxt is honored
+            # against the registered data, and nxt is continuously high
+            # while the bus is idle, so TXD/packet start is not disturbed).
+            self.sync.usb += [
+                self.ulpi.data.o.eq(out_data),
+                self.ulpi.stp.eq(out_stp),
+            ]
+        else:
+            self.comb += [
+                self.ulpi.data.o.eq(out_data),
+                self.ulpi.stp.eq(out_stp),
+            ]
 
         # Connect our RxEvent status signals from our RxEvent decoder.
         for signal_name, _ in self.RXEVENT_STATUS_SIGNALS:

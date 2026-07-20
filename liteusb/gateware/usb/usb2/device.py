@@ -91,16 +91,20 @@ class USBDevice(Module):
 
     """
 
-    def __init__(self, bus, handle_clocking=True):
+    def __init__(self, bus, handle_clocking=True, register_tx_outputs=False):
         """
         Parameters:
+            register_tx_outputs -- If True and a ULPI bus is used, the ULPI
+                TX data/stp outputs are registered before the pins (timing
+                closure at 60MHz ULPI, at the cost of one cycle of latency).
         """
         self.handle_clocking = handle_clocking
         self.bus = bus
 
         # If this looks more like a ULPI bus than a UTMI bus, translate it.
         if hasattr(bus, 'dir'):
-            self.utmi = UTMITranslator(ulpi=bus, handle_clocking=handle_clocking)
+            self.utmi = UTMITranslator(ulpi=bus, handle_clocking=handle_clocking,
+                register_outputs=register_tx_outputs)
             self.bus_busy = self.utmi.busy
             self.translator = self.utmi
             self.always_fs = False
