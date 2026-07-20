@@ -173,31 +173,16 @@ class USBEndpointMultiplexer(Module):
                 return  getattr(interface, name)
 
 
-        # Build a list of (condition, statements) tuples for Case statement
-        cases = {}
-        for i, interface in enumerate(self._interfaces):
-            statements = []
-            for signal_name in multiplex:
-                # Get the actual signals for our input and output...
-                driving_signal = get_signal(interface,   signal_name)
-                target_signal  = get_signal(self.shared, signal_name)
-
-                # ... and connect them.
-                statements.append(target_signal.eq(driving_signal))
-            cases[i] = statements
-
-        # Create a one-hot encoder to select which interface is active
-        from migen.genlib.coding import PriorityEncoder
-        self.submodules._mux_enc = _mux_enc = PriorityEncoder(len(self._interfaces))
-        for i, interface in enumerate(self._interfaces):
-            condition = get_signal(interface, when)
-            self.comb += _mux_enc.i[i].eq(condition)
-
-        # Use the encoded value to select the interface, but only when one is active.
-        # When no interface is active, leave the shared outputs latched.
-        self.comb += If(~_mux_enc.n,
-            Case(_mux_enc.o, cases)
-        )
+        # Select the active interface with a one-hot AND-OR tree (about two
+        # logic levels; functionally identical to the previous
+        # PriorityEncoder+Case chain).
+        for signal_name in multiplex:
+            target_signal = get_signal(self.shared, signal_name)
+            terms = []
+            for interface in self._interfaces:
+                condition = get_signal(interface, when)
+                terms.append(Mux(condition, get_signal(interface, signal_name), 0))
+            self.comb += target_signal.eq(functools.reduce(operator.__or__, terms, 0))
 
 
     def or_join_interface_signals(self, signal_for_interface):

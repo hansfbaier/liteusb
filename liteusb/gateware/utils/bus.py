@@ -106,21 +106,18 @@ class OneHotMultiplexer(Module):
             self.comb += encoder.i[index].eq(valid_signal)
 
 
-        # Create our multiplexer, and drive each of our output signals from it.
-        cases = {}
-        for index, interface in enumerate(self._inputs):
-            # If an interface is selected...
-            statements = []
-            for identifier in self._mux_signals:
-                # ... connect all of its muxed signals through to the output.
-                output_signal = self._get_signal(self.output, identifier)
-                input_signal  = self._get_signal(interface,   identifier)
-                statements.append(output_signal.eq(input_signal))
-            cases[index] = statements
-
-        # Add default case (no operation)
-        cases["default"] = []
-        self.comb += Case(encoder.o, cases)
+        # Drive each of our output signals from a one-hot AND-OR tree.
+        # (Functionally identical to the previous PriorityEncoder+Case
+        # implementation, but ~2 logic levels instead of a long linear
+        # priority chain; this matters on the ULPI 60MHz comb path.)
+        for identifier in self._mux_signals:
+            output_signal = self._get_signal(self.output, identifier)
+            terms = []
+            for interface in self._inputs:
+                valid_signal = getattr(interface, self._valid_field)
+                input_signal = self._get_signal(interface, identifier)
+                terms.append(Mux(valid_signal, input_signal, 0))
+            self.comb += output_signal.eq(functools.reduce(operator.__or__, terms, 0))
 
 
         # Create the OR'ing logic for each of or or_signals.

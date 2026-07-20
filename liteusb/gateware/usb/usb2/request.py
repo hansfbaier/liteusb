@@ -10,7 +10,7 @@
 import functools
 import operator
 
-from migen import Signal, Module, Cat, If, ClockDomainsRenamer
+from migen import Signal, Module, Cat, If, Mux, ClockDomainsRenamer
 from migen.genlib.fsm import FSM, NextState, NextValue
 from migen.genlib.coding import Encoder
 from migen.genlib.record import Record
@@ -407,22 +407,79 @@ class USBRequestHandlerMultiplexer(Module):
                 shared.clear_endpoint_halt.eq(interface.clear_endpoint_halt),
             ]
 
-        # The encoder provides the index of the single interface that claims the 
-        # output lines. Otherwise, it asserts the .n (invalid) line.
-        self.submodules.encoder = encoder = Encoder(len(self._interfaces))
-        self.comb += encoder.i.eq(Cat(interface.claim for interface in self._interfaces))
+        # Connect the outputs of the interface that claims them, using a
+        # one-hot AND-OR tree per output signal (about two logic levels;
+        # functionally identical to the previous Encoder+Case chain).
+        tx_payload_terms = []
+        tx_valid_terms   = []
+        tx_first_terms   = []
+        tx_last_terms    = []
+        tx_pid_terms     = []
+        ack_terms        = []
+        nak_terms        = []
+        stall_terms      = []
+        nyet_terms       = []
+        addr_chg_terms   = []
+        new_addr_terms   = []
+        cfg_chg_terms    = []
+        new_cfg_terms    = []
+        halt_en_terms    = []
+        halt_dir_terms   = []
+        halt_num_terms   = []
 
-        # Connect the interface outputs to the interface that claims them.
-        from migen import Case
-        cases = {}
-        for index, interface in enumerate(self._interfaces):
-            cases[index] = _connect_interface_outputs(interface)
-        self.comb += Case(encoder.o, cases)
+        for interface in self._interfaces:
+            c = interface.claim
+            tx_payload_terms.append(Mux(c, interface.tx.payload, 0))
+            tx_valid_terms  .append(Mux(c, interface.tx.valid, 0))
+            tx_first_terms  .append(Mux(c, interface.tx.first, 0))
+            tx_last_terms   .append(Mux(c, interface.tx.last, 0))
+            tx_pid_terms    .append(Mux(c, interface.tx_data_pid, 0))
+            ack_terms       .append(Mux(c, interface.handshakes_out.ack, 0))
+            nak_terms       .append(Mux(c, interface.handshakes_out.nak, 0))
+            stall_terms     .append(Mux(c, interface.handshakes_out.stall, 0))
+            nyet_terms      .append(Mux(c, interface.handshakes_out.nyet, 0))
+            addr_chg_terms  .append(Mux(c, interface.address_changed, 0))
+            new_addr_terms  .append(Mux(c, interface.new_address, 0))
+            cfg_chg_terms   .append(Mux(c, interface.config_changed, 0))
+            new_cfg_terms   .append(Mux(c, interface.new_config, 0))
+            halt_en_terms   .append(Mux(c, interface.clear_endpoint_halt.enable, 0))
+            halt_dir_terms  .append(Mux(c, interface.clear_endpoint_halt.direction, 0))
+            halt_num_terms  .append(Mux(c, interface.clear_endpoint_halt.number, 0))
 
-        # Use the fallback handler interface for the invalid case.
-        self.comb += If(encoder.n,
-            _connect_interface_outputs(self._fallback)
-        )
+            # The ready back-channel is broadcast to every handler.
+            self.comb += interface.tx.ready.eq(shared.tx.ready)
+
+        def or_all(terms):
+            return functools.reduce(operator.__or__, terms, 0)
+
+        any_claim = functools.reduce(operator.__or__,
+            (interface.claim for interface in self._interfaces), 0)
+
+        self.comb += [
+            shared.tx.payload.eq(or_all(tx_payload_terms)),
+            shared.tx.valid.eq(or_all(tx_valid_terms)),
+            shared.tx.first.eq(or_all(tx_first_terms)),
+            shared.tx.last.eq(or_all(tx_last_terms)),
+            shared.tx_data_pid.eq(or_all(tx_pid_terms)),
+
+            shared.handshakes_out.ack.eq(or_all(ack_terms)),
+            shared.handshakes_out.nak.eq(or_all(nak_terms)),
+            shared.handshakes_out.stall.eq(or_all(stall_terms)),
+            shared.handshakes_out.nyet.eq(or_all(nyet_terms)),
+
+            shared.address_changed.eq(or_all(addr_chg_terms)),
+            shared.new_address.eq(or_all(new_addr_terms)),
+            shared.config_changed.eq(or_all(cfg_chg_terms)),
+            shared.new_config.eq(or_all(new_cfg_terms)),
+            shared.clear_endpoint_halt.enable.eq(or_all(halt_en_terms)),
+            shared.clear_endpoint_halt.direction.eq(or_all(halt_dir_terms)),
+            shared.clear_endpoint_halt.number.eq(or_all(halt_num_terms)),
+
+            # Use the fallback handler interface when nothing claims.
+            If(~any_claim,
+                _connect_interface_outputs(self._fallback)
+            )
+        ]
 
 
 class StallOnlyRequestHandler(Module):
