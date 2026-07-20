@@ -47,7 +47,7 @@ class ACMRequestHandler(USBRequestHandler):
         #
         # Class request handlers.
         #
-        If(setup.type == USB_REQUEST_TYPE_CLASS,
+        self.comb += If(setup.type == USB_REQUEST_TYPE_CLASS,
             # Handle SET_LINE_CODING request
             If(setup.request == self.SET_LINE_CODING,
                 # Drive interface outputs for this request
@@ -109,7 +109,7 @@ class USBACMSerialDevice(Module):
     def __init__(self, bus, idVendor, idProduct,
             manufacturer_string="LiteUSB",
             product_string="USB-to-serial",
-            serial_number="", max_packet_size=64):
+            serial_number="", max_packet_size=64, handle_clocking=True):
 
         self._bus                 = bus
         self._idVendor            = idVendor
@@ -118,6 +118,7 @@ class USBACMSerialDevice(Module):
         self._product_string      = product_string
         self._serial_number       = serial_number
         self._max_packet_size     = max_packet_size
+        self._handle_clocking     = handle_clocking
 
         #
         # I/O port
@@ -125,6 +126,14 @@ class USBACMSerialDevice(Module):
         self.connect = Signal()
         self.sink   = stream.Endpoint([("data", 8)])    # Data to host (TX)
         self.source = stream.Endpoint([("data", 8)])    # Data from host (RX)
+
+        # Create our core USB device here (not in do_finalize) so integrators
+        # can access its signals (LEDs, probes) before finalization.
+        # All endpoint configuration also happens here: since ``usb`` is a
+        # submodule, its do_finalize runs before ours, so endpoints must be
+        # registered before finalization starts.
+        self.submodules.usb = self.usb = USBDevice(bus=self._bus, handle_clocking=self._handle_clocking)
+        self._configure()
 
     def create_descriptors(self):
         """ Creates the descriptors that describe our serial topology. """
@@ -210,9 +219,9 @@ class USBACMSerialDevice(Module):
 
         return descriptors
 
-    def do_finalize(self):
-        # Create our core USB device, and add a standard control endpoint.
-        self.submodules.usb = usb = USBDevice(bus=self._bus)
+    def _configure(self):
+        # Add a standard control endpoint to our core USB device.
+        usb = self.usb
         control_ep = usb.add_standard_control_endpoint(self.create_descriptors())
 
         # Attach our class request handlers.

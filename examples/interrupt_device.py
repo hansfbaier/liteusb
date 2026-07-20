@@ -26,7 +26,7 @@ class USBInterruptExample(Module):
     endpoint is polled.
     """
 
-    def __init__(self, phy):
+    def __init__(self, phy, handle_clocking=True):
         self.phy = phy
 
         # Activity signals
@@ -40,7 +40,7 @@ class USBInterruptExample(Module):
         #
         # Create our USB device.
         #
-        self.submodules.usb = usb = USBDevice(bus=phy)
+        self.submodules.usb = usb = USBDevice(bus=phy, handle_clocking=handle_clocking)
 
         # Add our standard control endpoint.
         descriptors = self._create_descriptors()
@@ -86,6 +86,17 @@ class USBInterruptExample(Module):
 
 
 def main():
+    import sys
+    if '--deca' in sys.argv:
+        sys.argv.remove('--deca')
+        from terasic_deca_common import DecaUSBSoC, deca_main
+        class _DecaSoC(DecaUSBSoC):
+            def add_usb_device(self, ulpi):
+                self.submodules.dev = USBInterruptExample(ulpi, handle_clocking=False)
+                self.usb = self.dev.usb
+        deca_main(_DecaSoC, "LiteUSB Interrupt Device on Terasic DECA")
+        return
+
     import argparse
     parser = argparse.ArgumentParser(description="LiteUSB Interrupt Endpoint Example")
     parser.add_argument('--build', action='store_true', help='Generate Verilog')

@@ -39,7 +39,7 @@ class LEDRequestHandler(USBRequestHandler):
         #
         # Vendor request handlers.
         #
-        If(setup.type == USBRequestType.VENDOR,
+        self.comb += If(setup.type == USBRequestType.VENDOR,
             If(setup.request == self.REQUEST_SET_LEDS,
                 # Drive interface outputs for this request
                 interface.claim.eq(1),
@@ -69,7 +69,7 @@ class USBVendorDeviceExample(Module):
     Sets LEDs to the value set in vendor request 0.
     """
 
-    def __init__(self, phy):
+    def __init__(self, phy, handle_clocking=True):
         self.phy = phy
 
         # LED signals (standalone mode — no platform pins)
@@ -78,7 +78,7 @@ class USBVendorDeviceExample(Module):
         #
         # Create our USB device.
         #
-        self.submodules.usb = usb = USBDevice(bus=phy)
+        self.submodules.usb = usb = USBDevice(bus=phy, handle_clocking=handle_clocking)
 
         # Add our standard control endpoint to the device.
         descriptors = self._create_descriptors()
@@ -112,6 +112,21 @@ class USBVendorDeviceExample(Module):
 
 
 def main():
+    import sys
+    if '--deca' in sys.argv:
+        sys.argv.remove('--deca')
+        from terasic_deca_common import DecaUSBSoC, deca_main
+        class _DecaSoC(DecaUSBSoC):
+            def add_usb_device(self, ulpi):
+                self.submodules.dev = USBVendorDeviceExample(ulpi, handle_clocking=False)
+                self.usb = self.dev.usb
+            def add_user_leds(self):
+                # LED4-7: lower nibble of the vendor-request-controlled LEDs
+                for i in range(4):
+                    self.comb += self.platform.request("user_led", 4 + i).eq(~self.dev.leds[i])
+        deca_main(_DecaSoC, "LiteUSB Vendor Request Device on Terasic DECA")
+        return
+
     import argparse
     parser = argparse.ArgumentParser(description="LiteUSB Vendor Request Example")
     parser.add_argument('--build', action='store_true', help='Generate Verilog')

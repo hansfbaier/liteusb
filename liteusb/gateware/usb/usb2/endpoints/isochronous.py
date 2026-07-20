@@ -142,20 +142,55 @@ class USBIsochronousInEndpoint(Module):
         #
         # Core sequencing FSM.
         #
-        fsm = FSM(reset_state="IDLE")
+        fsm = ClockDomainsRenamer("usb")(FSM(reset_state="IDLE"))
         self.submodules += fsm
+
+        # Registered (usb domain) state updates, matching LUNA's m.d.usb.
+        self.sync.usb += [
+            If(fsm.ongoing("IDLE"),
+                self.address.eq(0),
+                out_stream.first.eq(0),
+                # Once the host requests a packet from us and we have data
+                # to send, mark the start of the packet.
+                If(data_requested & (bytes_left_in_frame != 0),
+                    out_stream.first.eq(1)
+                )
+            ),
+            If(fsm.ongoing("SEND_DATA"),
+                # ``address`` should always move to the value presented in
+                # ``next_address`` on each clock edge.
+                self.address.eq(self.next_address),
+
+                If(out_stream.ready,
+                    out_stream.first.eq(0),
+
+                    # Mark the relevant byte as sent...
+                    bytes_left_in_frame.eq(bytes_left_in_frame - 1),
+                    bytes_left_in_packet.eq(bytes_left_in_packet - 1),
+
+                    # If we've just completed transmitting a packet, or we've
+                    # just transmitted a full frame, end our transmission.
+                    If(byte_terminates_send,
+                        # Move to the next DATA pid, which is always one DATA PID less.
+                        # [USB2.0: 5.9.2]. We'll reset this back to its maximum value when
+                        # the next frame starts.
+                        next_data_pid.eq(next_data_pid - 1),
+
+                        # Mark our next packet as being a full one.
+                        bytes_left_in_packet.eq(self._max_packet_size)
+                    )
+                )
+            )
+        ]
 
         # IDLE -- the host hasn't yet requested data from our endpoint.
         fsm.act("IDLE",
-            self.address.eq(0),
-            out_stream.first.eq(0),
             self.next_address.eq(0),
 
             # Once the host requests a packet from us...
             If(data_requested,
                 # If we have data to send, send it.
-                If(bytes_left_in_frame,
-                    out_stream.first.eq(1),
+                If(bytes_left_in_frame != 0,
                     NextState("SEND_DATA")
                 # Otherwise, we'll send a ZLP.
                 ).Else(
@@ -172,34 +207,16 @@ class USBIsochronousInEndpoint(Module):
             # ... and we're terminating our packet if we're on the last byte of it.
             out_stream.last.eq(byte_terminates_send),
 
-            # ``address`` should always move to the value presented in
-            # ``next_address`` on each clock edge.
-            self.address.eq(self.next_address),
-
             # By default, don't advance.
             self.next_address.eq(self.address),
 
             # We'll advance each time our data is accepted.
             If(out_stream.ready,
-                out_stream.first.eq(0),
-
-                # Mark the relevant byte as sent...
-                bytes_left_in_frame.eq(bytes_left_in_frame - 1),
-                bytes_left_in_packet.eq(bytes_left_in_packet - 1),
-
                 # ... and advance to the next address.
                 self.next_address.eq(self.address + 1),
 
-                # If we've just completed transmitting a packet, or we've
-                # just transmitted a full frame, end our transmission.
+                # If we've just completed a packet or the frame, return to idle.
                 If(byte_terminates_send,
-                    # Move to the next DATA pid, which is always one DATA PID less.
-                    # [USB2.0: 5.9.2]. We'll reset this back to its maximum value when
-                    # the next frame starts.
-                    next_data_pid.eq(next_data_pid - 1),
-
-                    # Mark our next packet as being a full one.
-                    bytes_left_in_packet.eq(self._max_packet_size),
                     NextState("IDLE")
                 )
             )

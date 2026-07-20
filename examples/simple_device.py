@@ -62,17 +62,17 @@ class SimpleUSBDevice(Module):
         Output signal indicating USB suspend state
     """
 
-    def __init__(self, phy):
+    def __init__(self, phy, handle_clocking=True):
         # Store PHY interface
         self.phy = phy
-        
+
         # Activity signals for LEDs or monitoring
         self.tx_activity_led = Signal()
         self.rx_activity_led = Signal()
         self.suspended = Signal()
-        
+
         # Create USB device with the provided PHY
-        self.submodules.usb = usb = USBDevice(bus=phy)
+        self.submodules.usb = usb = USBDevice(bus=phy, handle_clocking=handle_clocking)
         
         # Create and add standard control endpoint with descriptors
         descriptors = self._create_descriptors()
@@ -141,14 +141,14 @@ class SimpleUSBDevice(Module):
                 with i.EndpointDescriptor() as e:
                     e.bEndpointAddress = 0x01  # EP1 OUT
                     e.bmAttributes     = 0x02  # Bulk
-                    e.wMaxPacketSize   = 512   # Max packet size for HS
+                    e.wMaxPacketSize   = 64    # 64 = legal at FS and HS (512 is FS-illegal)
                     e.bInterval        = 0
                 
                 # Bulk IN endpoint
                 with i.EndpointDescriptor() as e:
                     e.bEndpointAddress = 0x81  # EP1 IN
                     e.bmAttributes     = 0x02  # Bulk
-                    e.wMaxPacketSize   = 512   # Max packet size for HS
+                    e.wMaxPacketSize   = 64    # 64 = legal at FS and HS (512 is FS-illegal)
                     e.bInterval        = 0
         
         return descriptors
@@ -202,8 +202,19 @@ def main():
     When run directly, this creates a simulation or generates Verilog
     for the simple USB device.
     """
+    import sys
+    if '--deca' in sys.argv:
+        sys.argv.remove('--deca')
+        from terasic_deca_common import DecaUSBSoC, deca_main
+        class _DecaSoC(DecaUSBSoC):
+            def add_usb_device(self, ulpi):
+                self.submodules.dev = SimpleUSBDevice(ulpi, handle_clocking=False)
+                self.usb = self.dev.usb
+        deca_main(_DecaSoC, "LiteUSB Simple Device on Terasic DECA")
+        return
+
     import argparse
-    
+
     parser = argparse.ArgumentParser(
         description="LiteUSB Simple Device Example",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -235,9 +246,9 @@ Examples:
         default='simple_device.v',
         help='Output filename (default: simple_device.v)'
     )
-    
+
     args = parser.parse_args()
-    
+
     # Create a mock PHY for standalone operation
     from liteusb.gateware.interface.utmi import UTMIInterface
     from migen.fhdl.verilog import convert

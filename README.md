@@ -103,23 +103,44 @@ python examples/acm_serial.py --build
 
 ### Verified on Hardware
 
-LiteUSB was validated on real hardware with [examples/terasic_deca_counter.py](examples/terasic_deca_counter.py):
-a LiteX SoC target for the **Terasic DECA** board (Intel MAX10 FPGA + TUSB1210 ULPI PHY)
-implementing a high-speed USB device with a bulk-IN endpoint streaming a monotonic counter.
-High-speed enumeration (`1209:0001`) and counter streaming were verified on Linux:
+LiteUSB was validated on real hardware on the **Terasic DECA** board
+(Intel MAX10 FPGA + TUSB1210 ULPI PHY), Linux host:
+
+- `counter_device.py` — enumerates and streams the bulk-IN monotonic
+  counter; verified with `examples/test_counter_device.py`.
+- `interrupt_device.py` — enumerates and delivers interrupt-IN packets;
+  verified with `examples/test_interrupt_device.py`.
+
+Both were observed enumerating at Full Speed; High Speed (chirp) works
+for the counter example but is not yet reliable across bitstreams —
+the device always remains usable at FS.
+
+All examples can be built as DECA bitstreams with the `--deca` flag.
+Hardware-specific code (clocking, ULPI hookup, diagnostic LEDs)
+is factored out into [examples/terasic_deca_common.py](examples/terasic_deca_common.py):
 
 ```bash
-python examples/terasic_deca_counter.py --with-usb-device --cpu-type=None --build
+python examples/counter_device.py       --deca --cpu-type=None --build
+python examples/simple_device.py        --deca --cpu-type=None --build
+python examples/vendor_request.py       --deca --cpu-type=None --build
+python examples/stream_out_device.py    --deca --cpu-type=None --build
+python examples/interrupt_device.py     --deca --cpu-type=None --build
+python examples/isochronous_count.py    --deca --cpu-type=None --build
+python examples/stress_test_device.py   --deca --cpu-type=None --build
+python examples/acm_serial.py           --deca --cpu-type=None --build
 # load build/terasic_deca/gateware/terasic_deca.sof via JTAG (quartus_pgm)
 $ lsusb -d 1209:0001
-Bus 005 Device 020: ID 1209:0001 Generic pid.codes Test PID
+Bus 005 Device 023: ID 1209:0001 Generic pid.codes Test PID
 ```
 
-The target also demonstrates two board-bringup tools: `--debug-leds` (sticky
-diagnostic LEDs) and `--with-issp` (In-System Sources & Probes readout of the
-USB state over JTAG). Note the PHY clocking gotcha documented in the file:
-the usb clock domain must be created with `with_reset=False`, otherwise the
-PLL-lock-gated reset holds the PHY in reset and the clock loop never starts.
+The shared target also provides `--debug-leds` (sticky diagnostic LEDs).
+A `--with-issp` flag (In-System Sources & Probes readout of the USB
+state over JTAG) exists but is currently **broken on the MAX10**: with
+`altsource_probe` instantiated the usb PLL never locks, for unknown
+reasons — do not use it. Note the PHY clocking gotcha documented in
+`terasic_deca_common.py`: the usb clock domain must be created with
+`with_reset=False`, otherwise the PLL-lock-gated reset holds the PHY in
+reset and the clock loop never starts.
 
 ### Basic Usage
 

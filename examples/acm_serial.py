@@ -24,7 +24,7 @@ class USBSerialDeviceExample(Module):
     Data received on OUT is looped back to IN.
     """
 
-    def __init__(self, phy):
+    def __init__(self, phy, handle_clocking=True):
         self.phy = phy
 
         # Activity signals
@@ -37,7 +37,8 @@ class USBSerialDeviceExample(Module):
         self.submodules.usb_serial = usb_serial = USBACMSerialDevice(
             bus=phy,
             idVendor=0x1209,
-            idProduct=0x0001
+            idProduct=0x0001,
+            handle_clocking=handle_clocking
         )
 
         # Place the streams into a loopback configuration.
@@ -55,6 +56,17 @@ class USBSerialDeviceExample(Module):
 
 
 def main():
+    import sys
+    if '--deca' in sys.argv:
+        sys.argv.remove('--deca')
+        from terasic_deca_common import DecaUSBSoC, deca_main
+        class _DecaSoC(DecaUSBSoC):
+            def add_usb_device(self, ulpi):
+                self.submodules.dev = USBSerialDeviceExample(ulpi, handle_clocking=False)
+                self.usb = self.dev.usb_serial.usb
+        deca_main(_DecaSoC, "LiteUSB CDC-ACM Serial Loopback on Terasic DECA")
+        return
+
     import argparse
     parser = argparse.ArgumentParser(description="LiteUSB CDC-ACM Serial Loopback Example")
     parser.add_argument('--build', action='store_true', help='Generate Verilog')

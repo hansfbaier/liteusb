@@ -25,7 +25,9 @@ class USBCounterDeviceExample(Module):
     """
 
     BULK_ENDPOINT_NUMBER = 1
-    MAX_BULK_PACKET_SIZE = 512
+    # 64 bytes: legal at both FS (max) and HS. Larger values (512) violate
+    # the spec at Full Speed and can hang buggy host xHCI controllers.
+    MAX_BULK_PACKET_SIZE = 64
 
     def __init__(self, phy):
         self.phy = phy
@@ -37,7 +39,7 @@ class USBCounterDeviceExample(Module):
         #
         # Create our USB device.
         #
-        self.submodules.usb = usb = USBDevice(bus=phy)
+        self.submodules.usb = usb = USBDevice(bus=phy, handle_clocking=False)
 
         # Add our standard control endpoint.
         descriptors = self._create_descriptors()
@@ -88,6 +90,17 @@ class USBCounterDeviceExample(Module):
 
 
 def main():
+    import sys
+    if '--deca' in sys.argv:
+        sys.argv.remove('--deca')
+        from terasic_deca_common import DecaUSBSoC, deca_main
+        class _DecaSoC(DecaUSBSoC):
+            def add_usb_device(self, ulpi):
+                self.submodules.dev = USBCounterDeviceExample(ulpi)
+                self.usb = self.dev.usb
+        deca_main(_DecaSoC, "LiteUSB Counter Device on Terasic DECA")
+        return
+
     import argparse
     parser = argparse.ArgumentParser(description="LiteUSB Counter Device Example")
     parser.add_argument('--build', action='store_true', help='Generate Verilog')
