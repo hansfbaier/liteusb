@@ -8,7 +8,7 @@
 """ Pre-made gateware that implements CDC-ACM serial for LiteUSB/LiteX. """
 
 from migen import *
-from migen.genlib.fifo import SyncFIFO
+from migen.genlib.fifo import AsyncFIFO
 
 from litex.soc.interconnect import stream
 
@@ -263,18 +263,20 @@ class USBACMSerialDevice(Module):
         self.submodules.serial_tx_endpoint = serial_tx_endpoint
         usb.add_endpoint(serial_tx_endpoint)
 
-        # Create bridge FIFOs between LiteX stream interface and USB stream interface
+        # Create bridge FIFOs between LiteX stream interface and USB stream interface.
+        # These cross clock domains: the USB endpoint side runs on "usb", the
+        # application (sink/source) side runs on "sync", so asynchronous FIFOs
+        # with proper CDC are required (a plain SyncFIFO in the wrong domain
+        # silently eats data — e.g. the ACM loopback echoing only zeros).
         # TX FIFO: LiteX sink -> USB TX endpoint
-        self.submodules.tx_fifo = tx_fifo = SyncFIFO(
-            width=8, 
-            depth=self._max_packet_size * 2,
-        )
-        
-        # RX FIFO: USB RX endpoint -> LiteX source  
-        self.submodules.rx_fifo = rx_fifo = SyncFIFO(
-            width=8,
-            depth=self._max_packet_size * 2,
-        )
+        self.submodules.tx_fifo = tx_fifo = ClockDomainsRenamer(
+            {"write": "sys", "read": "usb"})(
+            AsyncFIFO(width=8, depth=self._max_packet_size * 2))
+
+        # RX FIFO: USB RX endpoint -> LiteX source
+        self.submodules.rx_fifo = rx_fifo = ClockDomainsRenamer(
+            {"write": "usb", "read": "sys"})(
+            AsyncFIFO(width=8, depth=self._max_packet_size * 2))
 
         # Create LiteUSB StreamInterface adapters
         tx_stream = StreamInterface()
@@ -286,10 +288,10 @@ class USBACMSerialDevice(Module):
             # LiteX sink -> TX FIFO
             tx_fifo.we.eq(self.sink.valid),
             tx_fifo.din.eq(self.sink.data),
-            self.sink.ready.eq(~tx_fifo.writable),
+            self.sink.ready.eq(tx_fifo.writable),
 
             # TX FIFO -> USB TX stream
-            tx_stream.valid.eq(~tx_fifo.readable),
+            tx_stream.valid.eq(tx_fifo.readable),
             tx_stream.payload.eq(tx_fifo.dout),
             tx_fifo.re.eq(tx_stream.ready),
 
@@ -303,10 +305,10 @@ class USBACMSerialDevice(Module):
             rx_stream.stream_eq(serial_rx_endpoint.stream),
             rx_fifo.we.eq(rx_stream.valid),
             rx_fifo.din.eq(rx_stream.payload),
-            rx_stream.ready.eq(~rx_fifo.writable),
+            rx_stream.ready.eq(rx_fifo.writable),
 
             # RX FIFO -> LiteX source
-            self.source.valid.eq(~rx_fifo.readable),
+            self.source.valid.eq(rx_fifo.readable),
             self.source.data.eq(rx_fifo.dout),
             rx_fifo.re.eq(self.source.ready),
             self.source.first.eq(0),
