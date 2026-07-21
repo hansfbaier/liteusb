@@ -109,8 +109,8 @@ class TransactionalizedFIFO(Module):
         memory = Memory(width, depth + 1, init=[])
         self.specials.memory = memory
         
-        read_port = memory.get_port()
-        write_port = memory.get_port(write_capable=True)
+        read_port = memory.get_port(clock_domain=self.domain)
+        write_port = memory.get_port(write_capable=True, clock_domain=self.domain)
         self.specials += read_port, write_port
 
         # Always connect up our memory's data/en ports to ours.

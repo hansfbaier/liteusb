@@ -137,7 +137,7 @@ class ConstantStreamGenerator(Module):
 
         # Create ROM using Memory
         self.specials.rom = Memory(self._data_width, data_length, init=data_initializer, name="rom")
-        rom_read_port = self.rom.get_port()
+        rom_read_port = self.rom.get_port(clock_domain=self._domain)
         self.specials += rom_read_port
 
         if self._max_length_width:
