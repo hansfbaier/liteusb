@@ -112,6 +112,10 @@ LiteUSB was validated on real hardware on the **Terasic DECA** board
   verified with `examples/test_interrupt_device.py`.
 - `simple_device.py` — enumerates (descriptors, strings, EP0 control);
   verified with `examples/test_simple_device.py`, observed at High Speed.
+- `stream_out_device.py` — bulk-OUT → bulk-IN loopback (known fixed:
+  `TransactionalizedFIFO` memory ports were in the wrong clock domain;
+  see [PORTING_SUMMARY.md §9](PORTING_SUMMARY.md) for the same class of CDC
+  bug); verified with `examples/test_stream_out_device.py`.
 
 High Speed (chirp) is not yet reliable across examples/bitstreams —
 a device that comes up at Full Speed remains usable at FS. A known
