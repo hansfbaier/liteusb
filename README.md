@@ -128,8 +128,6 @@ virtual COM port. Open `/dev/ttyACM0` (or `litex_term /dev/ttyACM0`) to get
 the LiteX BIOS prompt over USB.
 
 The shared target also provides `--debug-leds` (sticky diagnostic LEDs).
-A `--with-issp` flag exists but is **broken on the MAX10** — the usb PLL
-never locks with `altsource_probe` instantiated.
 
 Note the PHY clocking gotcha: the usb clock domain must be created with
 `with_reset=False`, otherwise the PLL-lock-gated reset holds the PHY in

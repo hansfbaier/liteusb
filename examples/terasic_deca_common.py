@@ -12,8 +12,8 @@ Factored-out, hardware-specific glue so every example can be built as a
 DECA bitstream with minimal code:
 
 - ``DecaUSBCrg``    — sys PLL (clk50) + usb PLL (clk60 from PHY, -120° phase)
-- ``DecaUSBSoC``    — SoCCore base: ULPI hookup, status/diagnostic LEDs, ISSP
-- ``deca_main``     — shared command line (build/load, --debug-leds, --with-issp)
+- ``DecaUSBSoC``    — SoCCore base: ULPI hookup, status/diagnostic LEDs
+- ``deca_main``     — shared command line (build/load, --debug-leds)
 
 Clock architecture:
   TUSB1210 PHY → clk60 (H11, input) → MAX10 PLL → cd_usb (60MHz, -120°)
@@ -122,7 +122,6 @@ class DecaUSBCrg(LiteXModule):
             self.pll.create_clkout(self.cd_ref, 60e6)
             self.comb += ulpi.clk.eq(ClockSignal("ref"))
 
-            # REFCLK-alive indicator (visible on the ISSP probe).
             self.ref_toggle = Signal()
             self.sync.ref += self.ref_toggle.eq(~self.ref_toggle)
 
@@ -148,7 +147,6 @@ class DecaUSBSoC(SoCCore):
 
     def __init__(self, sys_clk_freq=50e6,
         debug_leds        = False,
-        with_issp         = False,
         sys_from_usb      = False,
         with_por          = True,
         **kwargs):
@@ -183,11 +181,7 @@ class DecaUSBSoC(SoCCore):
             "set_false_path -from [get_clocks {clk50}] -to [get_clocks {usb_clk}]",
         ]
 
-        if with_issp:
-            # jtag_uart and ISSP both claim the MAX10 JTAG primitive
-            # (Quartus Error 12143); ISSP wins, UART becomes a stub.
-            kwargs["uart_name"] = "stub"
-        elif kwargs.get("uart_name", "stub") == "serial":
+        if kwargs.get("uart_name", "stub") == "serial":
             kwargs["uart_name"] = "jtag_uart"
 
         SoCCore.__init__(self, platform, sys_clk_freq,
@@ -219,10 +213,6 @@ class DecaUSBSoC(SoCCore):
         else:
             self._add_status_leds(platform)
             self.add_user_leds()
-
-        # ── In-System Sources & Probes (JTAG status readout) ─────────────
-        if with_issp:
-            self._add_issp(ulpi)
 
     # Hooks -----------------------------------------------------------------
 
@@ -282,48 +272,6 @@ class DecaUSBSoC(SoCCore):
             platform.request("user_led", 7).eq(hb_sys[24]),
         ]
 
-    # ISSP ------------------------------------------------------------------
-
-    def _add_issp(self, ulpi):
-        usb = self.usb
-        probe = Cat(
-            self.crg.usb_pll.locked,        # 0
-            ulpi.dir,                       # 1
-            ulpi.nxt,                       # 2
-            ulpi.stp,                       # 3
-            usb.speed,                      # 5:4
-            usb.utmi.line_state,            # 7:6
-            usb.utmi.last_rx_command,       # 15:8
-            usb.utmi.vbus_valid,            # 16
-            usb.utmi.session_valid,         # 17
-            usb.utmi.session_end,           # 18
-            usb.utmi.rx_active,             # 19
-            usb.utmi.rx_valid,              # 20
-            usb.utmi.tx_ready,              # 21
-            usb.utmi.busy,                  # 22
-            usb.suspended,                  # 23
-            usb.connect,                    # 24
-            usb.reset_detected,             # 25
-            usb.frame_number,               # 36:26
-            usb.utmi.rx_data,               # 44:37
-            self.crg.por,                   # 65:45 (0 once POR pulse done)
-            usb.utmi.op_mode,               # 67:66 (2=CHIRP)
-            usb.utmi.xcvr_select,           # 69:68 (0=HS,1=FS)
-            usb.utmi.term_select,           # 70
-            usb.utmi.suspend,               # 71
-            self.crg.ref_toggle,            # 72 (toggles iff REFCLK runs)
-        )
-        self.specials += Instance("altsource_probe",
-            p_probe_width       = len(probe),
-            p_source_width      = 1,
-            p_instance_id       = "USB0",
-            p_sld_auto_instance_index = "YES",
-            i_probe             = probe,
-            o_source            = Signal(1),
-            i_source_clk        = 0,
-            i_source_ena        = 0,
-        )
-
 # CLI ------------------------------------------------------------------------
 
 def deca_main(soc_cls, description):
@@ -343,8 +291,6 @@ def deca_main(soc_cls, description):
         help="System clock frequency.")
     parser.add_target_argument("--debug-leds", action="store_true",
         help="Sticky diagnostic LEDs (PLL lock, DIR, reg writes, VBUS, RX, chirp).")
-    parser.add_target_argument("--with-issp", action="store_true",
-        help="Add In-System Sources & Probes (JTAG status readout of USB state).")
     parser.add_target_argument("--no-por", action="store_true",
         help="Disable the power-on PHY reset pulse (debug).")
     args = parser.parse_args()
@@ -352,7 +298,6 @@ def deca_main(soc_cls, description):
     soc = soc_cls(
         sys_clk_freq = args.sys_clk_freq,
         debug_leds   = args.debug_leds,
-        with_issp    = args.with_issp,
         with_por     = not args.no_por,
         **parser.soc_argdict)
 

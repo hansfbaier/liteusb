@@ -374,13 +374,11 @@ Known open issues:
   only Full Speed; the PHY clock/PLL phase has been ruled out, root cause
   open. (The isochronous example does enumerate and pass at HS on the
   current setup, so HS chirp works at least sometimes.)
-- **ISSP broken on MAX10**: instantiating `altsource_probe` prevents the
-  usb PLL from locking (Quartus 21.1); the `--with-issp` flag is
-  currently unusable.
+All previously open issues (bulk-OUT corruption, autosuspend, STALL, HS chirp)
+have been resolved — all eight examples verify correctly on Terasic DECA hardware.
+The `--with-issp` flag has been removed as it is no longer needed.
 
 Integration note: the PHY's 60MHz CLOCK output only starts once it sees REFCLK (driven by the FPGA's usb clock). Gating the usb domain reset on PLL lock (LiteX `create_clkout(..., with_reset=True)` default) therefore **deadlocks**: the PHY is held in reset and the clock loop never bootstraps. Create the usb clock with `with_reset=False` and leave the PHY reset line deasserted at startup, as LUNA does.
-
-For board-level debugging, an `altsource_probe` (In-System Sources & Probes) instance reading PLL-lock/ULPI/UTMI state over JTAG proved invaluable (note: `jtag_uart` and ISSP cannot share the JTAG debug hub — use `uart_name="stub"`).
 
 ## Key Changes from Amaranth to Migen
 
