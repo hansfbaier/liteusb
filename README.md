@@ -129,6 +129,11 @@ python examples/acm_serial.py           --deca --build
 
 Load `build/terasic_deca/gateware/terasic_deca.sof` via JTAG (`quartus_pgm`).
 
+There is also `examples/terasic_deca_soc_acm_console.py` — a full LiteX SoC
+(VexRiscv CPU + BIOS) with the console UART tunneled through a USB CDC-ACM
+virtual COM port. Open `/dev/ttyACM0` (or `litex_term /dev/ttyACM0`) to get
+the LiteX BIOS prompt over USB.
+
 The shared target also provides `--debug-leds` (sticky diagnostic LEDs).
 A `--with-issp` flag exists but is **broken on the MAX10** — the usb PLL
 never locks with `altsource_probe` instantiated.

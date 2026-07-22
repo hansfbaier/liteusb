@@ -298,8 +298,13 @@ class USBACMSerialDevice(Module):
             tx_stream.payload.eq(tx_fifo.dout),
             tx_fifo.re.eq(tx_stream.ready),
 
-            # Connect to USB endpoint
+            # Connect to USB endpoint.  Assert flush so partial
+            # packets are sent immediately — without this, the IN
+            # transfer manager waits for a full max_packet_size (64)
+            # before transmitting, causing console output to appear
+            # buffered / swallowed.
             serial_tx_endpoint.stream.stream_eq(tx_stream),
+            serial_tx_endpoint.flush.eq(1),
         ]
 
         # USB RX: Data from USB host -> LiteX source
