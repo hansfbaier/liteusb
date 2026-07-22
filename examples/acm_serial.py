@@ -74,13 +74,26 @@ def main():
     parser = argparse.ArgumentParser(description="LiteUSB CDC-ACM Serial Loopback Example")
     parser.add_argument('--build', action='store_true', help='Generate Verilog')
     parser.add_argument('--output', default='acm_serial.v', help='Output filename')
+    parser.add_argument('--hierarchical-verilog', action='store_true', help='Enable hierarchical Verilog generation.')
+    parser.add_argument('--keep-hierarchy', action='store_true', help='Hierarchical Verilog: keep internal hierarchy.')
     args = parser.parse_args()
 
     if args.build:
         from migen.fhdl.verilog import convert
         dut = USBSerialDeviceExample(UTMIInterface())
         ios = {dut.tx_activity_led, dut.rx_activity_led}
-        convert(dut, ios, name="usb_acm_serial").write(args.output)
+        if args.hierarchical_verilog:
+            from litex.gen.fhdl.verilog import convert as litex_convert
+            from litex.gen import LiteXContext
+            # The hierarchical converter requires LiteXContext.top to identify
+            # the top-level module for hierarchy exploration.
+            LiteXContext.top = dut
+            hierarchical = args.hierarchical_verilog
+            if args.keep_hierarchy:
+                hierarchical = {"enabled": True, "keep_hierarchy": True}
+            litex_convert(dut, ios, name="usb_acm_serial", hierarchical=hierarchical).write(args.output)
+        else:
+            convert(dut, ios, name="usb_acm_serial").write(args.output)
         print(f"Done! Output written to {args.output}")
     else:
         parser.print_help()

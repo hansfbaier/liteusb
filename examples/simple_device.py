@@ -252,6 +252,8 @@ Examples:
         default='simple_device.v',
         help='Output filename (default: simple_device.v)'
     )
+    parser.add_argument('--hierarchical-verilog', action='store_true', help='Enable hierarchical Verilog generation.')
+    parser.add_argument('--keep-hierarchy', action='store_true', help='Hierarchical Verilog: keep internal hierarchy.')
 
     args = parser.parse_args()
 
@@ -270,7 +272,16 @@ Examples:
             dut.rx_activity_led,
             dut.suspended,
         }
-        convert(dut, ios, name="simple_usb_device").write(args.output)
+        if args.hierarchical_verilog:
+            from litex.gen.fhdl.verilog import convert as litex_convert
+            from litex.gen import LiteXContext
+            LiteXContext.top = dut
+            hierarchical = args.hierarchical_verilog
+            if args.keep_hierarchy:
+                hierarchical = {"enabled": True, "keep_hierarchy": True}
+            litex_convert(dut, ios, name="simple_usb_device", hierarchical=hierarchical).write(args.output)
+        else:
+            convert(dut, ios, name="simple_usb_device").write(args.output)
         print(f"Done! Output written to {args.output}")
         
     elif args.simulate:
