@@ -127,6 +127,10 @@ LiteUSB was validated on real hardware on the **Terasic DECA** board
   control); verified with `examples/test_vendor_request.py`.
 - `acm_serial.py` — CDC-ACM virtual serial loopback; verified with
   `examples/test_acm_serial.py`.
+- `stress_test_device.py` — bulk-IN constant streamer at maximum rate;
+  verified with `examples/test_stress_test_device.py`. (Fixed: data-toggle
+  inversion, missing NAK, no FSM — see
+  [PORTING_SUMMARY.md §19](PORTING_SUMMARY.md).)
 - `isochronous_count.py` — isochronous-IN counter; verified at High Speed
   with `examples/test_isochronous_count.py` (3×1024 bytes/microframe).
   Host test also supports Full Speed (1023 bytes/frame).

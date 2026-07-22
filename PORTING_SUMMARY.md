@@ -13,7 +13,7 @@ This document summarizes the porting of LUNA (USB FPGA gateware) from Amaranth H
 
 ## Test Suite Status
 
-**47 tests discovered — 47 passing, 0 errors**
+**48 tests discovered — 48 passing, 0 errors**
 
 | Test Module | Tests | Status |
 |-------------|-------|--------|
@@ -26,6 +26,7 @@ This document summarizes the porting of LUNA (USB FPGA gateware) from Amaranth H
 | `test_usb_stream` | 1 | Passing |
 | `test_ulpi` | 8 | All passing |
 | `test_usb2_loopback` | 1 | Passing (full-device OUT→IN loopback, 4 rounds, rx_valid gaps) |
+| `test_usb2_stress` | 1 | Passing (full-device IN constant stream, 4 rounds, DATA toggle) |
 | `test_usb2_stream_out_gaps` | 1 | Passing (endpoint rx with PHY nxt pauses) |
 | `test_ulpi_rx_gaps` | 1 | Passing (ULPI translator rx with nxt pauses) |
 
@@ -314,6 +315,35 @@ passed through to the underlying `USBDevice`. The isochronous host test
 (`test_isochronous_count.py`) now auto-detects the device speed and
 uses the correct packet size/count.
 
+### 19. `StressTestEndpoint` — data-toggle inversion, missing NAK, no FSM
+
+**File:** `examples/stress_test_device.py`
+
+Three bugs in the custom `StressTestEndpoint` (which bypasses
+`USBInTransferManager` and drives the transmit interface directly):
+
+1. **`tx_pid_toggle` 2-bit inversion**: `~interface.tx_pid_toggle`
+   inverted all 2 bits (0→3 = DATAM instead of 0→1 = DATA1). The host
+   received DATAM PIDs and rejected them. Fix: toggle only bit 0:
+   `interface.tx_pid_toggle[0].eq(~interface.tx_pid_toggle[0])`.
+
+2. **No response to IN tokens**: `bytes_to_send` started at 0 with
+   `tx.valid = bytes_to_send != 0` combinationally. When an IN token
+   arrived, the endpoint had no data and asserted neither `tx.valid`
+   nor `handshakes_out.nak` — the host saw no response (EIO/timeout
+   on hardware). Fix: replaced the ad-hoc counter logic with a proper
+   FSM (`IDLE → SEND_PACKET → WAIT_FOR_ACK`) that loads
+   `bytes_to_send` on `packet_requested` and gates `tx.valid` to the
+   `SEND_PACKET` state only.
+
+3. **Unsolicited transmission**: the original combinational `tx.valid`
+   went high as soon as `bytes_to_send` was loaded (one cycle after the
+   IN token), causing the device to send data without waiting for the
+   next IN token. The FSM fix above also resolves this.
+
+Covered by the new `test_usb2_stress` integration test (4 rounds, DATA0/DATA1
+toggle, all-zero payload verification).
+
 ## Hardware Validation
 
 Validated on a **Terasic DECA (MAX10) + TUSB1210 ULPI PHY** target: full-speed connect, high-speed chirp, control-endpoint enumeration and bulk streaming all work. Board support is factored into `examples/terasic_deca_common.py`; every example builds for the board with `--deca`.
@@ -328,7 +358,7 @@ Validated on a **Terasic DECA (MAX10) + TUSB1210 ULPI PHY** target: full-speed c
 | `vendor_request.py` | `test_vendor_request.py` | PASS (vendor requests, LED control) |
 | `acm_serial.py` | `test_acm_serial.py` | PASS (CDC-ACM echo) |
 | `stream_out_device.py` | `test_stream_out_device.py` | PASS (bulk-OUT → IN loopback, after §16 CDC fix) |
-| `stress_test_device.py` | `test_stress_test_device.py` | EPIPE on first read (likely fixed by §13+§16, needs retest) |
+| `stress_test_device.py` | `test_stress_test_device.py` | PASS (bulk-IN constant stream, after §19 FSM fix) |
 | `isochronous_count.py` | `test_isochronous_count.py` | PASS (HS, 3×1024/microframe, monotonic counter verified) |
 
 Known open issues:

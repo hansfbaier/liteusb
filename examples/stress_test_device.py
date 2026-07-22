@@ -16,6 +16,7 @@ import os
 from migen import *
 
 from usb_protocol.emitters import DeviceDescriptorCollection
+from migen.genlib.fsm import FSM, NextState, NextValue
 
 from liteusb                  import USBDevice
 from liteusb.gateware.interface.utmi                          import UTMIInterface
@@ -77,37 +78,52 @@ class StressTestEndpoint(Module):
             & tokenizer.ready_for_response
         )
 
-        #
-        # Transmit logic
-        #
+        # FSM: wait for IN token, send packet, wait for ACK, repeat.
+        # This mirrors USBInTransferManager but without buffering — we
+        # generate data on the fly.
+        fsm = FSM(reset_state="IDLE")
+        fsm = ClockDomainsRenamer("usb")(fsm)
+        self.submodules.fsm = fsm
 
-        # Schedule a packet send whenever a packet is requested.
-        self.sync.usb += If(packet_requested,
-            bytes_to_send.eq(self._max_packet_size)
+        # IDLE: wait for IN token, then immediately start sending.
+        # We always have data ready (constant streamer), so never NAK.
+        fsm.act("IDLE",
+            If(packet_requested,
+                NextValue(bytes_to_send, self._max_packet_size),
+                NextState("SEND_PACKET")
+            )
         )
 
-        # Count a byte as sent each time the PHY accepts a byte.
-        self.sync.usb += If((bytes_to_send != 0) & tx.ready,
-            bytes_to_send.eq(bytes_to_send - 1)
+        # SEND_PACKET: transmit the constant payload.
+        fsm.act("SEND_PACKET",
+            tx.valid.eq(1),
+            tx.payload.eq(self._constant),
+            tx.first.eq(bytes_to_send == self._max_packet_size),
+            tx.last.eq(bytes_to_send == 1),
+
+            If(tx.ready,
+                NextValue(bytes_to_send, bytes_to_send - 1),
+                If(bytes_to_send == 1,
+                    NextState("WAIT_FOR_ACK")
+                )
+            )
         )
 
-        self.comb += [
-            # Always send our constant value.
-            tx.payload .eq(self._constant),
+        # WAIT_FOR_ACK: wait for host ACK, then toggle PID and go back.
+        fsm.act("WAIT_FOR_ACK",
+            If(interface.handshakes_in.ack & endpoint_selected,
+                NextState("IDLE")
+            ).Elif(tokenizer.new_token,
+                # Host didn't ACK — retransmit the same packet.
+                NextValue(bytes_to_send, self._max_packet_size),
+                NextState("SEND_PACKET")
+            )
+        )
 
-            # Send bytes, whenever we have them.
-            tx.valid   .eq(bytes_to_send != 0),
-            tx.first   .eq(bytes_to_send == self._max_packet_size),
-            tx.last    .eq(bytes_to_send == 1),
-        ]
-
-        #
-        # Data-toggle logic
-        #
-
-        # Toggle our data pid when we get an ACK.
+        # Toggle only bit 0 of our data pid (0=DATA0, 1=DATA1) on ACK.
+        # Inverting the whole 2-bit signal maps 0->3 (DATAM) which is wrong.
         self.sync.usb += If(interface.handshakes_in.ack & endpoint_selected,
-            interface.tx_pid_toggle.eq(~interface.tx_pid_toggle)
+            interface.tx_pid_toggle[0].eq(~interface.tx_pid_toggle[0])
         )
 
 
