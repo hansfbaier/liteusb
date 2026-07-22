@@ -13,13 +13,13 @@
 
 ### Key Features
 
-- :heavy_check_mark: **USB 2.0 Device Support**: Full-speed (12 Mbps) and high-speed (480 Mbps) operation
+- :heavy_check_mark: **USB 2.0 Device Support**: High-speed (480 Mbps) and full-speed (12 Mbps) operation
 - :heavy_check_mark: **Multiple PHY Interfaces**: ULPI and UTMI PHY support
 - :heavy_check_mark: **LiteX Integration**: Native integration with LiteX SoC framework
 - :heavy_check_mark: **Migen-based**: Uses Migen for hardware description
 - :heavy_check_mark: **Configurable**: Modular design allows selecting only needed components
 - :heavy_check_mark: **Standard Compliant**: Standard USB request handlers and descriptors
-- :heavy_check_mark: **Endpoint Support**: Control, Bulk, Interrupt, and Isochronous endpoints
+- :heavy_check_mark: **Endpoint Support**: Control, Bulk, Interrupt, and Isochronous endpoints with speed-appropriate packet sizes
 - :heavy_check_mark: **Simulation Support**: Tested and verifiable with simulation
 
 ### Architecture
@@ -88,9 +88,13 @@ chmod +x litex_setup.py
 
 ### Build the Examples
 
-All examples can be built to Verilog using `--build`:
+All examples default to **High Speed** (512-byte bulk, 1024-byte
+isochronous, 3 packets/microframe).  Set `LITEUSB_FULL_SPEED=1` to
+target Full Speed (64-byte bulk, 1023-byte isochronous, 1 packet/frame).
+Endpoint descriptors and gateware parameters are adjusted automatically.
 
 ```bash
+# High Speed (default)
 python examples/simple_device.py --build
 python examples/counter_device.py --build
 python examples/vendor_request.py --build
@@ -99,6 +103,9 @@ python examples/interrupt_device.py --build
 python examples/isochronous_count.py --build
 python examples/stress_test_device.py --build
 python examples/acm_serial.py --build
+
+# Full Speed
+LITEUSB_FULL_SPEED=1 python examples/simple_device.py --build
 ```
 
 ### Verified on Hardware
@@ -112,10 +119,17 @@ LiteUSB was validated on real hardware on the **Terasic DECA** board
   verified with `examples/test_interrupt_device.py`.
 - `simple_device.py` — enumerates (descriptors, strings, EP0 control);
   verified with `examples/test_simple_device.py`, observed at High Speed.
-- `stream_out_device.py` — bulk-OUT → bulk-IN loopback (known fixed:
-  `TransactionalizedFIFO` memory ports were in the wrong clock domain;
-  see [PORTING_SUMMARY.md §9](PORTING_SUMMARY.md) for the same class of CDC
-  bug); verified with `examples/test_stream_out_device.py`.
+- `stream_out_device.py` — bulk-OUT → bulk-IN loopback; verified with
+  `examples/test_stream_out_device.py`. (Fixed: `TransactionalizedFIFO`
+  memory ports were in the wrong clock domain; see
+  [PORTING_SUMMARY.md §16](PORTING_SUMMARY.md).)
+- `vendor_request.py` — enumerates and handles vendor requests (LED
+  control); verified with `examples/test_vendor_request.py`.
+- `acm_serial.py` — CDC-ACM virtual serial loopback; verified with
+  `examples/test_acm_serial.py`.
+- `isochronous_count.py` — isochronous-IN counter; verified at High Speed
+  with `examples/test_isochronous_count.py` (3×1024 bytes/microframe).
+  Host test also supports Full Speed (1023 bytes/frame).
 
 High Speed (chirp) is not yet reliable across examples/bitstreams —
 a device that comes up at Full Speed remains usable at FS. A known
@@ -127,6 +141,7 @@ Hardware-specific code (clocking, ULPI hookup, diagnostic LEDs)
 is factored out into [examples/terasic_deca_common.py](examples/terasic_deca_common.py):
 
 ```bash
+# High Speed (default)
 python examples/counter_device.py       --deca --cpu-type=None --build
 python examples/simple_device.py        --deca --cpu-type=None --build
 python examples/vendor_request.py       --deca --cpu-type=None --build
@@ -135,6 +150,10 @@ python examples/interrupt_device.py     --deca --cpu-type=None --build
 python examples/isochronous_count.py    --deca --cpu-type=None --build
 python examples/stress_test_device.py   --deca --cpu-type=None --build
 python examples/acm_serial.py           --deca --cpu-type=None --build
+
+# Full Speed
+LITEUSB_FULL_SPEED=1 python examples/simple_device.py --deca --cpu-type=None --build
+
 # load build/terasic_deca/gateware/terasic_deca.sof via JTAG (quartus_pgm)
 $ lsusb -d 1209:0001
 Bus 005 Device 023: ID 1209:0001 Generic pid.codes Test PID

@@ -252,6 +252,68 @@ not a handshake ACK (LUNA harness semantics). The port checked
 subsequent token went to address 0 while the device sat at its new
 address — all post-enumeration device tests timed out.
 
+### 16. `TransactionalizedFIFO` and `ConstantStreamGenerator` memory ports in wrong clock domain
+
+**Files:** `gateware/memory/__init__.py`, `gateware/stream/generator.py`
+
+`Memory.get_port()` defaults to `clock_domain="sync"`. The
+`TransactionalizedFIFO` accepted a `domain` parameter (default `"usb"`)
+and used it for all pointer logic (`self.sync.usb`), but the Memory
+read/write ports were created without `clock_domain=`, so they clocked
+on `sync` (system clock, e.g. 50 MHz) while addresses/data were driven
+from `usb` (60 MHz ULPI). This is a classic CDC mismatch: on real
+hardware the FIFO memory is clocked on the wrong domain, causing data
+corruption (skipped/duplicated bytes). Simulation never caught it
+because the migen simulator handles cross-domain memory access
+gracefully when only one domain writes.
+
+The same bug existed in `ConstantStreamGenerator` — the ROM read port
+defaulted to `sync` while the FSM ran in the configured domain.
+
+**Fix:** `self.rom.get_port(clock_domain=self._domain)` in
+`ConstantStreamGenerator`; `memory.get_port(clock_domain=self.domain)`
+in `TransactionalizedFIFO`. This is the same class of bug as §9
+(descriptor ROM) and §10 (StreamSerializer FSM), but in the FIFO and
+stream-generator modules.
+
+This was the root cause of the bulk-OUT loopback corruption
+(`stream_out_device.py`): the `USBStreamOutEndpoint` FIFO clocked its
+internal Memory on `sync` while the rest of the endpoint ran on `usb`,
+so long bulk-OUT packets lost/duplicated bytes.
+
+### 17. `full_speed_only` truthiness bug in examples
+
+**Files:** `examples/counter_device.py`, `interrupt_device.py`,
+`isochronous_count.py`, `stress_test_device.py`
+
+`1 if os.getenv('LITEUSB_FULL_SPEED', '0') else 0` always evaluated to
+`1` because `'0'` is a non-empty string, which is truthy in Python. This
+forced `full_speed_only=1`, trapping every device at Full Speed. At FS,
+the isochronous endpoint declaring 3×1024 bytes/microframe (HS-only) is
+invalid → the kernel rejected transfers with `LIBUSB_ERROR_INVALID_PARAM`.
+
+**Fix:** changed to `int(os.getenv('LITEUSB_FULL_SPEED', '0'))` in all
+affected examples (matching the pattern already used in
+`simple_device.py` and `stream_out_device.py`).
+
+### 18. Examples refactored: High Speed default, Full Speed opt-in
+
+All examples now default to **High Speed** with speed-appropriate
+endpoint parameters. Set `LITEUSB_FULL_SPEED=1` to target Full Speed.
+Endpoint `wMaxPacketSize` and gateware `max_packet_size` are selected
+automatically:
+
+| Example | HS (default) | FS (`LITEUSB_FULL_SPEED=1`) |
+|---------|-------------|---------------------------|
+| bulk endpoints | 512 bytes | 64 bytes |
+| isochronous | 1024 bytes, 3 packets/microframe (3072 total) | 1023 bytes, 1 packet/frame |
+| interrupt | 64 bytes (valid both speeds) | 64 bytes |
+
+`USBACMSerialDevice` (gateware) gained a `full_speed_only` signal
+passed through to the underlying `USBDevice`. The isochronous host test
+(`test_isochronous_count.py`) now auto-detects the device speed and
+uses the correct packet size/count.
+
 ## Hardware Validation
 
 Validated on a **Terasic DECA (MAX10) + TUSB1210 ULPI PHY** target: full-speed connect, high-speed chirp, control-endpoint enumeration and bulk streaming all work. Board support is factored into `examples/terasic_deca_common.py`; every example builds for the board with `--deca`.
@@ -262,35 +324,26 @@ Validated on a **Terasic DECA (MAX10) + TUSB1210 ULPI PHY** target: full-speed c
 |---------|-----------|--------|
 | `counter_device.py` | `test_counter_device.py` | PASS (bulk-IN monotonic stream) |
 | `interrupt_device.py` | `test_interrupt_device.py` | PASS |
-| `simple_device.py` | `test_simple_device.py` | PASS (enumeration, strings, EP0) |
+| `simple_device.py` | `test_simple_device.py` | PASS (enumeration, strings, EP0, HS) |
 | `vendor_request.py` | `test_vendor_request.py` | PASS (vendor requests, LED control) |
-| `stream_out_device.py` | `test_stream_out_device.py` | loopback data corrupted (~every 6th byte), under debug |
-| `stress_test_device.py` | `test_stress_test_device.py` | EPIPE on first read (likely fixed by #13, needs retest) |
-| `isochronous_count.py` | `test_isochronous_count.py` | enumerates FS only (iso needs HS) |
+| `acm_serial.py` | `test_acm_serial.py` | PASS (CDC-ACM echo) |
+| `stream_out_device.py` | `test_stream_out_device.py` | PASS (bulk-OUT → IN loopback, after §16 CDC fix) |
+| `stress_test_device.py` | `test_stress_test_device.py` | EPIPE on first read (likely fixed by §13+§16, needs retest) |
+| `isochronous_count.py` | `test_isochronous_count.py` | PASS (HS, 3×1024/microframe, monotonic counter verified) |
 
 Known open issues:
 
-- **Long bulk-OUT reception corrupt on the DECA/TUSB1210 setup**:
-  loopback echo loses/dups bytes (device computes a valid CRC over the
-  corrupted payload, so it is digital, pre-CRC). **The original LUNA
-  `loopback.py` example built natively for the same board fails the same
-  way** (overflow/zero data), so this is NOT a liteusb port bug — it is
-  a LUNA-gateware/TUSB1210 interaction (or PHY-level issue) that only
-  shows for long bulk-OUT packets: control transfers, bulk/interrupt/iso
-  IN streaming, and the LUNA DECA audio interface (iso IN) all work on
-  the same board. All simulation tests — full-device loopback with
-  rx_valid gaps, TX throttling, ULPI-translator-level feeds — pass, so
-  the trigger is not yet covered by simulation. ULPI I/O timing per the
-  datasheet was analyzed (TX comb path ~11.5ns, ~5ns slower than the
-  LUNA reference build's fit) but phase sweeps, physical synthesis, and
-  output registration did not change the behavior.
+- **Bulk-OUT loopback corruption** — **fixed** (§16: `TransactionalizedFIFO`
+  Memory ports were clocked on `sync` instead of `usb`). `stream_out_device.py`
+  loopback and ACM echo now verified working on hardware.
 - **Autosuspend**: after ~2s of bus idle the host suspends the device and
   resume does not recover (transfers fail until replug).
 - **Unclaimed control requests** NAK forever instead of STALLing (host
   sees a timeout instead of a stall).
 - **HS chirp unreliable**: some bitstreams enumerate at High Speed, some
   only Full Speed; the PHY clock/PLL phase has been ruled out, root cause
-  open.
+  open. (The isochronous example does enumerate and pass at HS on the
+  current setup, so HS chirp works at least sometimes.)
 - **ISSP broken on MAX10**: instantiating `altsource_probe` prevents the
   usb PLL from locking (Quartus 21.1); the `--with-issp` flag is
   currently unusable.
