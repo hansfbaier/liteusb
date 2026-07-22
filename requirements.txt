@@ -1,0 +1,11 @@
+#
+# LiteUSB — small footprint and configurable USB core for LiteX
+# Python dependencies
+#
+# Install:
+#   pip install -r requirements.txt
+#
+
+migen
+litex
+usb-protocol
