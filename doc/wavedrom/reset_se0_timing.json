@@ -1,0 +1,43 @@
+{
+  "head": {
+    "text": "test_full_speed_reset: SE0 held >2.5\u00b5s triggers bus_reset"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p.................."
+    },
+    {
+      "name": "line_state",
+      "wave": "2.3...............2",
+      "data": [
+        "0b01(J)",
+        "0b00(SE0)",
+        "0b01(J)"
+      ]
+    },
+    {
+      "name": "bus_reset",
+      "wave": "0....10..........."
+    },
+    {
+      "name": "se0_timer",
+      "wave": "x.2.3.4.5........x",
+      "data": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "...\u22652.5\u00b5s"
+      ]
+    },
+    {
+      "name": "operating_mode",
+      "wave": "x.2.3.............",
+      "data": [
+        "NORMAL",
+        "CHIRP"
+      ]
+    }
+  ]
+}

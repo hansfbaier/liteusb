@@ -1,0 +1,54 @@
+{
+  "head": {
+    "text": "test_interrupted_read: DIR mid-read \u2192 ulpi_out_req dropped, then re-driven"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p................"
+    },
+    {
+      "name": "read_request",
+      "wave": "0.10............."
+    },
+    {
+      "name": "busy",
+      "wave": "0.1..........0..."
+    },
+    {
+      "name": "ulpi_out_req",
+      "wave": "0.1.0..1......0."
+    },
+    {
+      "name": "ulpi_dir",
+      "wave": "0....10..0......."
+    },
+    {
+      "name": "ulpi_data_out",
+      "wave": "x.2.3..2.......x",
+      "data": [
+        "CMD",
+        "NOP",
+        "CMD(re-drv)"
+      ]
+    },
+    {
+      "name": "ulpi_nxt",
+      "wave": "0........10......"
+    },
+    {
+      "name": "read_data",
+      "wave": "x.........2....x",
+      "data": [
+        "0x07"
+      ]
+    },
+    {
+      "name": "done",
+      "wave": "0.........10....."
+    }
+  ],
+  "foot": {
+    "text": "DIR high \u2192 ulpi_out_req dropped. DIR low \u2192 command re-driven \u2192 read completes."
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "head": {
+    "text": "test_register_read: ULPIRegisterWindow read flow (REG_READ=0xC0)"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p..........."
+    },
+    {
+      "name": "read_request",
+      "wave": "0.10........"
+    },
+    {
+      "name": "busy",
+      "wave": "0.1.........0"
+    },
+    {
+      "name": "ulpi_data_out",
+      "wave": "x.2.3.4....x",
+      "data": [
+        "0xC0|addr",
+        "NOP",
+        "NOP(turn)"
+      ]
+    },
+    {
+      "name": "ulpi_out_req",
+      "wave": "0.1......0."
+    },
+    {
+      "name": "ulpi_nxt",
+      "wave": "0..10......."
+    },
+    {
+      "name": "ulpi_dir",
+      "wave": "0............"
+    },
+    {
+      "name": "read_data",
+      "wave": "x.......2..x",
+      "data": [
+        "0x07"
+      ]
+    },
+    {
+      "name": "done",
+      "wave": "0.......10.."
+    }
+  ],
+  "foot": {
+    "text": "Command phase (REG_READ|addr) \u2192 NXT \u2192 turnaround \u2192 data latch \u2192 done strobe."
+  }
+}

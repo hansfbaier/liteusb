@@ -1,0 +1,66 @@
+{
+  "head": {
+    "text": "USBDataPacketDeserializer \u2014 4-byte packet capture"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p............"
+    },
+    {
+      "name": "rx_active",
+      "wave": "0.1.........0"
+    },
+    {
+      "name": "rx_data",
+      "wave": "2.3.4.5.6...2",
+      "data": [
+        "SYNC",
+        "PID",
+        "B0",
+        "B1",
+        "B2",
+        "CRC"
+      ]
+    },
+    {
+      "name": "new_packet",
+      "wave": "0........10.."
+    },
+    {
+      "name": "length",
+      "wave": "x........2x..",
+      "data": [
+        "4"
+      ]
+    },
+    {
+      "name": "packet[0]",
+      "wave": "x........2x..",
+      "data": [
+        "B0"
+      ]
+    },
+    {
+      "name": "packet[1]",
+      "wave": "x........3x..",
+      "data": [
+        "B1"
+      ]
+    },
+    {
+      "name": "packet[2]",
+      "wave": "x........4x..",
+      "data": [
+        "B2"
+      ]
+    },
+    {
+      "name": "packet[3]",
+      "wave": "x........5x..",
+      "data": [
+        "B3"
+      ]
+    }
+  ]
+}

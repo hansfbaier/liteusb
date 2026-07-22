@@ -1,0 +1,44 @@
+{
+  "head": {
+    "text": "test_fs_interpacket_delay: 10-cycle interpacket gap at Full Speed"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p..............."
+    },
+    {
+      "name": "speed",
+      "wave": "2...............",
+      "data": [
+        "FULL(12Mbps)"
+      ]
+    },
+    {
+      "name": "setup_pid",
+      "wave": "0.10............"
+    },
+    {
+      "name": "data_pid",
+      "wave": "0..........10.."
+    },
+    {
+      "name": "ack",
+      "wave": "0............10."
+    },
+    {
+      "name": "delay_count",
+      "wave": "x.3.4.5.6......x",
+      "data": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "...10"
+      ]
+    }
+  ],
+  "foot": {
+    "text": "~10 cycles (2.5\u00b5s) between SETUP token and ACK handshake at FS."
+  }
+}

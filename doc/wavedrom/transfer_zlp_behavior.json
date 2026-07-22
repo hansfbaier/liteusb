@@ -1,0 +1,39 @@
+{
+  "head": {
+    "text": "test_zlp_generation: full last-packet \u2192 ZLP; short last-packet \u2192 no ZLP"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p....................."
+    },
+    {
+      "name": "transfer.last",
+      "wave": "0.....1.0...........1."
+    },
+    {
+      "name": "token.is_in",
+      "wave": "0......1.0....1.0....1"
+    },
+    {
+      "name": "tx.valid",
+      "wave": "0.......1.0....1.0...1"
+    },
+    {
+      "name": "tx.last",
+      "wave": "0.......1.0....1.0...1"
+    },
+    {
+      "name": "packet_size",
+      "wave": "x.......2x....3x....",
+      "data": [
+        "8(full)",
+        "ZLP=0",
+        "3(short)"
+      ]
+    }
+  ],
+  "foot": {
+    "text": "Full 8-byte last \u2192 ZLP after. Short 3-byte last \u2192 finishes without ZLP."
+  }
+}

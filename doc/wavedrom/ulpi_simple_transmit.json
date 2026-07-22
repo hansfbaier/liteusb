@@ -1,0 +1,46 @@
+{
+  "head": {
+    "text": "test_simple_transmit: ULPITransmitTranslator SOF packet (0xA5)"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p........"
+    },
+    {
+      "name": "tx_valid",
+      "wave": "0.10....."
+    },
+    {
+      "name": "tx_data",
+      "wave": "x.2x.....",
+      "data": [
+        "0xA5"
+      ]
+    },
+    {
+      "name": "ulpi_data_out",
+      "wave": "x.2.3....",
+      "data": [
+        "CMD|PID",
+        "0x11"
+      ]
+    },
+    {
+      "name": "ulpi_out_req",
+      "wave": "0.10....."
+    },
+    {
+      "name": "ulpi_nxt",
+      "wave": "0..10...."
+    },
+    {
+      "name": "ulpi_stp",
+      "wave": "0....10.."
+    },
+    {
+      "name": "tx_ready",
+      "wave": "0..10...."
+    }
+  ]
+}

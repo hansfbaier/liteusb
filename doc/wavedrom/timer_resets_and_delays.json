@@ -1,0 +1,30 @@
+{
+  "head": {
+    "text": "test_resets_and_delays: FS interpacket timing \u2192 tx_allowed, tx_timeout, rx_timeout"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p................................"
+    },
+    {
+      "name": "start",
+      "wave": "0.10..........................."
+    },
+    {
+      "name": "tx_allowed",
+      "wave": "0..........10..............."
+    },
+    {
+      "name": "tx_timeout",
+      "wave": "0........................10."
+    },
+    {
+      "name": "rx_timeout",
+      "wave": "0.................................10"
+    }
+  ],
+  "foot": {
+    "text": "FS speed: tx_allowed at ~10 cycles, tx_timeout at ~32, rx_timeout at ~80."
+  }
+}

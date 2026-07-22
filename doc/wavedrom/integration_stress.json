@@ -1,0 +1,46 @@
+{
+  "head": {
+    "text": "test_usb2_stress: constant IN streaming, DATA toggle across 4 rounds"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p......................"
+    },
+    {
+      "name": "token.is_in",
+      "wave": "0.10.10.10.10........."
+    },
+    {
+      "name": "tx.valid",
+      "wave": "0..10..10..10..10......"
+    },
+    {
+      "name": "data_pid",
+      "wave": "x..2...3...2...3.......",
+      "data": [
+        "DATA0",
+        "DATA1",
+        "DATA0",
+        "DATA1"
+      ]
+    },
+    {
+      "name": "tx.payload",
+      "wave": "x..2...3...2...3.......",
+      "data": [
+        "pkt0",
+        "pkt1",
+        "pkt2",
+        "pkt3"
+      ]
+    },
+    {
+      "name": "ack",
+      "wave": "0...1...1...1...1......"
+    }
+  ],
+  "foot": {
+    "text": "Four IN tokens, four packets, DATA0/DATA1 toggle, all-zero payload verified."
+  }
+}

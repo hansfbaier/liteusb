@@ -1,0 +1,37 @@
+{
+  "head": {
+    "text": "test_zlp: Zero-Length Packet (DATA1 + CRC16 only)"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p.........."
+    },
+    {
+      "name": "rx_active",
+      "wave": "0.1......0"
+    },
+    {
+      "name": "rx_valid",
+      "wave": "0.1.0...0"
+    },
+    {
+      "name": "rx_data",
+      "wave": "2.3.4...2",
+      "data": [
+        "SYNC",
+        "PID=0x4B",
+        "CRC16_lo",
+        "CRC16_hi"
+      ]
+    },
+    {
+      "name": "stream.valid",
+      "wave": "0........."
+    },
+    {
+      "name": "packet_complete",
+      "wave": "0......10."
+    }
+  ]
+}

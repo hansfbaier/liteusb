@@ -1,0 +1,49 @@
+{
+  "head": {
+    "text": "USBDataPacketGenerator \u2014 8-byte stream to TX packet"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p............."
+    },
+    {
+      "name": "stream.first",
+      "wave": "0.10.........."
+    },
+    {
+      "name": "stream.last",
+      "wave": "0...........10"
+    },
+    {
+      "name": "stream.valid",
+      "wave": "0...........10"
+    },
+    {
+      "name": "stream.payload",
+      "wave": "x.4..........x",
+      "data": [
+        "0xAA",
+        "0xBB",
+        "..."
+      ]
+    },
+    {
+      "name": "tx.valid",
+      "wave": "0..1.........0"
+    },
+    {
+      "name": "tx.data",
+      "wave": "x..4.........x",
+      "data": [
+        "PID=0xC3",
+        "8 bytes",
+        "CRC16"
+      ]
+    },
+    {
+      "name": "stream.ready",
+      "wave": "0..1.........0"
+    }
+  ]
+}

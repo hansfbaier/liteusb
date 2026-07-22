@@ -1,0 +1,42 @@
+{
+  "head": {
+    "text": "test_long_descriptor: Configuration descriptor with 30 endpoints"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p...................."
+    },
+    {
+      "name": "tx.valid",
+      "wave": "0..1...............0"
+    },
+    {
+      "name": "tx.first",
+      "wave": "0..10..............."
+    },
+    {
+      "name": "tx.last",
+      "wave": "0..................10"
+    },
+    {
+      "name": "tx.payload",
+      "wave": "x..2...............x",
+      "data": [
+        "cfg[0:8]",
+        "...",
+        "cfg[end-1]"
+      ]
+    },
+    {
+      "name": "descriptor_length",
+      "wave": "x.2...............x",
+      "data": [
+        "512+"
+      ]
+    }
+  ],
+  "foot": {
+    "text": "Long config descriptor (15 IN + 15 OUT endpoints) spans multiple packets."
+  }
+}

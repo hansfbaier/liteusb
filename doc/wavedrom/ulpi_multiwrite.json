@@ -1,0 +1,55 @@
+{
+  "head": {
+    "text": "test_multiwrite_behavior: ULPIControlTranslator \u2014 func ctrl + OTG ctrl"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p...................."
+    },
+    {
+      "name": "op_mode",
+      "wave": "2.2.2..3............",
+      "data": [
+        "00",
+        "01",
+        "10"
+      ]
+    },
+    {
+      "name": "dp_pulldown",
+      "wave": "0......1..........."
+    },
+    {
+      "name": "dm_pulldown",
+      "wave": "0......1..........."
+    },
+    {
+      "name": "reg_busy",
+      "wave": "0.1.0....1.0......."
+    },
+    {
+      "name": "reg_addr",
+      "wave": "x.2x....3x.......",
+      "data": [
+        "0x04(func)",
+        "0x0A(OTG)"
+      ]
+    },
+    {
+      "name": "reg_wdata",
+      "wave": "x.2x....3x...",
+      "data": [
+        "0x59",
+        "0x00"
+      ]
+    },
+    {
+      "name": "done",
+      "wave": "0.......10.....10...."
+    }
+  ],
+  "foot": {
+    "text": "Two sequenced writes: function control (0x04\u21920x59) then OTG control (0x0A\u21920x00)."
+  }
+}

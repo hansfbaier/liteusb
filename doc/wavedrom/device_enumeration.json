@@ -1,0 +1,52 @@
+{
+  "head": {
+    "text": "test_enumeration: Full enumeration \u2014 GET_DESCRIPTOR, SET_ADDRESS, SET_CONFIG"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p..................."
+    },
+    {
+      "name": "ep0_state",
+      "wave": "2.3.4.5.2.3.4.5.2.",
+      "data": [
+        "SETUP",
+        "DATA_IN",
+        "STATUS_OUT",
+        "IDLE",
+        "SETUP",
+        "DATA_IN",
+        "STATUS_OUT",
+        "IDLE"
+      ]
+    },
+    {
+      "name": "address",
+      "wave": "2.2.........3.......",
+      "data": [
+        "0",
+        "0x31"
+      ]
+    },
+    {
+      "name": "config",
+      "wave": "2.2.3...............",
+      "data": [
+        "0",
+        "1"
+      ]
+    },
+    {
+      "name": "descriptor_rq",
+      "wave": "2.2.2..............",
+      "data": [
+        "DEVICE",
+        "CONFIG"
+      ]
+    }
+  ],
+  "foot": {
+    "text": "1. GET_DESCRIPTOR(DEVICE) \u2192 2. SET_ADDRESS(0x31) \u2192 3. SET_CONFIGURATION(1)"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "head": {
+    "text": "test_decode: ULPIRxEventDecoder \u2014 DIR+NXT ignored; DIR alone \u2192 rx_active"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p.........."
+    },
+    {
+      "name": "ulpi_dir",
+      "wave": "0.1.0.1...."
+    },
+    {
+      "name": "ulpi_nxt",
+      "wave": "0.1.0.0...."
+    },
+    {
+      "name": "ulpi_data_i",
+      "wave": "x.2.3.4x..",
+      "data": [
+        "data",
+        "rx_cmd"
+      ]
+    },
+    {
+      "name": "last_rx_command",
+      "wave": "x.2.2.3x..",
+      "data": [
+        "N/A",
+        "0x1E"
+      ]
+    },
+    {
+      "name": "line_state",
+      "wave": "x.2.2.3x..",
+      "data": [
+        "XX",
+        "0b10"
+      ]
+    },
+    {
+      "name": "vbus_valid",
+      "wave": "0.......1."
+    },
+    {
+      "name": "rx_active",
+      "wave": "0.......10"
+    }
+  ],
+  "foot": {
+    "text": "DIR+NXT together \u2192 ignored. DIR only \u2192 RxCmd decoded: line_state, vbus, rx_active."
+  }
+}

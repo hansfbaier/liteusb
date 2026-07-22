@@ -186,6 +186,15 @@ builder = Builder(soc)
 builder.build()
 ```
 
+[> Documentation
+----------------
+
+- **[Architecture Reference](doc/architecture.html)** — Complete HTML documentation
+  with architecture overview, per-module descriptions, USB 2.0 spec quotes, and
+  interactive WaveDrom timing diagrams for every unit test.
+  *(Open locally or on [GitHub Pages](https://hansfbaier.github.io/liteusb/doc/architecture.html)
+  after cloning.)*
+
 [> Tests
 --------
 

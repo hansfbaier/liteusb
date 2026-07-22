@@ -1,0 +1,55 @@
+{
+  "head": {
+    "text": "USBDataPacketReceiver \u2014 DATA0 + 8 bytes + CRC16"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p.............."
+    },
+    {
+      "name": "rx_active",
+      "wave": "0.1...........0"
+    },
+    {
+      "name": "rx_valid",
+      "wave": "0.1.0.....1...0"
+    },
+    {
+      "name": "rx_data",
+      "wave": "2.3.4.........2",
+      "data": [
+        "SYNC",
+        "PID=0xC3",
+        "payload+CRC",
+        "idle"
+      ]
+    },
+    {
+      "name": "stream.valid",
+      "wave": "0........10...."
+    },
+    {
+      "name": "stream.next",
+      "wave": "0........1.0..."
+    },
+    {
+      "name": "stream.payload",
+      "wave": "x........2x....",
+      "data": [
+        "0xAA"
+      ]
+    },
+    {
+      "name": "packet_complete",
+      "wave": "0.........10..."
+    },
+    {
+      "name": "active_pid",
+      "wave": "x........2x....",
+      "data": [
+        "DATA0"
+      ]
+    }
+  ]
+}

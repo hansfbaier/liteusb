@@ -1,0 +1,33 @@
+{
+  "head": {
+    "text": "test_short_setup_packet: truncated 4-byte setup \u2192 ignored"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p............."
+    },
+    {
+      "name": "rx_active",
+      "wave": "0.1...0......"
+    },
+    {
+      "name": "rx_data",
+      "wave": "2.3.4.......2",
+      "data": [
+        "SETUP PID",
+        "DATA0 PID",
+        "B0",
+        "B1"
+      ]
+    },
+    {
+      "name": "packet.received",
+      "wave": "0............."
+    },
+    {
+      "name": "error",
+      "wave": "0........10..."
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "head": {
+    "text": "USBOutStreamBoundaryDetector \u2014 first/last byte detection"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p.........."
+    },
+    {
+      "name": "unproc.valid",
+      "wave": "0.1......0."
+    },
+    {
+      "name": "unproc.payload",
+      "wave": "x.4......x.",
+      "data": [
+        "0xAA",
+        "0xBB",
+        "0xCC",
+        "0xDD"
+      ]
+    },
+    {
+      "name": "proc.valid",
+      "wave": "0...1.....0"
+    },
+    {
+      "name": "proc.payload",
+      "wave": "x...4....x.",
+      "data": [
+        "0xAA",
+        "0xBB",
+        "0xCC",
+        "0xDD"
+      ]
+    },
+    {
+      "name": "first",
+      "wave": "0....10...."
+    },
+    {
+      "name": "last",
+      "wave": "0........10"
+    }
+  ]
+}

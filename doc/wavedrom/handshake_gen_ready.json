@@ -1,0 +1,30 @@
+{
+  "head": {
+    "text": "test_already_ready: tx_ready=1 already high \u2192 single-cycle valid"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p...."
+    },
+    {
+      "name": "issue_ack",
+      "wave": "0.10."
+    },
+    {
+      "name": "tx.valid",
+      "wave": "0..10"
+    },
+    {
+      "name": "tx.data",
+      "wave": "x..2x",
+      "data": [
+        "0xD2(ACK)"
+      ]
+    },
+    {
+      "name": "tx.ready",
+      "wave": "1...."
+    }
+  ]
+}

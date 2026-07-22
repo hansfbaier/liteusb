@@ -1,0 +1,31 @@
+{
+  "head": {
+    "text": "test_nak_when_not_ready: IN token with empty buffer \u2192 NAK"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p........"
+    },
+    {
+      "name": "token.is_in",
+      "wave": "0.10....."
+    },
+    {
+      "name": "tx.valid",
+      "wave": "0........"
+    },
+    {
+      "name": "nak",
+      "wave": "0..10...."
+    },
+    {
+      "name": "ack",
+      "wave": "0........"
+    },
+    {
+      "name": "active",
+      "wave": "0........"
+    }
+  ]
+}

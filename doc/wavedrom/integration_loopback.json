@@ -1,0 +1,42 @@
+{
+  "head": {
+    "text": "test_usb2_loopback: OUT \u2192 bulk endpoint \u2192 IN loopback"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p.................."
+    },
+    {
+      "name": "token_pid",
+      "wave": "2.3..2..3.........2",
+      "data": [
+        "OUT",
+        "DATA0",
+        "IN",
+        "DATA1"
+      ]
+    },
+    {
+      "name": "rx_data",
+      "wave": "x.2x..............x",
+      "data": [
+        "pkt"
+      ]
+    },
+    {
+      "name": "tx_data",
+      "wave": "x.......2.........x",
+      "data": [
+        "pkt(echo)"
+      ]
+    },
+    {
+      "name": "ack",
+      "wave": "0....1.0.1.........."
+    }
+  ],
+  "foot": {
+    "text": "OUT token \u2192 DATA0 packet \u2192 ACK. IN token \u2192 DATA1 packet (echo) \u2192 ACK."
+  }
+}

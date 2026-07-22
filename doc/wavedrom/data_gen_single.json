@@ -1,0 +1,47 @@
+{
+  "head": {
+    "text": "test_single_byte: 1-byte stream \u2192 1-byte packet"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p........"
+    },
+    {
+      "name": "stream.first",
+      "wave": "0.10....."
+    },
+    {
+      "name": "stream.last",
+      "wave": "0.10....."
+    },
+    {
+      "name": "stream.valid",
+      "wave": "0.10....."
+    },
+    {
+      "name": "stream.payload",
+      "wave": "x.2x.....",
+      "data": [
+        "0x55"
+      ]
+    },
+    {
+      "name": "tx.valid",
+      "wave": "0..1....0"
+    },
+    {
+      "name": "tx.data",
+      "wave": "x..4...x",
+      "data": [
+        "PID",
+        "0x55",
+        "CRC"
+      ]
+    },
+    {
+      "name": "stream.ready",
+      "wave": "0..1....0"
+    }
+  ]
+}

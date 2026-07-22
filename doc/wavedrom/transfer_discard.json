@@ -1,0 +1,43 @@
+{
+  "head": {
+    "text": "test_discard: discard drops queued packet"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p................"
+    },
+    {
+      "name": "transfer.valid",
+      "wave": "0.10.....10......"
+    },
+    {
+      "name": "discard",
+      "wave": "0......10........"
+    },
+    {
+      "name": "token.is_in",
+      "wave": "0.......1.0.....1"
+    },
+    {
+      "name": "tx.valid",
+      "wave": "0...............1"
+    },
+    {
+      "name": "data_pid",
+      "wave": "x.2........3....2",
+      "data": [
+        "DATA0",
+        "DATA1",
+        "DATA0"
+      ]
+    },
+    {
+      "name": "ack",
+      "wave": "0................1"
+    }
+  ],
+  "foot": {
+    "text": "Packet1 ACKed \u2192 discard \u2192 Packet2 never sent. New buffer \u2192 DATA1."
+  }
+}

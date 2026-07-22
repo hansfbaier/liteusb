@@ -1,0 +1,48 @@
+{
+  "head": {
+    "text": "test_register_write: ULPIRegisterWindow write flow (REG_WRITE=0x80)"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p............"
+    },
+    {
+      "name": "write_request",
+      "wave": "0.10........."
+    },
+    {
+      "name": "busy",
+      "wave": "0.1..........0"
+    },
+    {
+      "name": "ulpi_data_out",
+      "wave": "x.2.3.3.4...x",
+      "data": [
+        "0x80|addr",
+        "data",
+        "NOP",
+        "STP"
+      ]
+    },
+    {
+      "name": "ulpi_out_req",
+      "wave": "0.1.......0."
+    },
+    {
+      "name": "ulpi_nxt",
+      "wave": "0..10........"
+    },
+    {
+      "name": "ulpi_stop",
+      "wave": "0......10...."
+    },
+    {
+      "name": "done",
+      "wave": "0........10.."
+    }
+  ],
+  "foot": {
+    "text": "Command \u2192 data \u2192 NXT \u2192 STOP \u2192 done. addr=0x02, data=0xBC."
+  }
+}

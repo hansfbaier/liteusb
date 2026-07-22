@@ -1,0 +1,55 @@
+{
+  "head": {
+    "text": "test_simple_data_generation: 8-byte stream \u2192 full packet with CRC16"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p.............."
+    },
+    {
+      "name": "stream.first",
+      "wave": "0.10..........."
+    },
+    {
+      "name": "stream.last",
+      "wave": "0...........10"
+    },
+    {
+      "name": "stream.valid",
+      "wave": "0...........10"
+    },
+    {
+      "name": "stream.payload",
+      "wave": "x.4..........x",
+      "data": [
+        "B0",
+        "B1",
+        "B2",
+        "...",
+        "B7"
+      ]
+    },
+    {
+      "name": "tx.valid",
+      "wave": "0..1..........0"
+    },
+    {
+      "name": "tx.data",
+      "wave": "x..5.........x",
+      "data": [
+        "PID",
+        "B0..B7",
+        "CRC_lo",
+        "CRC_hi"
+      ]
+    },
+    {
+      "name": "stream.ready",
+      "wave": "0..1..........0"
+    }
+  ],
+  "foot": {
+    "text": "PID=0xC3 (DATA0) \u2192 8 payload bytes \u2192 CRC16 (0xEB, 0xBC)"
+  }
+}

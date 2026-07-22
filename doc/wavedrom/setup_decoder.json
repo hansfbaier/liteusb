@@ -1,0 +1,33 @@
+{
+  "head": {
+    "text": "USBSetupDecoder \u2014 8-byte setup packet decode"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p..............."
+    },
+    {
+      "name": "rx_active",
+      "wave": "0.1......0.1..0"
+    },
+    {
+      "name": "rx_data",
+      "wave": "2.3......2.3..2",
+      "data": [
+        "SETUP PID",
+        "DATA0 PID",
+        "setup[0:7]",
+        "CRC"
+      ]
+    },
+    {
+      "name": "ack",
+      "wave": "0.........10...."
+    },
+    {
+      "name": "packet.received",
+      "wave": "0..........10..."
+    }
+  ]
+}

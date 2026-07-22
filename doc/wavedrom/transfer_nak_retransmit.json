@@ -1,0 +1,39 @@
+{
+  "head": {
+    "text": "test_normal_transfer: NAK \u2192 retransmit same PID"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p................"
+    },
+    {
+      "name": "token.is_in",
+      "wave": "0.10....10........"
+    },
+    {
+      "name": "tx.valid",
+      "wave": "0...1.0...1.0....."
+    },
+    {
+      "name": "data_pid",
+      "wave": "x...2x...2x.......",
+      "data": [
+        "DATA0",
+        "DATA0",
+        "DATA1"
+      ]
+    },
+    {
+      "name": "ack",
+      "wave": "0............10...."
+    },
+    {
+      "name": "nak",
+      "wave": "0.....10.........."
+    }
+  ],
+  "foot": {
+    "text": "First IN: NAKed \u2192 retransmit DATA0. Second IN: ACKed \u2192 advance to DATA1."
+  }
+}

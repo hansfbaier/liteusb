@@ -1,0 +1,35 @@
+{
+  "head": {
+    "text": "test_stall: STALL detection (PID 0x1E)"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p......"
+    },
+    {
+      "name": "rx_active",
+      "wave": "0.10..0"
+    },
+    {
+      "name": "rx_valid",
+      "wave": "0.10..0"
+    },
+    {
+      "name": "rx_data",
+      "wave": "2.3.2..2",
+      "data": [
+        "SYNC",
+        "0x1E(STALL)"
+      ]
+    },
+    {
+      "name": "detected.stall",
+      "wave": "0..10.."
+    },
+    {
+      "name": "detected.ack",
+      "wave": "0......"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "head": {
+    "text": "test_invalid_rx: corrupted CRC16 \u2192 new_packet=0"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p............"
+    },
+    {
+      "name": "rx_active",
+      "wave": "0.1.........0"
+    },
+    {
+      "name": "rx_data",
+      "wave": "2.3.4.5.6...2",
+      "data": [
+        "SYNC",
+        "PID",
+        "B0",
+        "B1",
+        "0xFF",
+        "0xFF"
+      ]
+    },
+    {
+      "name": "new_packet",
+      "wave": "0............"
+    },
+    {
+      "name": "crc_valid",
+      "wave": "0............"
+    }
+  ]
+}

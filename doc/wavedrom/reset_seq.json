@@ -1,0 +1,44 @@
+{
+  "head": {
+    "text": "USBResetSequencer \u2014 Full Speed Reset to HS Detection"
+  },
+  "signal": [
+    {
+      "name": "clk",
+      "wave": "p............."
+    },
+    {
+      "name": "line_state",
+      "wave": "2.3..........2",
+      "data": [
+        "0b01(J)",
+        "0b00(SE0)",
+        "0b01(J)"
+      ]
+    },
+    {
+      "name": "vbus_connected",
+      "wave": "0.1..........."
+    },
+    {
+      "name": "bus_reset",
+      "wave": "0....10......."
+    },
+    {
+      "name": "current_speed",
+      "wave": "x.2...2x...2x.",
+      "data": [
+        "FULL",
+        "HIGH"
+      ]
+    },
+    {
+      "name": "operating_mode",
+      "wave": "x.2.....2x....",
+      "data": [
+        "NORMAL",
+        "CHIRP"
+      ]
+    }
+  ]
+}
