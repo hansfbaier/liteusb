@@ -1,28 +1,71 @@
-# LiteUSB
-
 ```
-              Copyright (c) 2020-2024 Great Scott Gadgets
-              Copyright (c) 2025-2026 Hans Baier
+    __    _ __       __  _______ ____
+   / /   (_) /____  / / / / ___// __ )
+  / /   / / __/ _ \/ / / /\__ \/ __  |
+ / /___/ / /_/  __/ /_/ /___/ / /_/ /
+/_____/_/\__/\___/\____//____/_____/
+
+  Copyright (c) 2020-2024 Great Scott Gadgets
+          Copyright (c) 2025-2026 Hans Baier
+
+ Small footprint and configurable USB device cores
+          powered by Migen & LiteX
 ```
 
-![License](https://img.shields.io/badge/License-BSD%203--Clause-orange.svg)
+[![](https://img.shields.io/badge/License-BSD%203--Clause-orange.svg)](#license)
 
-## Overview
+[> Intro
+--------
 
-**LiteUSB** is a small footprint and configurable USB device gateware library, originally developed as a port of [LUNA](https://github.com/greatscottgadgets/luna) from Amaranth HDL to Migen/LiteX. It provides a complete USB 2.0 device stack for FPGA designs, enabling easy integration of USB functionality into System-on-Chip (SoC) designs.
+LiteUSB is a small footprint and configurable USB device gateware library,
+originally developed as a port of [LUNA](https://github.com/greatscottgadgets/luna)
+from Amaranth HDL to Migen/LiteX. It provides a complete USB 2.0 device stack
+for FPGA designs.
 
-### Key Features
+LiteUSB is part of the LiteX ecosystem. Using Migen to describe the HDL allows
+the core to be highly configurable. It can be used as a LiteX library or
+integrated into standard design flows by generating Verilog RTL.
 
-- :heavy_check_mark: **USB 2.0 Device Support**: High-speed (480 Mbps) and full-speed (12 Mbps) operation
-- :heavy_check_mark: **Multiple PHY Interfaces**: ULPI and UTMI PHY support
-- :heavy_check_mark: **LiteX Integration**: Native integration with LiteX SoC framework
-- :heavy_check_mark: **Migen-based**: Uses Migen for hardware description
-- :heavy_check_mark: **Configurable**: Modular design allows selecting only needed components
-- :heavy_check_mark: **Standard Compliant**: Standard USB request handlers and descriptors
-- :heavy_check_mark: **Endpoint Support**: Control, Bulk, Interrupt, and Isochronous endpoints with speed-appropriate packet sizes
-- :heavy_check_mark: **Simulation Support**: Tested and verifiable with simulation
+[> Features
+-----------
 
-### Architecture
+- **USB 2.0 Device**: High-speed (480 Mbps) and full-speed (12 Mbps) operation.
+- **Multiple PHY Interfaces**: ULPI (external PHY) and UTMI (simulation).
+- **Endpoint Types**: Control, Bulk, Interrupt, and Isochronous.
+- **Migen-based**: Pure Migen HDL, no external dependencies.
+- **Standard Compliant**: Standard USB request handlers, descriptors, CRCs.
+- **Simulation Support**: Full test suite with device-level integration tests.
+- **CDC-ACM**: Built-in USB serial device (`liteusb.gateware.usb.devices.acm`).
+
+[> FPGA Proven
+--------------
+
+LiteUSB has been verified on the **Terasic DECA** (Intel MAX10 + TUSB1210
+ULPI PHY) with a Linux host:
+
+| Example | Description | Verified |
+|---------|-------------|----------|
+| `counter_device.py` | Bulk-IN monotonic counter | PASS |
+| `interrupt_device.py` | Interrupt-IN packets | PASS |
+| `simple_device.py` | Enumeration, strings, EP0 | PASS (HS) |
+| `stream_out_device.py` | Bulk-OUT → bulk-IN loopback | PASS |
+| `vendor_request.py` | Vendor requests, LED control | PASS |
+| `acm_serial.py` | CDC-ACM virtual serial loopback | PASS |
+| `stress_test_device.py` | Bulk-IN maximum rate streamer | PASS |
+| `isochronous_count.py` | Isochronous-IN counter | PASS (HS) |
+
+Known open issues:
+
+- **Autosuspend**: after ~2 s of bus idle, the host suspends the device and
+  resume does not recover (transfers fail until replug).
+- **Unclaimed control requests** NAK forever instead of STALLing.
+- **HS chirp unreliable**: some bitstreams enumerate at High Speed, some
+  only Full Speed. The PHY clock/PLL phase has been ruled out.
+- **ISSP broken on MAX10** (Quartus 21.1): `altsource_probe` prevents the
+  usb PLL from locking.
+
+[> Architecture
+---------------
 
 ```
                     +------------------+
@@ -50,102 +93,30 @@
     +---------------+ +-------------+ +-------------+
 ```
 
-## Installation
+[> Getting started
+------------------
 
-### Prerequisites
+1. Install Python 3.7+ and FPGA vendor development tools.
+2. Install Migen and LiteX by following the [LiteX installation guide](https://github.com/enjoy-digital/litex/wiki/Installation).
+3. Install `usb-protocol`: `pip install usb-protocol`.
 
-- Python 3.7+
-- Migen
-- LiteX
-- usb-protocol
-
-### Install from Source
+Build an example:
 
 ```bash
-# Clone the repository
-git clone https://github.com/hansfbaier/liteusb.git
-cd liteusb
-
-# Install dependencies and liteusb
-pip install -e .
-
-# Or install directly from PyPI (when available)
-pip install liteusb
-```
-
-### Using LiteX Setup Script
-
-If you're using the LiteX ecosystem, the recommended way to install is via the litex_setup script:
-
-```bash
-# Download and run the LiteX setup script
-wget https://raw.githubusercontent.com/enjoy-digital/litex/master/litex_setup.py
-chmod +x litex_setup.py
-./litex_setup.py --init --install --user
-```
-
-## Quick Start
-
-### Build the Examples
-
-All examples default to **High Speed** (512-byte bulk, 1024-byte
-isochronous, 3 packets/microframe).  Set `LITEUSB_FULL_SPEED=1` to
-target Full Speed (64-byte bulk, 1023-byte isochronous, 1 packet/frame).
-Endpoint descriptors and gateware parameters are adjusted automatically.
-
-```bash
-# High Speed (default)
 python examples/simple_device.py --build
-python examples/counter_device.py --build
-python examples/vendor_request.py --build
-python examples/stream_out_device.py --build
-python examples/interrupt_device.py --build
-python examples/isochronous_count.py --build
-python examples/stress_test_device.py --build
-python examples/acm_serial.py --build
-
-# Full Speed
-LITEUSB_FULL_SPEED=1 python examples/simple_device.py --build
 ```
 
-### Verified on Hardware
+All examples default to **High Speed** (512-byte bulk, 1024-byte isochronous,
+3 packets/microframe). Set `LITEUSB_FULL_SPEED=1` for Full Speed (64-byte bulk,
+1023-byte isochronous, 1 packet/frame).
 
-LiteUSB was validated on real hardware on the **Terasic DECA** board
-(Intel MAX10 FPGA + TUSB1210 ULPI PHY), Linux host:
-
-- `counter_device.py` — enumerates and streams the bulk-IN monotonic
-  counter; verified with `examples/test_counter_device.py`.
-- `interrupt_device.py` — enumerates and delivers interrupt-IN packets;
-  verified with `examples/test_interrupt_device.py`.
-- `simple_device.py` — enumerates (descriptors, strings, EP0 control);
-  verified with `examples/test_simple_device.py`, observed at High Speed.
-- `stream_out_device.py` — bulk-OUT → bulk-IN loopback; verified with
-  `examples/test_stream_out_device.py`. (Fixed: `TransactionalizedFIFO`
-  memory ports were in the wrong clock domain; see
-  [PORTING_SUMMARY.md §16](PORTING_SUMMARY.md).)
-- `vendor_request.py` — enumerates and handles vendor requests (LED
-  control); verified with `examples/test_vendor_request.py`.
-- `acm_serial.py` — CDC-ACM virtual serial loopback; verified with
-  `examples/test_acm_serial.py`.
-- `stress_test_device.py` — bulk-IN constant streamer at maximum rate;
-  verified with `examples/test_stress_test_device.py`. (Fixed: data-toggle
-  inversion, missing NAK, no FSM — see
-  [PORTING_SUMMARY.md §19](PORTING_SUMMARY.md).)
-- `isochronous_count.py` — isochronous-IN counter; verified at High Speed
-  with `examples/test_isochronous_count.py` (3×1024 bytes/microframe).
-  Host test also supports Full Speed (1023 bytes/frame).
-
-High Speed (chirp) is not yet reliable across examples/bitstreams —
-a device that comes up at Full Speed remains usable at FS. A known
-open issue: after ~2 s of bus idle the host autosuspends the device
-and resume does not recover (all further transfers fail) until replug.
+### Build for Terasic DECA
 
 All examples can be built as DECA bitstreams with the `--deca` flag.
-Hardware-specific code (clocking, ULPI hookup, diagnostic LEDs)
-is factored out into [examples/terasic_deca_common.py](examples/terasic_deca_common.py):
+Hardware-specific code (clocking, ULPI hookup, diagnostic LEDs) is factored
+into `examples/terasic_deca_common.py`:
 
 ```bash
-# High Speed (default)
 python examples/counter_device.py       --deca --cpu-type=None --build
 python examples/simple_device.py        --deca --cpu-type=None --build
 python examples/vendor_request.py       --deca --cpu-type=None --build
@@ -154,64 +125,45 @@ python examples/interrupt_device.py     --deca --cpu-type=None --build
 python examples/isochronous_count.py    --deca --cpu-type=None --build
 python examples/stress_test_device.py   --deca --cpu-type=None --build
 python examples/acm_serial.py           --deca --cpu-type=None --build
-
-# Full Speed
-LITEUSB_FULL_SPEED=1 python examples/simple_device.py --deca --cpu-type=None --build
-
-# load build/terasic_deca/gateware/terasic_deca.sof via JTAG (quartus_pgm)
-$ lsusb -d 1209:0001
-Bus 005 Device 023: ID 1209:0001 Generic pid.codes Test PID
 ```
 
+Load `build/terasic_deca/gateware/terasic_deca.sof` via JTAG (`quartus_pgm`).
+
 The shared target also provides `--debug-leds` (sticky diagnostic LEDs).
-A `--with-issp` flag (In-System Sources & Probes readout of the USB
-state over JTAG) exists but is currently **broken on the MAX10**: with
-`altsource_probe` instantiated the usb PLL never locks, for unknown
-reasons — do not use it. Note the PHY clocking gotcha documented in
-`terasic_deca_common.py`: the usb clock domain must be created with
+A `--with-issp` flag exists but is **broken on the MAX10** — the usb PLL
+never locks with `altsource_probe` instantiated.
+
+Note the PHY clocking gotcha: the usb clock domain must be created with
 `with_reset=False`, otherwise the PLL-lock-gated reset holds the PHY in
 reset and the clock loop never starts.
 
 ### Basic Usage
 
-See [examples/simple_device.py](examples/simple_device.py) for the complete working example:
-
 ```python
 from migen import *
-from liteusb import USBDevice, UTMIInterface
+from liteusb import USBDevice
 from usb_protocol.emitters import DeviceDescriptorCollection
 
 class MyUSBDevice(Module):
     def __init__(self, phy):
         self.submodules.usb = usb = USBDevice(bus=phy)
 
-        # Create descriptors
         descriptors = DeviceDescriptorCollection()
         with descriptors.DeviceDescriptor() as d:
             d.idVendor      = 0x1209
             d.idProduct     = 0x0001
-            d.bcdDevice     = 1.00
-            d.iManufacturer = "LiteUSB"
-            d.iProduct      = "My Device"
-            d.iSerialNumber = "0001"
             d.bNumConfigurations = 1
-
         with descriptors.ConfigurationDescriptor() as c:
             with c.InterfaceDescriptor() as i:
                 i.bInterfaceNumber = 0
-
                 with i.EndpointDescriptor() as e:
                     e.bEndpointAddress = 0x01
                     e.wMaxPacketSize   = 512
-
                 with i.EndpointDescriptor() as e:
                     e.bEndpointAddress = 0x81
                     e.wMaxPacketSize   = 512
 
-        # Add control endpoint
         usb.add_standard_control_endpoint(descriptors)
-
-        # Connect device
         self.comb += usb.connect.eq(1)
 ```
 
@@ -221,28 +173,41 @@ class MyUSBDevice(Module):
 from litex_boards.platforms import my_platform
 from litex.build.generic_platform import Pins, Subsignal, IOStandard
 
-# Create platform
 platform = my_platform.Platform()
-
-# Add USB PHY resource (if not already defined)
 platform.add_extension([
     ("usb", 0,
-        Subsignal("clk", Pins("A1")),
-        Subsignal("stp", Pins("B1")),
-        Subsignal("dir", Pins("C1")),
-        Subsignal("nxt", Pins("D1")),
+        Subsignal("clk",  Pins("A1")),
+        Subsignal("stp",  Pins("B1")),
+        Subsignal("dir",  Pins("C1")),
+        Subsignal("nxt",  Pins("D1")),
         Subsignal("data", Pins("E1 E2 E3 E4 E5 E6 E7 E8")),
         IOStandard("LVCMOS33"),
     ),
 ])
 
-# Build the design
 from litex.soc.integration.builder import Builder
 builder = Builder(soc)
 builder.build()
 ```
 
-## Available Modules
+[> Tests
+--------
+
+Unit tests are in `tests/`. To run all tests:
+
+```bash
+python3 -m pytest tests/ -v
+```
+
+Run individual test files:
+
+```bash
+python3 -m pytest tests/test_usb2_packet.py -v
+python3 -m pytest tests/test_usb2_transfer.py -v
+```
+
+[> Available Modules
+--------------------
 
 ### Core USB Stack
 
@@ -262,28 +227,19 @@ builder.build()
 
 | Module | Description |
 |--------|-------------|
-| `liteusb.gateware.usb.usb2.endpoints.stream` | Bulk/Interrupt stream endpoints (IN and OUT) |
-| `liteusb.gateware.usb.usb2.endpoints.isochronous` | Isochronous memory-mapped IN endpoint |
-| `liteusb.gateware.usb.usb2.endpoints.isochronous_stream_in` | Isochronous stream IN endpoint |
-| `liteusb.gateware.usb.usb2.endpoints.isochronous_stream_out` | Isochronous stream OUT endpoint |
-| `liteusb.gateware.usb.usb2.endpoints.status` | Signal/status IN endpoint (interrupt) |
+| `liteusb.gateware.usb.usb2.endpoints.stream` | Bulk/Interrupt stream endpoints |
+| `liteusb.gateware.usb.usb2.endpoints.isochronous` | Isochronous memory-mapped IN |
+| `liteusb.gateware.usb.usb2.endpoints.isochronous_stream_in` | Isochronous stream IN |
+| `liteusb.gateware.usb.usb2.endpoints.isochronous_stream_out` | Isochronous stream OUT |
+| `liteusb.gateware.usb.usb2.endpoints.status` | Signal/status IN endpoint |
 
 ### PHY Interfaces
 
 | Module | Description |
 |--------|-------------|
 | `liteusb.gateware.interface.ulpi` | ULPI PHY interface and translator |
-| `liteusb.gateware.interface.utmi` | UTMI/UTMI+ interface (simulation aid) |
-| `liteusb.gateware.interface.gateware_phy` | Pure gateware USB PHY (transmitter/receiver) |
-
-### Request Handlers
-
-| Module | Description |
-|--------|-------------|
-| `liteusb.gateware.usb.request.standard` | Standard USB request handler |
-| `liteusb.gateware.usb.request.control` | Control request handler base class |
-| `liteusb.gateware.usb.request.interface` | Request handler interface definitions |
-| `liteusb.gateware.usb.usb2.request` | Setup decoder, request handler multiplexer |
+| `liteusb.gateware.interface.utmi` | UTMI interface (simulation aid) |
+| `liteusb.gateware.interface.gateware_phy` | Pure gateware USB PHY |
 
 ### Devices
 
@@ -291,31 +247,22 @@ builder.build()
 |--------|-------------|
 | `liteusb.gateware.usb.devices.acm` | CDC-ACM USB serial device |
 
-### Utilities & Infrastructure
+### Utilities
 
 | Module | Description |
 |--------|-------------|
 | `liteusb.gateware.utils.cdc` | Clock domain crossing |
 | `liteusb.gateware.utils.bus` | Bus utilities (multiplexers) |
 | `liteusb.gateware.utils.io` | I/O utilities |
-| `liteusb.gateware.stream` | Stream interface definitions |
-| `liteusb.gateware.stream.generator` | StreamSerializer for data streaming |
+| `liteusb.gateware.stream.generator` | StreamSerializer |
 | `liteusb.gateware.stream.arbiter` | Stream arbiters |
 | `liteusb.gateware.memory` | Transactionalized FIFO |
 
-## Documentation
+[> License
+----------
 
-For more detailed documentation, examples, and API reference, see the source tree and example files in [examples/](examples/).
-
-### Related Projects
-
-- [LUNA](https://github.com/greatscottgadgets/luna) - Original Amaranth-based USB library
-- [LiteX](https://github.com/enjoy-digital/litex) - SoC builder framework
-- [Migen](https://github.com/m-labs/migen) - Python-based HDL
-
-## License
-
-This project is licensed under the **BSD 3-Clause License**. See the LICENSE file for details.
+LiteUSB is released under the **BSD 3-Clause License**. See the LICENSE file
+for details.
 
 ```
 Copyright (c) 2020-2024 Great Scott Gadgets <info@greatscottgadgets.com>
@@ -324,30 +271,22 @@ Copyright (c) 2025-2026 Hans Baier <foss@hans-baier.de>
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
 
-1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer.
-
+1. Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-
+   this list of conditions and the following disclaimer in the documentation.
 3. Neither the name of the copyright holder nor the names of its
    contributors may be used to endorse or promote products derived from
    this software without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.
 ```
 
-## Contact
+[> Contact
+----------
 
-- **Issues**: [GitHub Issues](https://github.com/hansfbaier/liteusb/issues)
-- **Email**: foss@hans-baier.de
+E-mail: foss [AT] hans-baier.de
+Issues: https://github.com/hansfbaier/liteusb/issues
