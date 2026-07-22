@@ -117,14 +117,14 @@ Hardware-specific code (clocking, ULPI hookup, diagnostic LEDs) is factored
 into `examples/terasic_deca_common.py`:
 
 ```bash
-python examples/counter_device.py       --deca --cpu-type=None --build
-python examples/simple_device.py        --deca --cpu-type=None --build
-python examples/vendor_request.py       --deca --cpu-type=None --build
-python examples/stream_out_device.py    --deca --cpu-type=None --build
-python examples/interrupt_device.py     --deca --cpu-type=None --build
-python examples/isochronous_count.py    --deca --cpu-type=None --build
-python examples/stress_test_device.py   --deca --cpu-type=None --build
-python examples/acm_serial.py           --deca --cpu-type=None --build
+python examples/counter_device.py       --deca --build
+python examples/simple_device.py        --deca --build
+python examples/vendor_request.py       --deca --build
+python examples/stream_out_device.py    --deca --build
+python examples/interrupt_device.py     --deca --build
+python examples/isochronous_count.py    --deca --build
+python examples/stress_test_device.py   --deca --build
+python examples/acm_serial.py           --deca --build
 ```
 
 Load `build/terasic_deca/gateware/terasic_deca.sof` via JTAG (`quartus_pgm`).
