@@ -54,15 +54,8 @@ ULPI PHY) with a Linux host:
 | `stress_test_device.py` | Bulk-IN maximum rate streamer | PASS |
 | `isochronous_count.py` | Isochronous-IN counter | PASS (HS) |
 
-Known open issues:
-
-- **Autosuspend**: after ~2 s of bus idle, the host suspends the device and
-  resume does not recover (transfers fail until replug).
-- **Unclaimed control requests** NAK forever instead of STALLing.
-- **HS chirp unreliable**: some bitstreams enumerate at High Speed, some
-  only Full Speed. The PHY clock/PLL phase has been ruled out.
-- **ISSP broken on MAX10** (Quartus 21.1): `altsource_probe` prevents the
-  usb PLL from locking.
+All eight examples verified on hardware.  Previously open issues
+(bulk-OUT corruption, autosuspend, STALL, HS chirp) have been resolved.
 
 [> Architecture
 ---------------
