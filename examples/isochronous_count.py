@@ -6,7 +6,11 @@
 # Copyright (c) 2026 Hans Baier <foss@hans-baier.de>
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Example: isochronous IN endpoint that sends a memory-like counter."""
+"""Example: isochronous IN endpoint that sends a memory-like counter.
+
+Defaults to High Speed (1024 bytes/packet, 3 packets/microframe = 3072 bytes).
+Set ``LITEUSB_FULL_SPEED=1`` to target Full Speed (1023 bytes/packet, 1 per frame).
+"""
 
 import os
 from migen import *
@@ -26,12 +30,25 @@ class USBIsochronousCounterDeviceExample(Module):
     The counter stands in for a simple memory.
     """
 
-    ISO_ENDPOINT_NUMBER      = 1
-    MAX_ISO_PACKET_SIZE      = 1024
-    TRANSFERS_PER_MICROFRAME = (2 << 11)
+    ISO_ENDPOINT_NUMBER = 1
 
     def __init__(self, phy, handle_clocking=False):
         self.phy = phy
+
+        full_speed = bool(int(os.getenv('LITEUSB_FULL_SPEED', '0')))
+
+        if full_speed:
+            max_packet_size      = 1023
+            packets_per_frame    = 1
+            w_max_packet_size    = max_packet_size
+            bytes_in_frame       = max_packet_size * packets_per_frame
+        else:
+            max_packet_size      = 1024
+            packets_per_microframe = 3
+            w_max_packet_size    = ((packets_per_microframe - 1) << 11) | max_packet_size
+            bytes_in_frame       = max_packet_size * packets_per_microframe
+
+        self._w_max_packet_size = w_max_packet_size
 
         # Activity signals
         self.tx_activity_led = Signal()
@@ -49,18 +66,18 @@ class USBIsochronousCounterDeviceExample(Module):
         # Add an isochronous endpoint to our device.
         iso_ep = USBIsochronousInEndpoint(
             endpoint_number=self.ISO_ENDPOINT_NUMBER,
-            max_packet_size=self.MAX_ISO_PACKET_SIZE
+            max_packet_size=max_packet_size
         )
         usb.add_endpoint(iso_ep)
 
         # Tie our address directly to our value, ensuring that we always
         # count as each offset is increased.
         self.comb += [
-            iso_ep.bytes_in_frame .eq(self.MAX_ISO_PACKET_SIZE * 3),
+            iso_ep.bytes_in_frame .eq(bytes_in_frame),
             iso_ep.value          .eq(iso_ep.address),
 
             usb.connect           .eq(1),
-            usb.full_speed_only   .eq(1 if os.getenv('LITEUSB_FULL_SPEED', '0') else 0),
+            usb.full_speed_only   .eq(int(full_speed)),
 
             self.tx_activity_led  .eq(usb.tx_activity_led),
             self.rx_activity_led  .eq(usb.rx_activity_led),
@@ -83,7 +100,7 @@ class USBIsochronousCounterDeviceExample(Module):
                 with i.EndpointDescriptor() as e:
                     e.bmAttributes     = USBTransferType.ISOCHRONOUS
                     e.bEndpointAddress = 0x80 | self.ISO_ENDPOINT_NUMBER
-                    e.wMaxPacketSize   = self.TRANSFERS_PER_MICROFRAME | self.MAX_ISO_PACKET_SIZE
+                    e.wMaxPacketSize   = self._w_max_packet_size
                     e.bInterval        = 1
 
         return descriptors

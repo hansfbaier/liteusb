@@ -27,8 +27,9 @@ import usb.util
 
 VID, PID = 0x1209, 0x0004
 EP_OUT, EP_IN = 0x01, 0x81
-# Must match MAX_BULK_PACKET_SIZE in stream_out_device.py.
-MAX_PACKET = 64
+# Default matches the HS device build (512).  Override on the command line
+# or set LITEUSB_FULL_SPEED=1 when building the device for 64-byte packets.
+MAX_PACKET = 512
 
 
 def main():

@@ -9,8 +9,10 @@
 """Example: CDC-ACM USB serial device in loopback mode.
 
 Uses the pre-made USBSerialDevice from liteusb.gateware.usb.devices.acm.
+Defaults to High Speed.  Set ``LITEUSB_FULL_SPEED=1`` to target Full Speed.
 """
 
+import os
 from migen import *
 
 from liteusb.gateware.interface.utmi                    import UTMIInterface
@@ -52,6 +54,7 @@ class USBSerialDeviceExample(Module):
 
             # Always connect by default.
             usb_serial.connect       .eq(1),
+            usb_serial.full_speed_only .eq(int(os.getenv('LITEUSB_FULL_SPEED', '0'))),
         ]
 
 

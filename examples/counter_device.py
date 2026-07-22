@@ -6,7 +6,11 @@
 # Copyright (c) 2026 Hans Baier <foss@hans-baier.de>
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Example: bulk-IN endpoint that sends a monotonic counter to the host."""
+"""Example: bulk-IN endpoint that sends a monotonic counter to the host.
+
+Defaults to High Speed (512-byte bulk packets).  Set ``LITEUSB_FULL_SPEED=1``
+to target Full Speed (64-byte bulk packets).
+"""
 
 import os
 from migen import *
@@ -25,12 +29,12 @@ class USBCounterDeviceExample(Module):
     """
 
     BULK_ENDPOINT_NUMBER = 1
-    # 64 bytes: legal at both FS (max) and HS. Larger values (512) violate
-    # the spec at Full Speed and can hang buggy host xHCI controllers.
-    MAX_BULK_PACKET_SIZE = 64
 
     def __init__(self, phy):
         self.phy = phy
+
+        full_speed = bool(int(os.getenv('LITEUSB_FULL_SPEED', '0')))
+        max_packet_size = 64 if full_speed else 512
 
         # Activity LEDs
         self.tx_activity_led = Signal()
@@ -42,13 +46,13 @@ class USBCounterDeviceExample(Module):
         self.submodules.usb = usb = USBDevice(bus=phy, handle_clocking=False)
 
         # Add our standard control endpoint.
-        descriptors = self._create_descriptors()
+        descriptors = self._create_descriptors(max_packet_size)
         usb.add_standard_control_endpoint(descriptors)
 
         # Add a stream endpoint to our device.
         stream_ep = USBStreamInEndpoint(
             endpoint_number=self.BULK_ENDPOINT_NUMBER,
-            max_packet_size=self.MAX_BULK_PACKET_SIZE
+            max_packet_size=max_packet_size
         )
         usb.add_endpoint(stream_ep)
 
@@ -62,13 +66,13 @@ class USBCounterDeviceExample(Module):
             stream_ep.stream.payload .eq(counter),
 
             usb.connect               .eq(1),
-            usb.full_speed_only       .eq(1 if os.getenv('LITEUSB_FULL_SPEED', '0') else 0),
+            usb.full_speed_only       .eq(int(full_speed)),
 
             self.tx_activity_led      .eq(usb.tx_activity_led),
             self.rx_activity_led      .eq(usb.rx_activity_led),
         ]
 
-    def _create_descriptors(self):
+    def _create_descriptors(self, max_packet_size):
         descriptors = DeviceDescriptorCollection()
 
         with descriptors.DeviceDescriptor() as d:
@@ -84,7 +88,7 @@ class USBCounterDeviceExample(Module):
                 i.bInterfaceNumber = 0
                 with i.EndpointDescriptor() as e:
                     e.bEndpointAddress = 0x80 | self.BULK_ENDPOINT_NUMBER
-                    e.wMaxPacketSize   = self.MAX_BULK_PACKET_SIZE
+                    e.wMaxPacketSize   = max_packet_size
 
         return descriptors
 

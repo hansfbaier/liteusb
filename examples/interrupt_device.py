@@ -6,7 +6,10 @@
 # Copyright (c) 2026 Hans Baier <foss@hans-baier.de>
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Example: USB device with an interrupt endpoint that reports a counter value."""
+"""Example: USB device with an interrupt endpoint that reports a counter value.
+
+Defaults to High Speed.  Set ``LITEUSB_FULL_SPEED=1`` to target Full Speed.
+"""
 
 import os
 from migen import *
@@ -29,6 +32,8 @@ class USBInterruptExample(Module):
     def __init__(self, phy, handle_clocking=True):
         self.phy = phy
 
+        full_speed = bool(int(os.getenv('LITEUSB_FULL_SPEED', '0')))
+
         # Activity signals
         self.tx_activity_led = Signal()
         self.rx_activity_led = Signal()
@@ -43,7 +48,7 @@ class USBInterruptExample(Module):
         self.submodules.usb = usb = USBDevice(bus=phy, handle_clocking=handle_clocking)
 
         # Add our standard control endpoint.
-        descriptors = self._create_descriptors()
+        descriptors = self._create_descriptors(full_speed)
         usb.add_standard_control_endpoint(descriptors)
 
         # Create an interrupt endpoint that will carry the value of our counter
@@ -55,13 +60,13 @@ class USBInterruptExample(Module):
         # Connect our device as a high speed device by default.
         self.comb += [
             usb.connect           .eq(1),
-            usb.full_speed_only   .eq(1 if os.getenv('LITEUSB_FULL_SPEED', '0') else 0),
+            usb.full_speed_only   .eq(int(full_speed)),
 
             self.tx_activity_led  .eq(usb.tx_activity_led),
             self.rx_activity_led  .eq(usb.rx_activity_led),
         ]
 
-    def _create_descriptors(self):
+    def _create_descriptors(self, full_speed):
         descriptors = DeviceDescriptorCollection()
 
         with descriptors.DeviceDescriptor() as d:
@@ -80,6 +85,8 @@ class USBInterruptExample(Module):
                     e.bEndpointAddress = 0x81
                     e.wMaxPacketSize   = 64
                     e.bmAttributes     = USBTransferType.INTERRUPT
+                    # bInterval: HS uses 2^(bInterval-1) microframes,
+                    # FS uses bInterval in milliseconds.  4 → 1ms FS / 2µs HS.
                     e.bInterval        = 4
 
         return descriptors

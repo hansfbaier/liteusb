@@ -12,12 +12,11 @@ Flash isochronous_count.py (--deca), then run:
     python3 test_isochronous_count.py [num_reads]
 
 Expects the device at 1209:0005 with an isochronous-IN endpoint 0x81
-(up to 3x1024 bytes per microframe) streaming address-valued bytes
-(0,1,2,... mod 256).
+streaming address-valued bytes (0,1,2,... mod 256).
 
-NOTE: isochronous 3x1024 requires HIGH SPEED. At Full Speed the host
-will (correctly) refuse the endpoint. pyusb has no isochronous API,
-so this uses the libusb1 (usb1) wrapper with async transfers.
+Supports both High Speed (3x1024 bytes/microframe) and Full Speed
+(1x1023 bytes/frame).  pyusb has no isochronous API, so this uses the
+libusb1 (usb1) wrapper with async transfers.
 """
 
 import sys
@@ -25,9 +24,9 @@ import sys
 import usb1
 
 VID, PID, EP_IN = 0x1209, 0x0005, 0x81
-PACKET_SIZE      = 1024
-PACKETS_PER_READ = 3
-READ_SIZE        = PACKET_SIZE * PACKETS_PER_READ
+
+# libusb speed constants
+LIBUSB_SPEED_HIGH = 3
 
 
 def monotonic_run(data):
@@ -37,7 +36,7 @@ def monotonic_run(data):
     return good, max(len(data) - 1, 0)
 
 
-def iso_read(context, handle, num_packets=PACKETS_PER_READ):
+def iso_read(context, handle, packet_size, num_packets):
     """Perform one isochronous IN read; returns the received bytes."""
     received = []
 
@@ -47,7 +46,7 @@ def iso_read(context, handle, num_packets=PACKETS_PER_READ):
                 received.append(bytes(buf))
 
     transfer = handle.getTransfer(num_packets)
-    transfer.setIsochronous(EP_IN, PACKET_SIZE * num_packets, callback, timeout=1000)
+    transfer.setIsochronous(EP_IN, packet_size * num_packets, callback, timeout=1000)
     transfer.submit()
     context.handleEventsTimeout(tv=2)
     return b"".join(received)
@@ -68,13 +67,21 @@ def main():
         handle.claimInterface(0)
 
         device = handle.getDevice()
+        speed = device.getDeviceSpeed()
         print(f"device on bus {device.getBusNumber()} address "
-              f"{device.getDeviceAddress()}, speed {device.getDeviceSpeed()}")
+              f"{device.getDeviceAddress()}, speed {speed}")
+
+        if speed >= LIBUSB_SPEED_HIGH:
+            packet_size  = 1024
+            num_packets  = 3
+        else:
+            packet_size  = 1023
+            num_packets  = 1
 
         total = good_total = 0
         for i in range(num_reads):
             try:
-                data = iso_read(context, handle)
+                data = iso_read(context, handle, packet_size, num_packets)
             except usb1.USBError as e:
                 handle.releaseInterface(0)
                 sys.exit(f"FAIL: isochronous read {i} error: {e}")

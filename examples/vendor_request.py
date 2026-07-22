@@ -6,8 +6,12 @@
 # Copyright (c) 2026 Hans Baier <foss@hans-baier.de>
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Example: USB device with a vendor request handler that controls LEDs."""
+"""Example: USB device with a vendor request handler that controls LEDs.
 
+Defaults to High Speed.  Set ``LITEUSB_FULL_SPEED=1`` to target Full Speed.
+"""
+
+import os
 from migen import *
 
 from usb_protocol.types      import USBRequestType
@@ -88,7 +92,10 @@ class USBVendorDeviceExample(Module):
         control_ep.add_request_handler(LEDRequestHandler(self.leds))
 
         # Connect our device by default.
-        self.comb += usb.connect.eq(1)
+        self.comb += [
+            usb.connect.eq(1),
+            usb.full_speed_only.eq(int(os.getenv('LITEUSB_FULL_SPEED', '0'))),
+        ]
 
     def _create_descriptors(self):
         descriptors = DeviceDescriptorCollection()

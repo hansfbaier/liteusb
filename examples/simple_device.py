@@ -17,6 +17,9 @@ framework. It creates a simple USB device with:
 - Device descriptors for enumeration
 - Activity LEDs for TX/RX visualization
 
+Defaults to High Speed (512-byte bulk packets).  Set
+``LITEUSB_FULL_SPEED=1`` to target Full Speed (64-byte bulk packets).
+
 The device can be integrated into a LiteX platform or used standalone with
 a suitable PHY interface (ULPI or UTMI).
 
@@ -66,6 +69,9 @@ class SimpleUSBDevice(Module):
         # Store PHY interface
         self.phy = phy
 
+        full_speed = bool(int(os.getenv('LITEUSB_FULL_SPEED', '0')))
+        max_packet_size = 64 if full_speed else 512
+
         # Activity signals for LEDs or monitoring
         self.tx_activity_led = Signal()
         self.rx_activity_led = Signal()
@@ -75,7 +81,7 @@ class SimpleUSBDevice(Module):
         self.submodules.usb = usb = USBDevice(bus=phy, handle_clocking=handle_clocking)
         
         # Create and add standard control endpoint with descriptors
-        descriptors = self._create_descriptors()
+        descriptors = self._create_descriptors(max_packet_size)
         usb.add_standard_control_endpoint(descriptors)
         
         # Connect device control signals
@@ -85,7 +91,7 @@ class SimpleUSBDevice(Module):
             
             # Optionally force full-speed only (disable high-speed)
             # Set LITEUSB_FULL_SPEED=1 environment variable to enable
-            usb.full_speed_only.eq(int(os.getenv('LITEUSB_FULL_SPEED', '0'))),
+            usb.full_speed_only.eq(int(full_speed)),
             
             # Export activity signals
             self.tx_activity_led.eq(usb.tx_activity_led),
@@ -93,7 +99,7 @@ class SimpleUSBDevice(Module):
             self.suspended.eq(usb.suspended),
         ]
 
-    def _create_descriptors(self):
+    def _create_descriptors(self, max_packet_size):
         """Create USB device descriptors.
         
         Creates the standard USB descriptors required for device enumeration:
@@ -141,14 +147,14 @@ class SimpleUSBDevice(Module):
                 with i.EndpointDescriptor() as e:
                     e.bEndpointAddress = 0x01  # EP1 OUT
                     e.bmAttributes     = 0x02  # Bulk
-                    e.wMaxPacketSize   = 64    # 64 = legal at FS and HS (512 is FS-illegal)
+                    e.wMaxPacketSize   = max_packet_size
                     e.bInterval        = 0
                 
                 # Bulk IN endpoint
                 with i.EndpointDescriptor() as e:
                     e.bEndpointAddress = 0x81  # EP1 IN
                     e.bmAttributes     = 0x02  # Bulk
-                    e.wMaxPacketSize   = 64    # 64 = legal at FS and HS (512 is FS-illegal)
+                    e.wMaxPacketSize   = max_packet_size
                     e.bInterval        = 0
         
         return descriptors

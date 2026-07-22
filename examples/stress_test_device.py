@@ -6,7 +6,11 @@
 # Copyright (c) 2026 Hans Baier <foss@hans-baier.de>
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Example: stress-test endpoint that streams a constant byte at maximum rate."""
+"""Example: stress-test endpoint that streams a constant byte at maximum rate.
+
+Defaults to High Speed (512-byte bulk packets).  Set ``LITEUSB_FULL_SPEED=1``
+to target Full Speed (64-byte bulk packets).
+"""
 
 import os
 from migen import *
@@ -18,8 +22,9 @@ from liteusb.gateware.interface.utmi                          import UTMIInterfa
 from liteusb.gateware.usb.usb2.endpoint                       import EndpointInterface
 
 
+_full_speed = bool(int(os.getenv('LITEUSB_FULL_SPEED', '0')))
 BULK_ENDPOINT_NUMBER = 1
-MAX_BULK_PACKET_SIZE = 64 if os.getenv('LITEUSB_FULL_SPEED', '0') else 256
+MAX_BULK_PACKET_SIZE = 64 if _full_speed else 512
 CONSTANT_TO_SEND     = 0x00
 
 
@@ -141,7 +146,7 @@ class USBStressTest(Module):
         # Connect our device as a high speed device by default.
         self.comb += [
             usb.connect          .eq(1),
-            usb.full_speed_only  .eq(1 if os.getenv('LITEUSB_FULL_SPEED', '0') else 0),
+            usb.full_speed_only  .eq(int(os.getenv('LITEUSB_FULL_SPEED', '0'))),
 
             self.tx_activity_led .eq(usb.tx_activity_led),
             self.rx_activity_led .eq(usb.rx_activity_led),

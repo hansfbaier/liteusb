@@ -77,6 +77,8 @@ class USBACMSerialDevice(Module):
     connect: Signal(), input
         When asserted, the USB-to-serial device will be presented to the host
         and allowed to communicate.
+    full_speed_only: Signal(), input
+        When asserted, the device operates at Full Speed only (no HS chirp).
     
     # UART-like interface (compatible with litex.soc.cores.uart)
     sink: stream.Endpoint([("data", 8)]), input
@@ -124,6 +126,7 @@ class USBACMSerialDevice(Module):
         # I/O port
         #
         self.connect = Signal()
+        self.full_speed_only = Signal()
         self.sink   = stream.Endpoint([("data", 8)])    # Data to host (TX)
         self.source = stream.Endpoint([("data", 8)])    # Data from host (RX)
 
@@ -314,8 +317,9 @@ class USBACMSerialDevice(Module):
             self.source.first.eq(0),
             self.source.last.eq(0),
 
-            # USB connect
-            usb.connect.eq(self.connect)
+            # USB connect and speed
+            usb.connect.eq(self.connect),
+            usb.full_speed_only.eq(self.full_speed_only),
         ]
 
     def add_core_interfaces(self, soc):
