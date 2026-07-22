@@ -189,11 +189,11 @@ builder.build()
 [> Documentation
 ----------------
 
-- **[Architecture Reference](doc/architecture.html)** — Complete HTML documentation
+- **[Architecture Reference](https://hansfbaier.github.io/liteusb/doc/architecture.html)** — Complete HTML documentation
   with architecture overview, per-module descriptions, USB 2.0 spec quotes, and
   interactive WaveDrom timing diagrams for every unit test.
-  *(Open locally or on [GitHub Pages](https://hansfbaier.github.io/liteusb/doc/architecture.html)
-  after cloning.)*
+  *(Requires [GitHub Pages](https://docs.github.com/en/pages/quickstart) enabled on the repo.
+  Or open [`doc/architecture.html`](doc/architecture.html) locally after cloning.)*
 
 [> Tests
 --------
