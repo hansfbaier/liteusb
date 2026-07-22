@@ -27,7 +27,8 @@ tr:nth-child(even) { background: #f8f8f8; }
 .wavedrom { margin: 20px 0; }
 .note { background: #f0fff0; border-left: 4px solid #4a4; padding: 8px 16px; margin: 12px 0; color: #363; }
 .warn { background: #fffef0; border-left: 4px solid #c90; padding: 8px 16px; margin: 12px 0; color: #640; }
-.fsm { font-family: monospace; white-space: pre; background: #f4f4f4; border: 1px solid #ddd; padding: 10px; border-radius: 4px; font-size: 12px; color: #444; }
+.fsm-diagram { margin: 16px 0; text-align: center; }
+.fsm-diagram img { max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 6px; padding: 8px; background: #fff; }
 .toc { background: #f8f8f8; border: 1px solid #ddd; padding: 16px 20px; border-radius: 6px; }
 .toc a { text-decoration: none; }
 .toc ul { columns: 2; list-style: none; padding-left: 0; }
@@ -185,7 +186,6 @@ sub-modules:</p>
 <tr><td><code>ULPITransmitTranslator</code></td><td>Translates UTMI tx_valid/tx_data into ULPI TRANSMIT_COMMAND + data + STP</td></tr>
 </table>
 
-<h4>ULPITransmitTranslator — Test WaveDrom</h4>
 <!-- ═══════════════════════════════════════════════════════════ -->
 <h2 id="packet">3. Packet Layer</h2>
 <p><code>liteusb.gateware.usb.usb2.packet</code></p>
@@ -209,14 +209,15 @@ The FSM transitions through IDLE → READ_PID → READ_TOKEN_0 → READ_TOKEN_1 
 TOKEN_COMPLETE → IDLE. It also performs address matching — tokens addressed
 to other devices are silently ignored.</p>
 
-<div class="fsm">States: IDLE → READ_PID → READ_TOKEN_0 → READ_TOKEN_1 → TOKEN_COMPLETE → IDLE
-Output: TokenDetectorInterface (new_token, pid, address, endpoint, new_frame, frame)</div>
+<div class="fsm-diagram"><img src="fsm/token_detector.svg" alt="USBTokenDetector FSM"></div>
 
 
 <h3>3.2 USBHandshakeDetector</h3>
 <p>Detects handshake PID bytes (ACK, NAK, STALL, NYET) on the UTMI bus.
 FSM: IDLE → READ_PID → AWAIT_COMPLETION → IDLE. Since handshake packets
 contain only a PID byte, detection is a single-cycle observation.</p>
+
+<div class="fsm-diagram"><img src="fsm/handshake_detector.svg" alt="USBHandshakeDetector FSM"></div>
 
 
 <h3>3.3 USBDataPacketCRC</h3>
@@ -230,8 +231,7 @@ for each endpoint through the <code>DataCRCInterface</code>.</p>
 the CRC-16, and produces a <code>USBOutStreamInterface</code>. The receiver strips
 the PID and CRC bytes — only the payload reaches the stream.</p>
 
-<div class="fsm">States: IDLE → READ_PID → WAIT_FOR_FIRST_DATA → RECEIVE_DATA → CHECK_CRC
-Output: stream (USBOutStreamInterface), packet_complete, active_pid, packet_id</div>
+<div class="fsm-diagram"><img src="fsm/data_packet_receiver.svg" alt="USBDataPacketReceiver FSM"></div>
 
 
 <h3>3.5 USBDataPacketDeserializer</h3>
@@ -246,13 +246,15 @@ setup packets.</p>
 Produces: PID byte (DATA0/DATA1/DATA2/MDATA) → payload bytes → CRC-16
 (2 bytes, LSB first). The FSM advances on <code>tx.ready</code> handshake.</p>
 
-<div class="fsm">States: IDLE → SEND_PID → SEND_PAYLOAD → SEND_CRC_FIRST → SEND_CRC_SECOND</div>
+<div class="fsm-diagram"><img src="fsm/data_packet_generator.svg" alt="USBDataPacketGenerator FSM"></div>
 
 
 <h3>3.7 USBHandshakeGenerator</h3>
 <p>Generates handshake packets (ACK, NAK, STALL) on the UTMI output.
 FSM: IDLE → TRANSMIT. Strobe <code>issue_ack</code> (or equivalent) to send a
 single PID byte with proper tx_valid/tx_ready handshake.</p>
+
+<div class="fsm-diagram"><img src="fsm/handshake_generator.svg" alt="USBHandshakeGenerator FSM"></div>
 
 
 <h3>3.8 USBInterpacketTimer</h3>
@@ -280,11 +282,7 @@ bit of the EOP to the first bit of the next SYNC field."
 bus reset detection, high-speed chirp handshake, suspend/resume, and
 forced disconnect.</p>
 
-<div class="fsm">States: INITIALIZE → LS_FS_NON_RESET → START_HS_DETECTION →
-  PREPARE_FOR_CHIRP_0 → PREPARE_FOR_CHIRP_1 → DEVICE_CHIRP →
-  AWAIT_HOST_K → IN_HOST_K → AWAIT_HOST_J → IN_HOST_J →
-  IS_HIGH_SPEED → HS_NON_RESET → IS_LOW_OR_FULL_SPEED →
-  DETECT_HS_SUSPEND → SUSPENDED → DISCONNECT</div>
+<div class="fsm-diagram"><img src="fsm/reset_sequencer.svg" alt="USBResetSequencer FSM"></div>
 
 <div class="spec">
 <strong>USB 2.0 Spec §7.1.7.5 — Reset:</strong>
@@ -345,7 +343,7 @@ has the highest priority.</p>
 Contains a 5-state FSM for SETUP / DATA / STATUS phases, plus a
 <code>USBSetupDecoder</code> and <code>USBRequestHandlerMultiplexer</code>.</p>
 
-<div class="fsm">States: SETUP → DATA_IN → DATA_OUT → STATUS_IN → STATUS_OUT → SETUP</div>
+<div class="fsm-diagram"><img src="fsm/control_endpoint.svg" alt="USBControlEndpoint FSM"></div>
 
 <div class="spec">
 <strong>USB 2.0 Spec §5.5:</strong>
@@ -365,7 +363,7 @@ always in the opposite direction."
 <p>Double-buffered IN transfer sequencer. Converts an arbitrary-length
 application stream into packet-sized chunks on the USB bus.</p>
 
-<div class="fsm">States: WAIT_FOR_DATA → WAIT_TO_SEND → SEND_PACKET → WAIT_FOR_ACK</div>
+<div class="fsm-diagram"><img src="fsm/transfer_in.svg" alt="USBInTransferManager FSM"></div>
 
 <h4>Key features:</h4>
 <ul>
@@ -407,7 +405,7 @@ must return a zero-length packet."
 (Migen Memory primitive) initialized at build time. Outputs a
 <code>USBInStreamInterface</code> with <code>first</code>/<code>last</code> packet framing.</p>
 
-<div class="fsm">States: IDLE → STREAMING → DONE</div>
+<div class="fsm-diagram"><img src="fsm/descriptor_generator.svg" alt="USBDescriptorStreamGenerator FSM"></div>
 
 <p>Parameters: <code>start_position</code> (byte offset), <code>max_length</code> (truncation).
 Supports sub-descriptor selection via <code>offset</code> signal.</p>
@@ -483,7 +481,7 @@ application-level stream logic.</p>
 a 2-byte pipeline delay to detect <code>first</code> and <code>last</code> byte positions
 within a received data stream.</p>
 
-<div class="fsm">States: WAIT_FOR_FIRST_BYTE → RECEIVE_AND_TRANSMIT → OUTPUT_STROBES</div>
+<div class="fsm-diagram"><img src="fsm/stream_boundary.svg" alt="USBOutStreamBoundaryDetector FSM"></div>
 
 
 <!-- ═══════════════════════════════════════════════════════════ -->
