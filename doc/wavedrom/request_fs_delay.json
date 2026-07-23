@@ -5,40 +5,23 @@
   "signal": [
     {
       "name": "clk",
-      "wave": "p..............."
+      "wave": "p..............................."
     },
     {
-      "name": "speed",
-      "wave": "2...............",
-      "data": [
-        "FULL(12Mbps)"
-      ]
+      "name": "start",
+      "wave": "0..................10..........."
     },
     {
-      "name": "setup_pid",
-      "wave": "0.10............"
+      "name": "tx_allowed",
+      "wave": "0........10....................1"
     },
     {
-      "name": "data_pid",
-      "wave": "0..........10.."
+      "name": "tx_timeout",
+      "wave": "0..............................."
     },
     {
-      "name": "ack",
-      "wave": "0............10."
-    },
-    {
-      "name": "delay_count",
-      "wave": "x.3.4.5.6......x",
-      "data": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "...10"
-      ]
+      "name": "rx_timeout",
+      "wave": "0..............................."
     }
-  ],
-  "foot": {
-    "text": "~10 cycles (2.5\u00b5s) between SETUP token and ACK handshake at FS."
-  }
+  ]
 }

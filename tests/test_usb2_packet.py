@@ -9,7 +9,7 @@ from liteusb.tests           import LiteUSBTestCase, usb_domain_test_case
 from migen import Record
 from liteusb.gateware.usb.usb2.packet import USBDataPacketDeserializer, USBDataPacketGenerator, USBDataPacketReceiver
 from liteusb.gateware.usb.usb2.packet import USBHandshakeDetector, USBHandshakeGenerator
-from liteusb.gateware.usb.usb2.packet import InterpacketTimerInterface, USBInterpacketTimer, USBTokenDetector
+from liteusb.gateware.usb.usb2.packet import InterpacketTimerInterface, USBInterpacketTimer, USBTokenDetector, USBSpeed
 
 class USBPacketizerTest(LiteUSBTestCase):
     SYNC_CLOCK_FREQUENCY = None
@@ -513,9 +513,10 @@ class USBInterpacketTimerTest(LiteUSBTestCase):
 
     def initialize_signals(self):
         # Assume FS for our tests, unless overridden.
-        yield self.dut.speed(USBSpeed.FULL)
+        yield self.dut.speed.eq(USBSpeed.FULL)
 
 
+    @usb_domain_test_case
     def test_resets_and_delays(self):
         yield from self.advance_cycles(4)
         interface = self.interface
@@ -530,26 +531,28 @@ class USBInterpacketTimerTest(LiteUSBTestCase):
         self.assertEqual((yield interface.tx_timeout), 0)
         self.assertEqual((yield interface.rx_timeout), 0)
 
-        # 10 cycles later, we should see our first timer output.
-        yield from self.advance_cycles(10)
+        # 11 cycles after start, tx_allowed should pulse (counter == 10).
+        yield from self.advance_cycles(11)
         self.assertEqual((yield interface.tx_allowed), 1)
         self.assertEqual((yield interface.tx_timeout), 0)
         self.assertEqual((yield interface.rx_timeout), 0)
 
-        # 22 cycles later (32 total), we should see our second timer output.
+        # 22 cycles later (33 total), tx_timeout should pulse (counter == 32).
         yield from self.advance_cycles(22)
         self.assertEqual((yield interface.tx_allowed), 0)
         self.assertEqual((yield interface.tx_timeout), 1)
         self.assertEqual((yield interface.rx_timeout), 0)
 
-        # 58 cycles later (80 total), we should see our third timer output.
-        yield from self.advance_cycles(22)
+        # 48 cycles later (81 total), rx_timeout should pulse (counter == 80).
+        yield from self.advance_cycles(48)
         self.assertEqual((yield interface.tx_allowed), 0)
         self.assertEqual((yield interface.tx_timeout), 0)
         self.assertEqual((yield interface.rx_timeout), 1)
 
-        # Ensure that the timers don't go high again.
+        # Ensure the timer outputs stay low for 32 cycles after the rx_timeout pulse.
+        yield
         for _ in range(32):
-            self.assertEqual((yield self.rx_to_tx_min),     0)
-            self.assertEqual((yield self.rx_to_tx_max),     0)
-            self.assertEqual((yield self.tx_to_rx_timeout), 0)
+            self.assertEqual((yield interface.tx_allowed), 0)
+            self.assertEqual((yield interface.tx_timeout), 0)
+            self.assertEqual((yield interface.rx_timeout), 0)
+            yield

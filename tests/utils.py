@@ -141,6 +141,10 @@ class LiteUSBTestCase(unittest.TestCase):
             if vcd_suffix:
                 vcd_name = "{}_{}".format(vcd_name, vcd_suffix)
             vcd_name += ".vcd"
+            # Place VCDs under doc/vcd/ so documentation scripts can find them.
+            vcd_dir = os.path.join(os.path.dirname(__file__), '..', 'doc', 'vcd')
+            os.makedirs(vcd_dir, exist_ok=True)
+            vcd_name = os.path.join(vcd_dir, vcd_name)
         
         # Run simulation using migen's run_simulation
         run_simulation(

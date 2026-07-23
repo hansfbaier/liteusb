@@ -5,27 +5,27 @@
   "signal": [
     {
       "name": "clk",
-      "wave": "p........"
+      "wave": "p.."
     },
     {
       "name": "token.is_in",
-      "wave": "0.10....."
+      "wave": "01."
     },
     {
       "name": "tx.valid",
-      "wave": "0........"
+      "wave": "0.."
     },
     {
       "name": "nak",
-      "wave": "0..10...."
+      "wave": "10."
     },
     {
       "name": "ack",
-      "wave": "0........"
+      "wave": "0.."
     },
     {
       "name": "active",
-      "wave": "0........"
+      "wave": "01."
     }
   ]
 }

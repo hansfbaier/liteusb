@@ -5,31 +5,31 @@
   "signal": [
     {
       "name": "clk",
-      "wave": "p......"
+      "wave": "p...."
     },
     {
       "name": "rx_active",
-      "wave": "0.10..0"
+      "wave": "1.0.."
     },
     {
       "name": "rx_valid",
-      "wave": "0.10..0"
+      "wave": "1.0.."
     },
     {
       "name": "rx_data",
-      "wave": "2.3.2..2",
+      "wave": "23...",
       "data": [
-        "SYNC",
-        "0x5A(NAK)"
+        "0x0",
+        "0x5a"
       ]
     },
     {
       "name": "detected.nak",
-      "wave": "0..10.."
+      "wave": "0...1"
     },
     {
       "name": "detected.ack",
-      "wave": "0......"
+      "wave": "0...."
     }
   ]
 }

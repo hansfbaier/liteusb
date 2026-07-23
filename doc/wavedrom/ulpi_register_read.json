@@ -5,50 +5,47 @@
   "signal": [
     {
       "name": "clk",
-      "wave": "p..........."
+      "wave": "p.................."
     },
     {
       "name": "read_request",
-      "wave": "0.10........"
+      "wave": "0...1...........0.."
     },
     {
       "name": "busy",
-      "wave": "0.1.........0"
+      "wave": "0..1..............0"
     },
     {
       "name": "ulpi_data_out",
-      "wave": "x.2.3.4....x",
+      "wave": "2...3...........2..",
       "data": [
-        "0xC0|addr",
-        "NOP",
-        "NOP(turn)"
+        "0x0",
+        "0xc0"
       ]
     },
     {
       "name": "ulpi_out_req",
-      "wave": "0.1......0."
+      "wave": "0..............1..."
     },
     {
       "name": "ulpi_nxt",
-      "wave": "0..10......."
+      "wave": "0.................."
     },
     {
       "name": "ulpi_dir",
-      "wave": "0............"
+      "wave": "0.................."
     },
     {
       "name": "read_data",
-      "wave": "x.......2..x",
+      "wave": "2.................3",
       "data": [
-        "0x07"
+        "0x0",
+        "0x7"
       ]
     },
     {
       "name": "done",
-      "wave": "0.......10.."
+      "wave": "0.................1"
     }
-  ],
-  "foot": {
-    "text": "Command phase (REG_READ|addr) \u2192 NXT \u2192 turnaround \u2192 data latch \u2192 done strobe."
-  }
+  ]
 }

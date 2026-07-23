@@ -13,24 +13,26 @@ This document summarizes the porting of LUNA (USB FPGA gateware) from Amaranth H
 
 ## Test Suite Status
 
-**48 tests discovered — 48 passing, 0 errors**
+**57 tests discovered — 57 passing, 0 errors**
 
 | Test Module | Tests | Status |
 |-------------|-------|--------|
 | `test_usb2_packet` | 18 | All passing |
 | `test_usb2_endpoints` | 2 | All passing |
 | `test_usb2_descriptor` | 7 | All passing |
+| `test_usb2_device` | 3 | All passing (full-device enumeration) |
 | `test_usb2_transfer` | 4 | All passing |
 | `test_usb2_request` | 3 | All passing |
 | `test_usb2_reset` | 1 | Passing |
 | `test_usb_stream` | 1 | Passing |
 | `test_ulpi` | 8 | All passing |
+| `test_wavedrom` | 10 | All passing (VCD-to-WaveDrom sanity checks) |
 | `test_usb2_loopback` | 1 | Passing (full-device OUT→IN loopback, 4 rounds, rx_valid gaps) |
 | `test_usb2_stress` | 1 | Passing (full-device IN constant stream, 4 rounds, DATA toggle) |
 | `test_usb2_stream_out_gaps` | 1 | Passing (endpoint rx with PHY nxt pauses) |
 | `test_ulpi_rx_gaps` | 1 | Passing (ULPI translator rx with nxt pauses) |
 
-The `test_usb2_device` module contains enumeration tests that require the full USB device test harness; these are not discovered by the standard unittest runner and need the custom `run_tests.py` script.
+All tests in `tests/` are now collected and run by pytest, including the device-level enumeration tests.
 
 ## Ported Modules
 
@@ -515,9 +517,7 @@ GENERATE_VCDS=1 python3 -m unittest liteusb.tests.test_usb2_packet -v
 
 ## Known Issues
 
-1. **`test_usb2_device`** — The full device enumeration tests (`test_enumeration`, `test_long_descriptor`, `test_descriptor_zlp`) are not discoverable by the standard unittest runner due to the custom test harness structure. They require the `run_tests.py` script or manual invocation.
-
-2. **Migen Array proxy in sync** — When a signal used as an `Array` index is also assigned in the same sync block, Migen's simulator may evaluate the index using the post-assignment value. The `USBInTransferManager` works around this by keeping set and clear operations in separate sync blocks that target different buffers.
+1. **Migen Array proxy in sync** — When a signal used as an `Array` index is also assigned in the same sync block, Migen's simulator may evaluate the index using the post-assignment value. The `USBInTransferManager` works around this by keeping set and clear operations in separate sync blocks that target different buffers.
 
 3. **VCD generation** — Requires the `GENERATE_VCDS` environment variable to be set.
 

@@ -5,51 +5,55 @@
   "signal": [
     {
       "name": "clk",
-      "wave": "p...................."
+      "wave": "p........................"
     },
     {
-      "name": "op_mode",
-      "wave": "2.2.2..3............",
+      "name": "reg_04_value",
+      "wave": "2................3.......",
       "data": [
-        "00",
-        "01",
-        "10"
+        "0x41",
+        "0x59"
       ]
     },
     {
-      "name": "dp_pulldown",
-      "wave": "0......1..........."
+      "name": "reg_04_write",
+      "wave": "0..........1.....0......."
     },
     {
-      "name": "dm_pulldown",
-      "wave": "0......1..........."
-    },
-    {
-      "name": "reg_busy",
-      "wave": "0.1.0....1.0......."
-    },
-    {
-      "name": "reg_addr",
-      "wave": "x.2x....3x.......",
+      "name": "reg_04_wdata",
+      "wave": "2...........3............",
       "data": [
-        "0x04(func)",
-        "0x0A(OTG)"
+        "0x0",
+        "0x59"
       ]
     },
     {
-      "name": "reg_wdata",
-      "wave": "x.2x....3x...",
+      "name": "reg_04_done",
+      "wave": "0...............10......."
+    },
+    {
+      "name": "reg_0a_value",
+      "wave": "2.....................3..",
       "data": [
-        "0x59",
-        "0x00"
+        "0x6",
+        "0x0"
       ]
     },
     {
-      "name": "done",
-      "wave": "0.......10.....10...."
+      "name": "reg_0a_write",
+      "wave": "10........1...........0.."
+    },
+    {
+      "name": "reg_0a_wdata",
+      "wave": "23.........2.............",
+      "data": [
+        "0x0",
+        "0x86"
+      ]
+    },
+    {
+      "name": "reg_0a_done",
+      "wave": "0....................10.."
     }
-  ],
-  "foot": {
-    "text": "Two sequenced writes: function control (0x04\u21920x59) then OTG control (0x0A\u21920x00)."
-  }
+  ]
 }

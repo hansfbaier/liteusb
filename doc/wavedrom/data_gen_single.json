@@ -5,43 +5,44 @@
   "signal": [
     {
       "name": "clk",
-      "wave": "p........"
+      "wave": "p............."
     },
     {
       "name": "stream.first",
-      "wave": "0.10....."
+      "wave": "01..0........."
     },
     {
       "name": "stream.last",
-      "wave": "0.10....."
+      "wave": "01..0........."
     },
     {
       "name": "stream.valid",
-      "wave": "0.10....."
+      "wave": "01..0........."
     },
     {
       "name": "stream.payload",
-      "wave": "x.2x.....",
+      "wave": "23............",
       "data": [
-        "0x55"
-      ]
-    },
-    {
-      "name": "tx.valid",
-      "wave": "0..1....0"
-    },
-    {
-      "name": "tx.data",
-      "wave": "x..4...x",
-      "data": [
-        "PID",
-        "0x55",
-        "CRC"
+        "0x0",
+        "0xab"
       ]
     },
     {
       "name": "stream.ready",
-      "wave": "0..1....0"
+      "wave": "0.1.0........."
+    },
+    {
+      "name": "tx.valid",
+      "wave": "01...0........"
+    },
+    {
+      "name": "tx.data",
+      "wave": "234.2.........",
+      "data": [
+        "0x0",
+        "0xc3",
+        "0xab"
+      ]
     }
   ]
 }

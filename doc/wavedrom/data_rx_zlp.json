@@ -5,33 +5,27 @@
   "signal": [
     {
       "name": "clk",
-      "wave": "p.........."
+      "wave": "p......"
     },
     {
       "name": "rx_active",
-      "wave": "0.1......0"
+      "wave": "1....0."
     },
     {
       "name": "rx_valid",
-      "wave": "0.1.0...0"
+      "wave": "1....0."
     },
     {
       "name": "rx_data",
-      "wave": "2.3.4...2",
+      "wave": "23.2...",
       "data": [
-        "SYNC",
-        "PID=0x4B",
-        "CRC16_lo",
-        "CRC16_hi"
+        "0x0",
+        "0x4b"
       ]
     },
     {
       "name": "stream.valid",
-      "wave": "0........."
-    },
-    {
-      "name": "packet_complete",
-      "wave": "0......10."
+      "wave": "0...10."
     }
   ]
 }

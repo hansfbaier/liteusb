@@ -8,13 +8,14 @@
 from liteusb.gateware.usb.usb2        import USBPacketID
 from liteusb.gateware.usb.usb2.device import USBDevice
 
+from liteusb.tests          import usb_domain_test_case
 from liteusb.tests.usb2 import USBDeviceTest
 
 from usb_protocol.emitters         import DeviceDescriptorCollection
 from usb_protocol.types            import DescriptorTypes
 
 
-class FullDeviceTest(USBDeviceTest):
+class TestFullDevice(USBDeviceTest):
     """ :meta private: """
 
     FRAGMENT_UNDER_TEST = USBDevice
@@ -71,6 +72,7 @@ class FullDeviceTest(USBDeviceTest):
         dut.add_standard_control_endpoint(descriptors)
 
 
+    @usb_domain_test_case
     def test_enumeration(self):
 
         # Reference enumeration process (quirks merged from Linux, macOS, and Windows):
@@ -141,7 +143,7 @@ class FullDeviceTest(USBDeviceTest):
         self.assertEqual(configuration, [1], "device did not accept configuration!")
 
 
-class LongDescriptorTest(USBDeviceTest):
+class TestLongDescriptor(USBDeviceTest):
     """ :meta private: """
 
     FRAGMENT_UNDER_TEST = USBDevice
@@ -191,6 +193,7 @@ class LongDescriptorTest(USBDeviceTest):
 
         dut.add_standard_control_endpoint(descriptors)
 
+    @usb_domain_test_case
     def test_long_descriptor(self):
         descriptor = self.descriptors.get_descriptor_bytes(DescriptorTypes.CONFIGURATION)
 
@@ -200,6 +203,7 @@ class LongDescriptorTest(USBDeviceTest):
         self.assertEqual(bytes(data), descriptor)
         self.assertEqual(len(data), len(descriptor))
 
+    @usb_domain_test_case
     def test_descriptor_zlp(self):
         # Try requesting a long descriptor, but using a length that is a
         # multiple of the endpoint's maximum packet length. This should cause

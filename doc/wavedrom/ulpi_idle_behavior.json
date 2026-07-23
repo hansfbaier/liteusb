@@ -5,30 +5,27 @@
   "signal": [
     {
       "name": "clk",
-      "wave": "p....."
+      "wave": "p"
     },
     {
       "name": "busy",
-      "wave": "0....."
+      "wave": "0"
     },
     {
       "name": "ulpi_data_out",
-      "wave": "2.....",
-      "data": [
-        "0x00(NOP)"
-      ]
+      "wave": "0"
     },
     {
       "name": "read_request",
-      "wave": "0....."
+      "wave": "0"
     },
     {
       "name": "write_request",
-      "wave": "0....."
+      "wave": "0"
     },
     {
       "name": "done",
-      "wave": "0....."
+      "wave": "0"
     }
   ]
 }

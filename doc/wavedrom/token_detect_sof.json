@@ -5,39 +5,39 @@
   "signal": [
     {
       "name": "clk",
-      "wave": "p..........."
+      "wave": "p......"
     },
     {
       "name": "rx_active",
-      "wave": "0.1.......0."
+      "wave": "1...0.."
     },
     {
       "name": "rx_valid",
-      "wave": "0.1.......0."
+      "wave": "01...0."
     },
     {
       "name": "rx_data",
-      "wave": "2.3.4.5...2.",
+      "wave": "2345...",
       "data": [
-        "SYNC",
-        "PID=SOF",
-        "frame[7:0]",
-        "frame[10:8]",
-        "CRC5"
+        "0x0",
+        "0xa5",
+        "0x3a",
+        "0x3d"
       ]
     },
     {
       "name": "new_token",
-      "wave": "0.........."
+      "wave": "0......"
     },
     {
       "name": "new_frame",
-      "wave": "0...10......"
+      "wave": "0....10"
     },
     {
       "name": "frame",
-      "wave": "x...2x......",
+      "wave": "2....3.",
       "data": [
+        "0x0",
         "0x53a"
       ]
     }

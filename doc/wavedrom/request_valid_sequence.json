@@ -5,64 +5,39 @@
   "signal": [
     {
       "name": "clk",
-      "wave": "p..................."
+      "wave": "p....................."
     },
     {
       "name": "rx_active",
-      "wave": "0.1......0.1......0"
+      "wave": "01...0.1..........0..."
     },
     {
       "name": "rx_data",
-      "wave": "2.3......2.3......2",
+      "wave": "2.324...56789abcdef...",
       "data": [
-        "SETUP PID",
-        "DATA0 PID",
-        "setup[0:7]",
-        "CRC"
+        "0x0",
+        "0x2d",
+        "0x10",
+        "0xc3",
+        "0x42",
+        "0xc",
+        "0xcd",
+        "0xab",
+        "0x23",
+        "0x1",
+        "0x78",
+        "0x56",
+        "0x3b",
+        "0xa2"
       ]
     },
     {
       "name": "ack",
-      "wave": "0.........10........"
+      "wave": "0..................10."
     },
     {
       "name": "packet.received",
-      "wave": "0..........10......."
-    },
-    {
-      "name": "packet.request",
-      "wave": "x..........2x......",
-      "data": [
-        "0x06(GET_DESC)"
-      ]
-    },
-    {
-      "name": "packet.value",
-      "wave": "x..........2x......",
-      "data": [
-        "0x0100(DEVICE)"
-      ]
-    },
-    {
-      "name": "packet.index",
-      "wave": "x..........2x......",
-      "data": [
-        "0x0000"
-      ]
-    },
-    {
-      "name": "packet.length",
-      "wave": "x..........2x......",
-      "data": [
-        "18"
-      ]
-    },
-    {
-      "name": "packet.is_in_request",
-      "wave": "x........10........."
+      "wave": "0...................10"
     }
-  ],
-  "foot": {
-    "text": "SETUP token \u2192 DATA0 with GET_DESCRIPTOR(DEVICE, wLength=18) \u2192 ACK \u2192 decoded fields."
-  }
+  ]
 }

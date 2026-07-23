@@ -1,42 +1,38 @@
 {
+  "head": {
+    "text": "USBControlEndpoint \u2014 EP0 stages: SETUP, DATA_IN, STATUS_OUT"
+  },
   "signal": [
     {
       "name": "clk",
-      "wave": "p...................."
-    },
-    {
-      "name": "rx.active",
-      "wave": "01.........0........."
+      "wave": "p....................."
     },
     {
       "name": "rx.valid",
-      "wave": "0.1........0........."
+      "wave": "0.1........0.........."
     },
     {
       "name": "rx.data",
-      "wave": "2.345262.72..........",
+      "wave": "2..34252.62...........",
       "data": [
         "0x0",
         "0x2d",
-        "0x80",
         "0x6",
         "0x1",
         "0x40"
       ]
     },
     {
+      "name": "rx.active",
+      "wave": "01.........0.........."
+    },
+    {
       "name": "tx.valid",
-      "wave": "0...................."
+      "wave": "0....................."
     },
     {
       "name": "tx.data",
-      "wave": "2....................",
-      "data": [
-        "0x0"
-      ]
+      "wave": "0....................."
     }
-  ],
-  "head": {
-    "text": "USBControlEndpoint \u2014 EP0 stages: SETUP, DATA_IN, STATUS_OUT"
-  }
+  ]
 }

@@ -5,50 +5,36 @@
   "signal": [
     {
       "name": "clk",
-      "wave": "p.........."
+      "wave": "p........."
     },
     {
       "name": "ulpi_dir",
-      "wave": "0.1.0.1...."
+      "wave": "01....01.."
     },
     {
       "name": "ulpi_nxt",
-      "wave": "0.1.0.0...."
+      "wave": "1....0...."
     },
     {
       "name": "ulpi_data_i",
-      "wave": "x.2.3.4x..",
+      "wave": "2.....34..",
       "data": [
-        "data",
-        "rx_cmd"
-      ]
-    },
-    {
-      "name": "last_rx_command",
-      "wave": "x.2.2.3x..",
-      "data": [
-        "N/A",
-        "0x1E"
+        "0xab",
+        "0x12",
+        "0x1e"
       ]
     },
     {
       "name": "line_state",
-      "wave": "x.2.2.3x..",
-      "data": [
-        "XX",
-        "0b10"
-      ]
+      "wave": "01....01.."
     },
     {
       "name": "vbus_valid",
-      "wave": "0.......1."
+      "wave": "01...0.1.."
     },
     {
       "name": "rx_active",
-      "wave": "0.......10"
+      "wave": "0.......1."
     }
-  ],
-  "foot": {
-    "text": "DIR+NXT together \u2192 ignored. DIR only \u2192 RxCmd decoded: line_state, vbus, rx_active."
-  }
+  ]
 }

@@ -191,9 +191,14 @@ builder.build()
 
 - **[Architecture Reference](https://hansfbaier.github.io/liteusb/doc/architecture.html)** — Complete HTML documentation
   with architecture overview, per-module descriptions, USB 2.0 spec quotes, and
-  interactive WaveDrom timing diagrams for every unit test.
+  interactive WaveDrom timing diagrams derived from the unit test VCD traces.
   *(Requires [GitHub Pages](https://docs.github.com/en/pages/quickstart) enabled on the repo.
   Or open [`doc/architecture.html`](doc/architecture.html) locally after cloning.)*
+
+  Regenerate the diagrams and HTML after test changes:
+  ```bash
+  python3 doc/scripts/generate_docs.py
+  ```
 
 [> Tests
 --------

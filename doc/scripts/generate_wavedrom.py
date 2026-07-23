@@ -1,176 +1,738 @@
 #!/usr/bin/env python3
-"""Generate WaveDrom JSON files for liteusb documentation."""
-import json, os
+"""Generate WaveDrom JSON from unit-test VCD traces.
 
-OUT = 'doc/wavedrom'
-os.makedirs(OUT, exist_ok=True)
+Usage:
+    GENERATE_VCDS=1 python3 -m pytest tests/ -q
+    python3 doc/scripts/generate_wavedrom.py
 
-diagrams = {
+This reads the VCD files produced by the test suite (now placed under
+ doc/vcd/) and converts the signals of interest into WaveDrom timing
+diagrams.  Each diagram is defined by a VCD file and a list of signals
+to extract, so the resulting diagrams exactly represent the unit test
+traces.
+"""
+import json, os, re
+from pathlib import Path
+from vcd.reader import tokenize
+
+VCD_DIR = Path('doc/vcd')
+OUT_DIR = Path('doc/wavedrom')
+OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+# ── WaveDrom conversion helpers (same semantics as tests/test_wavedrom.py) ──
+
+def bools_to_wave(vals):
+    wave = []
+    prev = None
+    for v in vals:
+        b = bool(v)
+        wave.append('.' if prev == b else ('1' if b else '0'))
+        prev = b
+    return ''.join(wave)
+
+
+def ints_to_wave(vals, fmt="hex"):
+    if not vals:
+        return "x", []
+
+    def fmt_v(v):
+        if fmt == "hex":
+            return hex(v)
+        if fmt == "bin":
+            return bin(v)
+        return str(v)
+
+    wave = []
+    data_map = {}
+    prev_sym = None
+    for v in vals:
+        if v not in data_map:
+            idx = len(data_map) + 2
+            data_map[v] = str(idx) if idx < 10 else chr(ord('a') + idx - 10)
+        sym = data_map[v]
+        wave.append('.' if sym == prev_sym else sym)
+        prev_sym = sym
+    ordered = [""] * len(data_map)
+    for val, sym in data_map.items():
+        idx = int(sym) - 2 if sym.isdigit() else ord(sym) - ord('a') + 8
+        ordered[idx] = fmt_v(val)
+    return ''.join(wave), ordered
+
+
+def signal_entry(name, vals, fmt="hex"):
+    if all(isinstance(v, bool) or v in (0, 1) for v in vals):
+        return {"name": name, "wave": bools_to_wave(vals)}
+    w, d = ints_to_wave(vals, fmt)
+    sig = {"name": name, "wave": w}
+    if d:
+        sig["data"] = d
+    return sig
+
+
+def clk_wave(n_cycles):
+    return {"name": "clk", "wave": "p" + "." * (n_cycles - 1)}
+
+
+# ── VCD parsing ───────────────────────────────────────────────────────────
+
+def parse_vcd_events(vcd_path):
+    """Parse a VCD into a list of ordered events and a signal map.
+
+    Migen/pyosys VCDs often use event-based time (all timestamps are 0),
+    so we return events in file order rather than sorting by time.
+    """
+    id_map = {}
+    current_scope = []
+    in_dumpvars = False
+    events = []
+
+    with open(vcd_path, 'r', encoding='utf-8', errors='replace') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith('$var'):
+                parts = line.split()
+                size = int(parts[2])
+                code = parts[3]
+                reference = parts[4]
+                id_map[code] = {'reference': reference, 'size': size}
+            elif line.startswith('$scope'):
+                current_scope.append(line.split()[2])
+            elif line.startswith('$upscope'):
+                if current_scope:
+                    current_scope.pop()
+            elif line.startswith('$dumpvars') or line.startswith('$enddefinitions'):
+                in_dumpvars = True
+            elif line.startswith('$end') and in_dumpvars:
+                in_dumpvars = False
+            elif line.startswith('#'):
+                # Time stamp is ignored; we use event ordering.
+                pass
+            elif line.startswith('$'):
+                continue
+            else:
+                # value change line
+                if line.startswith('b') or line.startswith('B'):
+                    parts = line.split()
+                    val = int(parts[0][1:], 2) if len(parts[0]) > 1 else 0
+                    code = parts[1]
+                elif line.startswith('r') or line.startswith('R'):
+                    parts = line.split()
+                    val = float(parts[0][1:])
+                    code = parts[1]
+                elif line.startswith('s') or line.startswith('S'):
+                    parts = line.split(maxsplit=1)
+                    val = parts[0][1:]
+                    code = parts[1] if len(parts) > 1 else ''
+                else:
+                    # scalar value: first char is value, rest is id_code
+                    val = int(line[0]) if line[0] in '01' else line[0]
+                    code = line[1:]
+                if code in id_map:
+                    events.append((code, val))
+
+    return id_map, events
+
+
+def sample_at_clock_edges(id_map, events, clock_refs=('usb_clk', 'sys_clk', 'sync_clk', 'clk')):
+    """Sample signal values on each clock rising edge from ordered VCD events."""
+    # Find clock code.
+    clock_code = None
+    for code, info in id_map.items():
+        if info['reference'] in clock_refs:
+            clock_code = code
+            break
+    if clock_code is None:
+        for code, info in id_map.items():
+            if info['size'] == 1 and 'clk' in info['reference'].lower():
+                clock_code = code
+                break
+    if clock_code is None:
+        raise RuntimeError(f"No clock found in VCD; refs: {list(id_map.values())}")
+
+    current = {code: 0 for code in id_map}
+    samples = {code: [] for code in id_map}
+    prev_clock = 0
+
+    for code, val in events:
+        current[code] = val
+        if code == clock_code:
+            v = int(val) if val in (0, 1, '0', '1') else 0
+            if v == 1 and prev_clock == 0:
+                # Rising edge: snapshot all signals.
+                for c in id_map:
+                    samples[c].append(current[c])
+            prev_clock = v
+
+    return id_map[clock_code]['reference'], samples
+
+
+def extract_signals(vcd_path, signal_map, clock_refs=('usb_clk', 'sys_clk', 'sync_clk', 'clk')):
+    """Extract named signals from a VCD and return WaveDrom signal list.
+
+    signal_map: dict of display_name -> vcd_reference or list of candidates
+    """
+    id_map, events = parse_vcd_events(vcd_path)
+    clock_name, samples = sample_at_clock_edges(id_map, events, clock_refs)
+
+    # Resolve each requested display name to an id_code.
+    signals = []
+    for display_name, vcd_ref in signal_map.items():
+        candidates = vcd_ref if isinstance(vcd_ref, list) else [vcd_ref]
+        code = None
+        for cand in candidates:
+            for c, info in id_map.items():
+                if info['reference'] == cand:
+                    code = c
+                    break
+            if code:
+                break
+        if code is None:
+            available = [info['reference'] for info in id_map.values()]
+            raise RuntimeError(f"Signal {candidates} not found in {vcd_path}. Available: {available}")
+        vals = samples[code]
+        size = id_map[code]['size']
+        fmt = "bin" if size == 2 and all(v in (0, 1, 2, 3) for v in vals) else "hex"
+        signals.append(signal_entry(display_name, vals, fmt))
+
+    return signals, len(samples[next(iter(samples))]) if samples else 0
+
+
+def build_diagram(vcd_path, title, signal_map, foot=None, clock_refs=('usb_clk', 'sys_clk', 'sync_clk', 'clk')):
+    signals, n = extract_signals(vcd_path, signal_map, clock_refs)
+    if n == 0:
+        raise RuntimeError(f"No clock edges in {vcd_path}")
+    diagram = {
+        "head": {"text": title},
+        "signal": [clk_wave(n)] + signals,
+    }
+    if foot:
+        diagram["foot"] = {"text": foot}
+    return diagram
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Diagram definitions: each entry maps an output JSON name to a VCD file and
+# the signals to extract from that VCD.  Reference names are exactly those
+# emitted by migen in the VCD header.
+# ═══════════════════════════════════════════════════════════════════════════
+
+DIAGRAMS = {
+    # ── Module-level diagrams (one representative test per module) ─────────
     'token_detect': {
-        'head': {'text': 'USBTokenDetector — OUT token to address 0x3a'},
-        'signal': [
-            {'name': 'clk',     'wave': 'p...........'},
-            {'name': 'rx_active','wave': '0.1.......0.'},
-            {'name': 'rx_valid', 'wave': '0.1.......0.'},
-            {'name': 'rx_data',  'wave': '2.3.4.5...2.', 'data': ['SYNC','PID=OUT','ADDR[0:6]','ENDP[0:3]','CRC5']},
-            {'name': 'new_token','wave': '0...10......'},
-            {'name': 'pid',      'wave': 'x...2x......', 'data': ['0x87(OUT)']},
-            {'name': 'address',  'wave': 'x...3x......', 'data': ['0x3a']},
-            {'name': 'endpoint', 'wave': 'x...2x......', 'data': ['0x0a']},
-        ]
+        'vcd': 'test_USBTokenDetectorTest_test_valid_token.vcd',
+        'title': 'USBTokenDetector — OUT token to address 0x3a',
+        'signals': {
+            'rx_active': 'rx_active',
+            'rx_valid': 'rx_valid',
+            'rx_data': 'rx_data',
+            'new_token': 'usbtokendetector_new_token',
+            'pid': 'usbtokendetector_pid',
+            'address': 'usbtokendetector_address',
+            'endpoint': 'usbtokendetector_endpoint',
+        },
+    },
+    'token_detect_sof': {
+        'vcd': 'test_USBTokenDetectorTest_test_valid_start_of_frame.vcd',
+        'title': 'test_valid_start_of_frame: SOF token, frame 0x53a',
+        'signals': {
+            'rx_active': 'rx_active',
+            'rx_valid': 'rx_valid',
+            'rx_data': 'rx_data',
+            'new_token': 'usbtokendetector_new_token',
+            'new_frame': 'usbtokendetector_new_frame',
+            'frame': 'usbtokendetector_frame',
+        },
+    },
+    'token_detect_mismatch': {
+        'vcd': 'test_USBTokenDetectorTest_test_token_to_other_device.vcd',
+        'title': 'test_token_to_other_device: token to 0x3a, device at 0x1f (mismatch)',
+        'signals': {
+            'rx_active': 'rx_active',
+            'rx_valid': 'rx_valid',
+            'rx_data': 'rx_data',
+            'new_token': 'usbtokendetector_new_token',
+            'address': 'usbtokendetector_address',
+        },
     },
     'handshake_detect': {
-        'head': {'text': 'USBHandshakeDetector — ACK detection'},
-        'signal': [
-            {'name': 'clk',           'wave': 'p......'},
-            {'name': 'rx_active',     'wave': '0.10..0'},
-            {'name': 'rx_valid',      'wave': '0.10..0'},
-            {'name': 'rx_data',        'wave': '2.3.2..2', 'data': ['SYNC','0xD2(ACK)']},
-            {'name': 'detected.ack',   'wave': '0..10..'},
-            {'name': 'detected.nak',   'wave': '0......'},
-            {'name': 'detected.stall', 'wave': '0......'},
-        ]
+        'vcd': 'test_USBHandshakeDetectorTest_test_ack.vcd',
+        'title': 'USBHandshakeDetector — ACK detection',
+        'signals': {
+            'rx_active': 'rx_active',
+            'rx_valid': 'rx_valid',
+            'rx_data': 'rx_data',
+            'detected.ack': 'ack',
+            'detected.nak': 'nak',
+            'detected.stall': 'stall',
+        },
+    },
+    'handshake_nak': {
+        'vcd': 'test_USBHandshakeDetectorTest_test_nak.vcd',
+        'title': 'test_nak: NAK detection (PID 0x5A)',
+        'signals': {
+            'rx_active': 'rx_active',
+            'rx_valid': 'rx_valid',
+            'rx_data': 'rx_data',
+            'detected.nak': 'nak',
+            'detected.ack': 'ack',
+        },
+    },
+    'handshake_stall': {
+        'vcd': 'test_USBHandshakeDetectorTest_test_stall.vcd',
+        'title': 'test_stall: STALL detection (PID 0x1E)',
+        'signals': {
+            'rx_active': 'rx_active',
+            'rx_valid': 'rx_valid',
+            'rx_data': 'rx_data',
+            'detected.stall': 'stall',
+            'detected.ack': 'ack',
+        },
     },
     'data_rx': {
-        'head': {'text': 'USBDataPacketReceiver — DATA0 + 8 bytes + CRC16'},
-        'signal': [
-            {'name': 'clk',             'wave': 'p..............'},
-            {'name': 'rx_active',       'wave': '0.1...........0'},
-            {'name': 'rx_valid',        'wave': '0.1.0.....1...0'},
-            {'name': 'rx_data',         'wave': '2.3.4.........2', 'data': ['SYNC','PID=0xC3','payload+CRC','idle']},
-            {'name': 'stream.valid',    'wave': '0........10....'},
-            {'name': 'stream.next',     'wave': '0........1.0...'},
-            {'name': 'stream.payload',  'wave': 'x........2x....', 'data': ['0xAA']},
-            {'name': 'packet_complete', 'wave': '0.........10...'},
-            {'name': 'active_pid',      'wave': 'x........2x....', 'data': ['DATA0']},
-        ]
+        'vcd': 'test_USBDataPacketReceiverTest_test_data_receive.vcd',
+        'title': 'USBDataPacketReceiver — DATA0 + 8 bytes + CRC16',
+        'signals': {
+            'rx_active': 'rx_active',
+            'rx_valid': 'rx_valid',
+            'rx_data': 'rx_data',
+            'stream.valid': 'usbdatapacketreceiver_valid',
+            'stream.next': 'usbdatapacketreceiver_next',
+            'stream.payload': 'usbdatapacketreceiver_payload',
+        },
+    },
+    'data_rx_zlp': {
+        'vcd': 'test_USBDataPacketReceiverTest_test_zlp.vcd',
+        'title': 'test_zlp: Zero-Length Packet (DATA1 + CRC16 only)',
+        'signals': {
+            'rx_active': 'rx_active',
+            'rx_valid': 'rx_valid',
+            'rx_data': 'rx_data',
+            'stream.valid': 'usbdatapacketreceiver_valid',
+        },
     },
     'data_deserialize': {
-        'head': {'text': 'USBDataPacketDeserializer — 4-byte packet capture'},
-        'signal': [
-            {'name': 'clk',       'wave': 'p............'},
-            {'name': 'rx_active', 'wave': '0.1.........0'},
-            {'name': 'rx_data',   'wave': '2.3.4.5.6...2', 'data': ['SYNC','PID','B0','B1','B2','CRC']},
-            {'name': 'new_packet','wave': '0........10..'},
-            {'name': 'length',    'wave': 'x........2x..', 'data': ['4']},
-            {'name': 'packet[0]', 'wave': 'x........2x..', 'data': ['B0']},
-            {'name': 'packet[1]', 'wave': 'x........3x..', 'data': ['B1']},
-            {'name': 'packet[2]', 'wave': 'x........4x..', 'data': ['B2']},
-            {'name': 'packet[3]', 'wave': 'x........5x..', 'data': ['B3']},
-        ]
+        'vcd': 'test_USBDataPacketDeserializerTest_test_packet_rx.vcd',
+        'title': 'USBDataPacketDeserializer — 4-byte packet capture',
+        'signals': {
+            'rx_active': 'rx_active',
+            'rx_data': 'rx_data',
+            'new_packet': 'usbdatapacketdeserializer0',
+            'length': 'usbdatapacketdeserializer1',
+            'packet[0]': 'usbdatapacketdeserializer_packet_0',
+            'packet[1]': 'usbdatapacketdeserializer_packet_1',
+            'packet[2]': 'usbdatapacketdeserializer_packet_2',
+            'packet[3]': 'usbdatapacketdeserializer_packet_3',
+        },
+    },
+    'data_deserialize_invalid': {
+        'vcd': 'test_USBDataPacketDeserializerTest_test_invalid_rx.vcd',
+        'title': 'test_invalid_rx: corrupted CRC16 → new_packet=0',
+        'signals': {
+            'rx_active': 'rx_active',
+            'rx_data': 'rx_data',
+            'new_packet': 'usbdatapacketdeserializer0',
+        },
     },
     'data_gen': {
-        'head': {'text': 'USBDataPacketGenerator — 8-byte stream to TX packet'},
-        'signal': [
-            {'name': 'clk',          'wave': 'p.............'},
-            {'name': 'stream.first', 'wave': '0.10..........'},
-            {'name': 'stream.last',  'wave': '0...........10'},
-            {'name': 'stream.valid', 'wave': '0...........10'},
-            {'name': 'stream.payload','wave':'x.4..........x', 'data': ['0xAA','0xBB','...']},
-            {'name': 'tx.valid',     'wave': '0..1.........0'},
-            {'name': 'tx.data',      'wave': 'x..4.........x', 'data': ['PID=0xC3','8 bytes','CRC16']},
-            {'name': 'stream.ready', 'wave': '0..1.........0'},
-        ]
+        'vcd': 'test_USBDataPacketGeneratorTest_test_simple_data_generation.vcd',
+        'title': 'USBDataPacketGenerator — 8-byte stream to TX packet',
+        'signals': {
+            'stream.first': 'usbdatapacketgenerator_usbinstreaminterface_first',
+            'stream.last': 'usbdatapacketgenerator_usbinstreaminterface_last',
+            'stream.valid': 'usbdatapacketgenerator_usbinstreaminterface_valid',
+            'stream.payload': 'usbdatapacketgenerator_usbinstreaminterface_payload',
+            'stream.ready': 'usbdatapacketgenerator_usbinstreaminterface_ready',
+            'tx.valid': 'usbdatapacketgenerator_utmitransmitinterface_valid',
+            'tx.data': 'usbdatapacketgenerator_utmitransmitinterface_data',
+        },
+    },
+    'data_gen_single': {
+        'vcd': 'test_USBDataPacketGeneratorTest_test_single_byte.vcd',
+        'title': 'test_single_byte: 1-byte stream → 1-byte packet',
+        'signals': {
+            'stream.first': 'usbdatapacketgenerator_usbinstreaminterface_first',
+            'stream.last': 'usbdatapacketgenerator_usbinstreaminterface_last',
+            'stream.valid': 'usbdatapacketgenerator_usbinstreaminterface_valid',
+            'stream.payload': 'usbdatapacketgenerator_usbinstreaminterface_payload',
+            'stream.ready': 'usbdatapacketgenerator_usbinstreaminterface_ready',
+            'tx.valid': 'usbdatapacketgenerator_utmitransmitinterface_valid',
+            'tx.data': 'usbdatapacketgenerator_utmitransmitinterface_data',
+        },
+    },
+    'data_gen_zlp': {
+        'vcd': 'test_USBDataPacketGeneratorTest_test_zlp_generation.vcd',
+        'title': 'test_zlp_generation: zero-length packet',
+        'signals': {
+            'stream.first': 'usbdatapacketgenerator_usbinstreaminterface_first',
+            'stream.last': 'usbdatapacketgenerator_usbinstreaminterface_last',
+            'stream.valid': 'usbdatapacketgenerator_usbinstreaminterface_valid',
+            'stream.payload': 'usbdatapacketgenerator_usbinstreaminterface_payload',
+            'stream.ready': 'usbdatapacketgenerator_usbinstreaminterface_ready',
+            'tx.valid': 'usbdatapacketgenerator_utmitransmitinterface_valid',
+            'tx.data': 'usbdatapacketgenerator_utmitransmitinterface_data',
+        },
     },
     'handshake_gen': {
-        'head': {'text': 'USBHandshakeGenerator — issue_ack strobe'},
-        'signal': [
-            {'name': 'clk',       'wave': 'p.....'},
-            {'name': 'issue_ack', 'wave': '0.10..'},
-            {'name': 'tx.valid',  'wave': '0..10.'},
-            {'name': 'tx.data',   'wave': 'x..2x..', 'data': ['0xD2(ACK)']},
-            {'name': 'tx.ready',  'wave': '0...10'},
-        ]
+        'vcd': 'test_USBHandshakeGeneratorTest_test_ack_generation.vcd',
+        'title': 'USBHandshakeGenerator — issue_ack strobe',
+        'signals': {
+            'issue_ack': 'usbhandshakegenerator0',
+            'tx.valid': 'usbhandshakegenerator_valid',
+            'tx.data': 'usbhandshakegenerator_data',
+            'tx.ready': 'usbhandshakegenerator_ready',
+        },
+    },
+    'handshake_gen_ready': {
+        'vcd': 'test_USBHandshakeGeneratorTest_test_already_ready.vcd',
+        'title': 'test_already_ready: tx_ready=1 already high → single-cycle valid',
+        'signals': {
+            'issue_ack': 'usbhandshakegenerator0',
+            'tx.valid': 'usbhandshakegenerator_valid',
+            'tx.data': 'usbhandshakegenerator_data',
+            'tx.ready': 'usbhandshakegenerator_ready',
+        },
     },
     'reset_seq': {
-        'head': {'text': 'USBResetSequencer — Full Speed Reset to HS Detection'},
-        'signal': [
-            {'name': 'clk',           'wave': 'p.............'},
-            {'name': 'line_state',    'wave': '2.3..........2', 'data': ['0b01(J)','0b00(SE0)','0b01(J)']},
-            {'name': 'vbus_connected','wave': '0.1...........'},
-            {'name': 'bus_reset',     'wave': '0....10.......'},
-            {'name': 'current_speed', 'wave': 'x.2...2x...2x.', 'data': ['FULL','HIGH']},
-            {'name': 'operating_mode','wave': 'x.2.....2x....', 'data': ['NORMAL','CHIRP']},
-        ]
+        'vcd': 'test_USBResetSequencerTest_test_full_speed_reset.vcd',
+        'title': 'USBResetSequencer — Full Speed Reset to HS Detection',
+        'signals': {
+            'line_state': 'line_state_time',
+            'vbus_connected': 'usbresetsequencer10',
+            'bus_reset': 'bus_idle',
+            'current_speed': 'usbresetsequencer4',
+            'operating_mode': 'usbresetsequencer8',
+        },
     },
     'control_ep0': {
-        'head': {'text': 'USBControlEndpoint — EP0 stages: SETUP, DATA_IN, STATUS_OUT'},
-        'signal': [
-            {'name': 'clk',           'wave': 'p...............'},
-            {'name': 'setup.received','wave': '0.10............'},
-            {'name': 'fsm_state',     'wave': '2.3.4.5.2.......', 'data': ['SETUP','DATA_IN','STATUS_OUT','IDLE']},
-            {'name': 'rx.valid',      'wave': '0.10.0..10.0....'},
-            {'name': 'tx.valid',      'wave': '0..0..1.0..0.10.'},
-            {'name': 'tx.first',      'wave': '0..0..10.0.0....'},
-            {'name': 'tx.last',       'wave': '0...........10..'},
-        ]
+        'vcd': 'control_endpoint.vcd',
+        'title': 'USBControlEndpoint — EP0 stages: SETUP, DATA_IN, STATUS_OUT',
+        'signals': {
+            'rx.valid': 'utmi_rx_valid',
+            'rx.data': 'utmi_rx_data',
+            'rx.active': 'utmi_rx_active',
+            'tx.valid': 'endpointinterface_usbinstreaminterface_valid',
+            'tx.data': 'endpointinterface_usbinstreaminterface_payload',
+        },
     },
     'transfer_in': {
-        'head': {'text': 'USBInTransferManager — Double-buffered IN with PID toggle'},
-        'signal': [
-            {'name': 'clk',          'wave': 'p...............'},
-            {'name': 'transfer.valid','wave': '0.10...10......'},
-            {'name': 'transfer.last', 'wave': '0.....10.......'},
-            {'name': 'token.is_in',  'wave': '0......10....10'},
-            {'name': 'data_pid',     'wave': 'x.2........3..2', 'data': ['DATA0','DATA1','DATA0']},
-            {'name': 'tx.valid',     'wave': '0.......10....1'},
-            {'name': 'tx.payload',   'wave': 'x.......2x....2', 'data': ['pkt[0]','pkt[1]']},
-            {'name': 'ack',          'wave': '0........10..'},
-            {'name': 'nak',          'wave': '0.............'},
-        ]
+        'vcd': 'test_USBInTransferManagerTest_test_normal_transfer.vcd',
+        'title': 'USBInTransferManager — Double-buffered IN with PID toggle',
+        'signals': {
+            'transfer.valid': 'transfer_stream_valid',
+            'transfer.last': 'transfer_stream_last',
+            'data_pid': 'data_pid',
+            'packet.valid': 'packet_stream_valid',
+            'packet.payload': 'packet_stream_payload',
+        },
+    },
+    'transfer_nak_retransmit': {
+        'vcd': 'test_USBInTransferManagerTest_test_normal_transfer.vcd',
+        'title': 'test_normal_transfer: NAK → retransmit same PID',
+        'signals': {
+            'token.is_in': 'tokenizer_is_in',
+            'tx.valid': 'packet_stream_valid',
+            'data_pid': 'data_pid',
+            'ack': 'handshakes_in_ack',
+            'nak': 'handshakes_out_nak',
+        },
+    },
+    'transfer_nak_not_ready': {
+        'vcd': 'test_USBInTransferManagerTest_test_nak_when_not_ready.vcd',
+        'title': 'test_nak_when_not_ready: IN token with empty buffer → NAK',
+        'signals': {
+            'token.is_in': 'tokenizer_is_in',
+            'tx.valid': 'packet_stream_valid',
+            'nak': 'handshakes_out_nak',
+            'ack': 'handshakes_in_ack',
+            'active': 'active',
+        },
+    },
+    'transfer_zlp_behavior': {
+        'vcd': 'test_USBInTransferManagerTest_test_zlp_generation.vcd',
+        'title': 'test_zlp_generation: full last-packet → ZLP; short last-packet → no ZLP',
+        'signals': {
+            'transfer.last': 'transfer_stream_last',
+            'token.is_in': 'tokenizer_is_in',
+            'tx.valid': 'packet_stream_valid',
+            'tx.last': 'packet_stream_last',
+            'generate_zlps': 'generate_zlps',
+        },
+    },
+    'transfer_discard': {
+        'vcd': 'test_USBInTransferManagerTest_test_discard.vcd',
+        'title': 'test_discard: discard drops queued packet',
+        'signals': {
+            'transfer.valid': 'transfer_stream_valid',
+            'discard': 'discard',
+            'token.is_in': 'tokenizer_is_in',
+            'tx.valid': 'packet_stream_valid',
+            'data_pid': 'data_pid',
+            'ack': 'handshakes_in_ack',
+        },
     },
     'descriptor': {
-        'head': {'text': 'USBDescriptorStreamGenerator — ROM data to USB stream'},
-        'signal': [
-            {'name': 'clk',       'wave': 'p..........'},
-            {'name': 'start',     'wave': '0.10.......'},
-            {'name': 'tx.valid',  'wave': '0..1......0'},
-            {'name': 'tx.first',  'wave': '0..10......'},
-            {'name': 'tx.last',   'wave': '0.....1...0'},
-            {'name': 'tx.payload','wave': 'x..3......x', 'data': ['desc[0]','desc[1]','desc[n-1]']},
-            {'name': 'tx.ready',  'wave': '0..1......0'},
-            {'name': 'stall',     'wave': '0..........'},
-        ]
+        'vcd': 'descriptor_generator.vcd',
+        'title': 'USBDescriptorStreamGenerator — ROM data to USB stream',
+        'signals': {
+            'start': 'usbdescriptorstreamgenerator_on_first_packet',
+            'tx.valid': 'usbdescriptorstreamgenerator_valid',
+            'tx.first': 'usbdescriptorstreamgenerator_first',
+            'tx.last': 'usbdescriptorstreamgenerator_last',
+            'tx.payload': 'usbdescriptorstreamgenerator_payload',
+            'tx.ready': 'usbdescriptorstreamgenerator_ready',
+        },
     },
     'setup_decoder': {
-        'head': {'text': 'USBSetupDecoder — 8-byte setup packet decode'},
-        'signal': [
-            {'name': 'clk',           'wave': 'p...............'},
-            {'name': 'rx_active',     'wave': '0.1......0.1..0'},
-            {'name': 'rx_data',       'wave': '2.3......2.3..2', 'data': ['SETUP PID','DATA0 PID','setup[0:7]','CRC']},
-            {'name': 'ack',           'wave': '0.........10....'},
-            {'name': 'packet.received','wave':'0..........10...'},
-        ]
+        'vcd': 'test_USBSetupDecoderTest_test_valid_sequence_receive.vcd',
+        'title': 'USBSetupDecoder — 8-byte setup packet decode',
+        'signals': {
+            'rx_active': 'rx_active',
+            'rx_data': 'rx_data',
+            'ack': 'usbsetupdecoder1',
+            'packet.received': 'usbsetupdecoder_received',
+        },
+    },
+    'request_valid_sequence': {
+        'vcd': 'test_USBSetupDecoderTest_test_valid_sequence_receive.vcd',
+        'title': 'test_valid_sequence_receive: Full SETUP transaction → decoded SetupPacket',
+        'signals': {
+            'rx_active': 'rx_active',
+            'rx_data': 'rx_data',
+            'ack': 'usbsetupdecoder1',
+            'packet.received': 'usbsetupdecoder_received',
+        },
+    },
+    'request_fs_delay': {
+        'vcd': 'test_USBSetupDecoderTest_test_fs_interpacket_delay.vcd',
+        'title': 'test_fs_interpacket_delay: 10-cycle interpacket gap at Full Speed',
+        'signals': {
+            'start': 'usbsetupdecoder_interpackettimerinterface_start',
+            'tx_allowed': 'usbsetupdecoder_interpackettimerinterface_tx_allowed',
+            'tx_timeout': 'usbsetupdecoder_interpackettimerinterface_tx_timeout',
+            'rx_timeout': 'usbsetupdecoder_interpackettimerinterface_rx_timeout',
+        },
+    },
+    'request_truncated': {
+        'vcd': 'test_USBSetupDecoderTest_test_short_setup_packet.vcd',
+        'title': 'test_short_setup_packet: truncated 4-byte setup → ignored',
+        'signals': {
+            'rx_active': 'rx_active',
+            'rx_data': 'rx_data',
+            'packet.received': 'usbsetupdecoder_received',
+            'error': 'usbsetupdecoder1',
+        },
+    },
+    'timer_resets_and_delays': {
+        'vcd': 'test_USBInterpacketTimerTest_test_resets_and_delays.vcd',
+        'title': 'USBInterpacketTimer — FS reset and delay strobes',
+        'signals': {
+            'start': 'start',
+            'tx_allowed': 'tx_allowed',
+            'tx_timeout': 'tx_timeout',
+            'rx_timeout': 'rx_timeout',
+        },
     },
     'stream_boundary': {
-        'head': {'text': 'USBOutStreamBoundaryDetector — first/last byte detection'},
-        'signal': [
-            {'name': 'clk',          'wave': 'p..........'},
-            {'name': 'unproc.valid', 'wave': '0.1......0.'},
-            {'name': 'unproc.payload','wave':'x.4......x.', 'data': ['0xAA','0xBB','0xCC','0xDD']},
-            {'name': 'proc.valid',   'wave': '0...1.....0'},
-            {'name': 'proc.payload', 'wave': 'x...4....x.', 'data': ['0xAA','0xBB','0xCC','0xDD']},
-            {'name': 'first',        'wave': '0....10....'},
-            {'name': 'last',         'wave': '0........10'},
-        ]
+        'vcd': 'test_USBOutStreamBoundaryDetectorTest_test_boundary_detection.vcd',
+        'title': 'USBOutStreamBoundaryDetector — first/last byte detection',
+        'signals': {
+            'unproc.valid': 'usboutstreamboundarydetector_usboutstreaminterface0_valid',
+            'unproc.payload': 'usboutstreamboundarydetector_usboutstreaminterface0_payload',
+            'proc.valid': 'usboutstreamboundarydetector_usboutstreaminterface1_valid',
+            'proc.payload': 'usboutstreamboundarydetector_usboutstreaminterface1_payload',
+            'first': 'usboutstreamboundarydetector_is_first_byte',
+            'last': 'usboutstreamboundarydetector_buffered_complete',
+        },
     },
     'ulpi_transmit': {
-        'head': {'text': 'ULPITransmitTranslator — SOF packet transmission'},
-        'signal': [
-            {'name': 'clk',          'wave': 'p........'},
-            {'name': 'tx_valid',     'wave': '0.10.....'},
-            {'name': 'tx_data',      'wave': 'x.2x.....', 'data': ['0xA5(SOF)']},
-            {'name': 'ulpi_data_out','wave': 'x.2.3....', 'data': ['CMD|PID','0x11']},
-            {'name': 'ulpi_out_req', 'wave': '0.10.....'},
-            {'name': 'ulpi_nxt',     'wave': '0..10....'},
-            {'name': 'ulpi_stp',     'wave': '0....10..'},
-            {'name': 'tx_ready',     'wave': '0..10....'},
-        ]
+        'vcd': 'test_ULPITransmitTranslatorTest_test_simple_transmit.vcd',
+        'title': 'ULPITransmitTranslator — SOF packet transmission',
+        'signals': {
+            'tx_valid': 'ulpitransmittranslator1',
+            'tx_data': 'ulpitransmittranslator0',
+            'ulpi_data_out': 'ulpitransmittranslator6',
+            'ulpi_out_req': 'ulpitransmittranslator2',
+            'ulpi_nxt': 'ulpitransmittranslator5',
+            'ulpi_stp': 'ulpitransmittranslator7',
+            'tx_ready': 'ulpitransmittranslator8',
+        },
+    },
+    'ulpi_simple_transmit': {
+        'vcd': 'test_ULPITransmitTranslatorTest_test_simple_transmit.vcd',
+        'title': 'test_simple_transmit: ULPITransmitTranslator SOF packet (0xA5)',
+        'signals': {
+            'tx_valid': 'ulpitransmittranslator1',
+            'tx_data': 'ulpitransmittranslator0',
+            'ulpi_data_out': 'ulpitransmittranslator6',
+            'ulpi_out_req': 'ulpitransmittranslator2',
+            'ulpi_nxt': 'ulpitransmittranslator5',
+            'ulpi_stp': 'ulpitransmittranslator7',
+            'tx_ready': 'ulpitransmittranslator8',
+        },
+    },
+    'ulpi_handshake': {
+        'vcd': 'test_ULPITransmitTranslatorTest_test_handshake.vcd',
+        'title': 'test_handshake: ULPITransmitTranslator ACK handshake (PID 0xD2)',
+        'signals': {
+            'tx_valid': 'ulpitransmittranslator1',
+            'tx_data': 'ulpitransmittranslator0',
+            'ulpi_data_out': 'ulpitransmittranslator6',
+            'ulpi_out_req': 'ulpitransmittranslator2',
+            'ulpi_nxt': 'ulpitransmittranslator5',
+            'ulpi_stp': 'ulpitransmittranslator7',
+            'tx_ready': 'ulpitransmittranslator8',
+        },
+    },
+    'ulpi_idle_behavior': {
+        'vcd': 'test_TestULPIRegisters_test_idle_behavior.vcd',
+        'title': 'test_idle_behavior: ULPIRegisterWindow idle state — NOP on data_out',
+        'signals': {
+            'busy': 'ulpiregisterwindow2',
+            'ulpi_data_out': 'ulpiregisterwindow1',
+            'read_request': 'ulpiregisterwindow6',
+            'write_request': 'ulpiregisterwindow4',
+            'done': 'ulpiregisterwindow8',
+        },
+    },
+    'ulpi_register_read': {
+        'vcd': 'test_TestULPIRegisters_test_register_read.vcd',
+        'title': 'test_register_read: ULPIRegisterWindow read flow (REG_READ=0xC0)',
+        'signals': {
+            'read_request': 'ulpiregisterwindow2',
+            'busy': 'ulpiregisterwindow6',
+            'ulpi_data_out': 'ulpiregisterwindow1',
+            'ulpi_out_req': 'ulpiregisterwindow4',
+            'ulpi_nxt': 'ulpiregisterwindow5',
+            'ulpi_dir': 'ulpiregisterwindow3',
+            'read_data': 'ulpiregisterwindow10',
+            'done': 'ulpiregisterwindow8',
+        },
+    },
+    'ulpi_interrupted_read': {
+        'vcd': 'test_TestULPIRegisters_test_interrupted_read.vcd',
+        'title': 'test_interrupted_read: DIR mid-read → ulpi_out_req dropped, then re-driven',
+        'signals': {
+            'read_request': 'ulpiregisterwindow2',
+            'busy': 'ulpiregisterwindow6',
+            'ulpi_out_req': 'ulpiregisterwindow4',
+            'ulpi_dir': 'ulpiregisterwindow3',
+            'ulpi_data_out': 'ulpiregisterwindow1',
+            'ulpi_nxt': 'ulpiregisterwindow5',
+            'read_data': 'ulpiregisterwindow10',
+            'done': 'ulpiregisterwindow8',
+        },
+    },
+    'ulpi_register_write': {
+        'vcd': 'test_TestULPIRegisters_test_register_write.vcd',
+        'title': 'test_register_write: ULPIRegisterWindow write flow (REG_WRITE=0x80)',
+        'signals': {
+            'write_request': 'ulpiregisterwindow2',
+            'busy': 'ulpiregisterwindow6',
+            'ulpi_data_out': 'ulpiregisterwindow1',
+            'ulpi_out_req': 'ulpiregisterwindow4',
+            'ulpi_nxt': 'ulpiregisterwindow5',
+            'ulpi_stop': 'ulpiregisterwindow8',
+            'done': 'ulpiregisterwindow9',
+        },
+    },
+    'ulpi_decode': {
+        'vcd': 'test_ULPIRxEventDecoderTest_test_decode.vcd',
+        'title': 'test_decode: ULPIRxEventDecoder — DIR+NXT ignored; DIR alone → rx_active',
+        'signals': {
+            'ulpi_dir': 'dir',
+            'ulpi_nxt': 'nxt',
+            'ulpi_data_i': 'data_i',
+            'line_state': 'direction_delayed',
+            'vbus_valid': 'receiving',
+            'rx_active': 'ulpirxeventdecoder3',
+        },
+    },
+    'ulpi_multiwrite': {
+        'vcd': 'test_ControlTranslatorTest_test_multiwrite_behavior.vcd',
+        'title': 'test_multiwrite_behavior: ULPIControlTranslator — func ctrl + OTG ctrl',
+        'signals': {
+            'reg_04_value': 'current_register_value_04',
+            'reg_04_write': 'write_requested_04',
+            'reg_04_wdata': 'write_value_04',
+            'reg_04_done': 'write_done_04',
+            'reg_0a_value': 'current_register_value_0a',
+            'reg_0a_write': 'write_requested_0a',
+            'reg_0a_wdata': 'write_value_0a',
+            'reg_0a_done': 'write_done_0a',
+        },
+    },
+    'device_enumeration': {
+        'vcd': 'test_TestFullDevice_test_enumeration.vcd',
+        'title': 'TestFullDevice::test_enumeration — GET_DESCRIPTOR, SET_ADDRESS, SET_CONFIG',
+        'signals': {
+            'rx_active': 'rx_active',
+            'rx_valid': 'rx_valid',
+            'rx_data': 'rx_data',
+            'tx_valid': 'tx_valid',
+            'tx_data': 'tx_data',
+        },
+    },
+    'device_long_descriptor': {
+        'vcd': 'test_TestLongDescriptor_test_long_descriptor.vcd',
+        'title': 'TestLongDescriptor::test_long_descriptor — 30-endpoint config descriptor',
+        'signals': {
+            'rx_active': 'rx_active',
+            'rx_valid': 'rx_valid',
+            'rx_data': 'rx_data',
+            'tx_valid': 'tx_valid',
+            'tx_data': 'tx_data',
+        },
+    },
+    'device_descriptor_zlp': {
+        'vcd': 'test_TestLongDescriptor_test_descriptor_zlp.vcd',
+        'title': 'TestLongDescriptor::test_descriptor_zlp — max-length packet + ZLP',
+        'signals': {
+            'rx_active': 'rx_active',
+            'rx_valid': 'rx_valid',
+            'rx_data': 'rx_data',
+            'tx_valid': 'tx_valid',
+            'tx_data': 'tx_data',
+        },
     },
 }
 
-for name, d in diagrams.items():
-    with open(f'{OUT}/{name}.json', 'w') as f:
-        json.dump(d, f, indent=2)
-    print(f'  {name}.json')
-print(f'\n{len(diagrams)} files written')
+
+def find_vcd(pattern):
+    """Find a VCD file in VCD_DIR matching a glob or exact name."""
+    if pattern.startswith('test_') and pattern.endswith('.vcd'):
+        exact = VCD_DIR / pattern
+        if exact.exists():
+            return exact
+    matches = list(VCD_DIR.glob(pattern))
+    if not matches:
+        raise FileNotFoundError(f"No VCD matching {pattern} in {VCD_DIR}")
+    return matches[0]
+
+
+def main():
+    ok = 0
+    for name, cfg in DIAGRAMS.items():
+        try:
+            vcd = find_vcd(cfg['vcd'])
+            diagram = build_diagram(
+                vcd,
+                cfg['title'],
+                cfg['signals'],
+                foot=cfg.get('foot'),
+                clock_refs=cfg.get('clock_refs', ('usb_clk', 'sys_clk', 'sync_clk', 'clk'))
+            )
+            out = OUT_DIR / f"{name}.json"
+            with open(out, 'w') as f:
+                json.dump(diagram, f, indent=2)
+            print(f"  {name}.json ({len(diagram['signal'])-1} signals)")
+            ok += 1
+        except Exception as e:
+            print(f"  FAILED {name}: {e}")
+    print(f"\n{ok}/{len(DIAGRAMS)} diagrams written to {OUT_DIR}/")
+
+
+if __name__ == "__main__":
+    main()

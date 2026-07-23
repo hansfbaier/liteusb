@@ -13,14 +13,15 @@ from liteusb.gateware.usb.usb2 import USBPacketID
 from liteusb.gateware.interface.utmi import UTMIInterface
 
 from .contrib import usb_packet
+from .test_case import LiteUSBTestCase
 
 
-class USBDeviceTest:
+class USBDeviceTest(LiteUSBTestCase):
     """ Test case strap for UTMI-connected devices.
-    
+
     This is a base class for USB device tests. It provides methods for sending
     and receiving USB packets, as well as higher-level transaction helpers.
-    
+
     To use this class, subclass it and define:
         FRAGMENT_UNDER_TEST - the class of the DUT to test
         FRAGMENT_ARGUMENTS - dictionary of arguments to pass to the DUT
@@ -37,7 +38,9 @@ class USBDeviceTest:
     # Keeping this reasonable prevents the simulation from running indefinitely.
     MAX_NAKS = 100
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.utmi = UTMIInterface()
 
         # Vitals about the device.
@@ -199,21 +202,6 @@ class USBDeviceTest:
             if timeout_counter >= timeout:
                 raise TimeoutError("Timeout waiting for signal")
             yield
-
-    def advance_cycles(self, cycles):
-        """ Advance simulation by a number of cycles. """
-        for _ in range(cycles):
-            yield
-
-    def assertEqual(self, a, b):
-        """ Assert that two values are equal. """
-        if a != b:
-            raise AssertionError(f"Assertion failed: {a!r} != {b!r}")
-
-    def assertLess(self, a, b):
-        """ Assert that a is less than b. """
-        if not (a < b):
-            raise AssertionError(f"Assertion failed: {a!r} is not less than {b!r}")
 
     #
     # More complex transaction helpers.
@@ -543,7 +531,9 @@ class USBDeviceTest:
         response_pid = yield from self.control_request_out(0,
             USBStandardRequests.SET_ADDRESS, value=new_address)
 
-        if update_address and (response_pid == USBPacketID.ACK):
+        # The status stage returns the ZLP's data PID (DATA1 on success),
+        # not a handshake ACK — match LUNA's harness semantics here.
+        if update_address and (response_pid == USBPacketID.DATA1):
             self.address = new_address
 
         return response_pid

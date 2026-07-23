@@ -1,44 +1,43 @@
 {
   "head": {
-    "text": "test_zlp_generation: zero-length packet (first=0,last=1,valid=1,no payload)"
+    "text": "test_zlp_generation: zero-length packet"
   },
   "signal": [
     {
       "name": "clk",
-      "wave": "p......."
+      "wave": "p...."
     },
     {
       "name": "stream.first",
-      "wave": "0.0....."
+      "wave": "0...."
     },
     {
       "name": "stream.last",
-      "wave": "0.10...."
+      "wave": "010.."
     },
     {
       "name": "stream.valid",
-      "wave": "0.10...."
+      "wave": "01.0."
     },
     {
       "name": "stream.payload",
-      "wave": "x.x....."
-    },
-    {
-      "name": "tx.valid",
-      "wave": "0..1...0"
-    },
-    {
-      "name": "tx.data",
-      "wave": "x..4..x",
-      "data": [
-        "PID=0xC3",
-        "CRC=0",
-        "CRC=0"
-      ]
+      "wave": "0...."
     },
     {
       "name": "stream.ready",
-      "wave": "0..1...0"
+      "wave": "0...."
+    },
+    {
+      "name": "tx.valid",
+      "wave": "0.1.."
+    },
+    {
+      "name": "tx.data",
+      "wave": "2.32.",
+      "data": [
+        "0x0",
+        "0xc3"
+      ]
     }
   ]
 }
