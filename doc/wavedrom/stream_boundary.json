@@ -8,11 +8,11 @@
       "wave": "p......"
     },
     {
-      "name": "unproc.valid",
+      "name": "\u2192 unproc.valid",
       "wave": "1...0.."
     },
     {
-      "name": "unproc.payload",
+      "name": "\u2192 unproc.payload",
       "wave": "2345...",
       "data": [
         "0x0",
@@ -22,11 +22,11 @@
       ]
     },
     {
-      "name": "proc.valid",
+      "name": "proc.valid \u2192",
       "wave": "0.1...0"
     },
     {
-      "name": "proc.payload",
+      "name": "proc.payload \u2192",
       "wave": "2.3456.",
       "data": [
         "0x0",
@@ -37,11 +37,11 @@
       ]
     },
     {
-      "name": "first",
+      "name": "first \u2192",
       "wave": "010...."
     },
     {
-      "name": "last",
+      "name": "last \u2192",
       "wave": "0......"
     }
   ]

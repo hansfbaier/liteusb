@@ -8,11 +8,11 @@
       "wave": "p.........."
     },
     {
-      "name": "rx_active",
+      "name": "\u2192 rx_active",
       "wave": "1........0."
     },
     {
-      "name": "rx_data",
+      "name": "\u2192 rx_data",
       "wave": "23456789...",
       "data": [
         "0x0",
@@ -26,11 +26,11 @@
       ]
     },
     {
-      "name": "new_packet",
+      "name": "new_packet \u2192",
       "wave": "0.........."
     },
     {
-      "name": "length",
+      "name": "length \u2192",
       "wave": "2.........3",
       "data": [
         "0x0",
@@ -38,7 +38,7 @@
       ]
     },
     {
-      "name": "packet[0]",
+      "name": "packet[0] \u2192",
       "wave": "2.........3",
       "data": [
         "0x0",
@@ -46,7 +46,7 @@
       ]
     },
     {
-      "name": "packet[1]",
+      "name": "packet[1] \u2192",
       "wave": "2.........3",
       "data": [
         "0x0",
@@ -54,7 +54,7 @@
       ]
     },
     {
-      "name": "packet[2]",
+      "name": "packet[2] \u2192",
       "wave": "2.........3",
       "data": [
         "0x0",
@@ -62,7 +62,7 @@
       ]
     },
     {
-      "name": "packet[3]",
+      "name": "packet[3] \u2192",
       "wave": "2.........3",
       "data": [
         "0x0",

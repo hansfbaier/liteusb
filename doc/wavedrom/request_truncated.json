@@ -8,11 +8,11 @@
       "wave": "p................."
     },
     {
-      "name": "rx_active",
+      "name": "\u2192 rx_active",
       "wave": "01...0.1.......0.."
     },
     {
-      "name": "rx_data",
+      "name": "\u2192 rx_data",
       "wave": "2.324...56789ab...",
       "data": [
         "0x0",
@@ -28,11 +28,11 @@
       ]
     },
     {
-      "name": "packet.received",
+      "name": "packet.received \u2192",
       "wave": "0................."
     },
     {
-      "name": "error",
+      "name": "error \u2192",
       "wave": "0................."
     }
   ]

@@ -8,15 +8,15 @@
       "wave": "p........................"
     },
     {
-      "name": "rx_active",
+      "name": "\u2192 rx_active",
       "wave": "1............0..........."
     },
     {
-      "name": "rx_valid",
+      "name": "\u2192 rx_valid",
       "wave": "1....01......0..........."
     },
     {
-      "name": "rx_data",
+      "name": "\u2192 rx_data",
       "wave": "23245.2....67............",
       "data": [
         "0x0",
@@ -28,15 +28,15 @@
       ]
     },
     {
-      "name": "stream.valid",
+      "name": "stream.valid \u2192",
       "wave": "0...1.........0.........."
     },
     {
-      "name": "stream.next",
+      "name": "stream.next \u2192",
       "wave": "0...101......0..........."
     },
     {
-      "name": "stream.payload",
+      "name": "stream.payload \u2192",
       "wave": "2.....342................",
       "data": [
         "0x0",

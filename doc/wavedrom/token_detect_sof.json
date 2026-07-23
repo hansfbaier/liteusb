@@ -8,15 +8,15 @@
       "wave": "p......"
     },
     {
-      "name": "rx_active",
+      "name": "\u2192 rx_active",
       "wave": "1...0.."
     },
     {
-      "name": "rx_valid",
+      "name": "\u2192 rx_valid",
       "wave": "01...0."
     },
     {
-      "name": "rx_data",
+      "name": "\u2192 rx_data",
       "wave": "2345...",
       "data": [
         "0x0",
@@ -26,15 +26,15 @@
       ]
     },
     {
-      "name": "new_token",
+      "name": "new_token \u2192",
       "wave": "0......"
     },
     {
-      "name": "new_frame",
+      "name": "new_frame \u2192",
       "wave": "0....10"
     },
     {
-      "name": "frame",
+      "name": "frame \u2192",
       "wave": "2....3.",
       "data": [
         "0x0",

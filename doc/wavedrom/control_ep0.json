@@ -8,11 +8,11 @@
       "wave": "p....................."
     },
     {
-      "name": "rx.valid",
+      "name": "\u2192 rx.valid",
       "wave": "0.1........0.........."
     },
     {
-      "name": "rx.data",
+      "name": "\u2192 rx.data",
       "wave": "2..34252.62...........",
       "data": [
         "0x0",
@@ -23,15 +23,15 @@
       ]
     },
     {
-      "name": "rx.active",
+      "name": "\u2192 rx.active",
       "wave": "01.........0.........."
     },
     {
-      "name": "tx.valid",
+      "name": "tx.valid \u2192",
       "wave": "0....................."
     },
     {
-      "name": "tx.data",
+      "name": "tx.data \u2192",
       "wave": "0....................."
     }
   ]

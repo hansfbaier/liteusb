@@ -8,19 +8,19 @@
       "wave": "p............."
     },
     {
-      "name": "stream.first",
+      "name": "\u2192 stream.first",
       "wave": "1..0.........."
     },
     {
-      "name": "stream.last",
+      "name": "\u2192 stream.last",
       "wave": "0........1...."
     },
     {
-      "name": "stream.valid",
+      "name": "\u2192 stream.valid",
       "wave": "1.........0..."
     },
     {
-      "name": "stream.payload",
+      "name": "\u2192 stream.payload",
       "wave": "2...342.......",
       "data": [
         "0x0",
@@ -29,15 +29,15 @@
       ]
     },
     {
-      "name": "stream.ready",
+      "name": "stream.ready \u2192",
       "wave": "0.1.......0..."
     },
     {
-      "name": "tx.valid",
+      "name": "tx.valid \u2192",
       "wave": "0.1..........0"
     },
     {
-      "name": "tx.data",
+      "name": "tx.data \u2192",
       "wave": "2.32452....672",
       "data": [
         "0x0",

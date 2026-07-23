@@ -8,18 +8,18 @@
       "wave": "p...."
     },
     {
-      "name": "tx_valid",
+      "name": "\u2192 tx_valid",
       "wave": "1.0.."
     },
     {
-      "name": "tx_data",
+      "name": "\u2192 tx_data",
       "wave": "2....",
       "data": [
         "0xd2"
       ]
     },
     {
-      "name": "ulpi_data_out",
+      "name": "ulpi_data_out \u2192",
       "wave": "232..",
       "data": [
         "0x0",
@@ -27,19 +27,19 @@
       ]
     },
     {
-      "name": "ulpi_out_req",
+      "name": "ulpi_out_req \u2192",
       "wave": "01.0."
     },
     {
-      "name": "ulpi_nxt",
+      "name": "\u2192 ulpi_nxt",
       "wave": "0.10."
     },
     {
-      "name": "ulpi_stp",
+      "name": "ulpi_stp \u2192",
       "wave": "01..."
     },
     {
-      "name": "tx_ready",
+      "name": "tx_ready \u2192",
       "wave": "0.10."
     }
   ]

@@ -8,15 +8,15 @@
       "wave": "p............................."
     },
     {
-      "name": "write_request",
+      "name": "\u2192 write_request",
       "wave": "0...1...........01..........0."
     },
     {
-      "name": "busy",
+      "name": "busy \u2192",
       "wave": "0..1.........................0"
     },
     {
-      "name": "ulpi_data_out",
+      "name": "ulpi_data_out \u2192",
       "wave": "2...3...........4...........2.",
       "data": [
         "0x0",
@@ -25,19 +25,19 @@
       ]
     },
     {
-      "name": "ulpi_out_req",
+      "name": "ulpi_out_req \u2192",
       "wave": "0..............10..........1.."
     },
     {
-      "name": "ulpi_nxt",
+      "name": "\u2192 ulpi_nxt",
       "wave": "0...........................10"
     },
     {
-      "name": "ulpi_stop",
+      "name": "ulpi_stop \u2192",
       "wave": "0...........................1."
     },
     {
-      "name": "done",
+      "name": "done \u2192",
       "wave": "0............................."
     }
   ]

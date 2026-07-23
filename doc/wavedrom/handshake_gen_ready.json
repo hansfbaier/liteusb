@@ -8,15 +8,15 @@
       "wave": "p..."
     },
     {
-      "name": "issue_ack",
+      "name": "\u2192 issue_ack",
       "wave": "0..."
     },
     {
-      "name": "tx.valid",
+      "name": "tx.valid \u2192",
       "wave": "010."
     },
     {
-      "name": "tx.data",
+      "name": "tx.data \u2192",
       "wave": "23..",
       "data": [
         "0x0",
@@ -24,7 +24,7 @@
       ]
     },
     {
-      "name": "tx.ready",
+      "name": "\u2192 tx.ready",
       "wave": "1..."
     }
   ]
