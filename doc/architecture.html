@@ -35,6 +35,8 @@ tr:nth-child(even) { background: #f8f8f8; }
 .toc li { margin: 2px 0; }
 /* WaveDrom skin override — ensure it uses light background */
 .wavedrom svg { background: #fff !important; }
+
+.vcd-link { font-size: 0.85em; color: #888; text-decoration: none; margin-left: 4px; }
 </style>
 </head>
 <body>
@@ -725,7 +727,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 <ul>
-<li><b>test_valid_token</b> (DUT: <code>USBTokenDetector</code>): Sends an OUT token to address 0x3a; verifies new_token=1, pid=OUT, address=0x3a, endpoint=0xa.</li>
+<li><b>test_valid_token</b> (DUT: <code>USBTokenDetector</code>): Sends an OUT token to address 0x3a; verifies new_token=1, pid=OUT, address=0x3a, endpoint=0xa. <a href="fliplot/index.html?vcd=../vcd/test_USBTokenDetectorTest_test_valid_token.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "USBTokenDetector \u2014 OUT token to address 0x3a"}, "signal": [{"name": "clk", "wave": "p................."}, {"name": "\u2192 rx_active", "wave": "0.........1...0..."}, {"name": "\u2192 rx_valid", "wave": "0..........1...0.."}, {"name": "\u2192 rx_data", "wave": "2..........345....", "data": ["0x0", "0xe1", "0x3a", "0x3d"]}, {"name": "new_token \u2192", "wave": "0...............10"}, {"name": "pid \u2192", "wave": "0...............1."}, {"name": "address \u2192", "wave": "2...............3.", "data": ["0x0", "0x3a"]}, {"name": "endpoint \u2192", "wave": "2...............3.", "data": ["0x0", "0xa"]}]}</script>
 
 
@@ -735,7 +737,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 
-<li><b>test_valid_start_of_frame</b> (DUT: <code>USBTokenDetector</code>): Sends SOF token with frame number 0x53a; verifies new_frame=1, frame=0x53a.</li>
+<li><b>test_valid_start_of_frame</b> (DUT: <code>USBTokenDetector</code>): Sends SOF token with frame number 0x53a; verifies new_frame=1, frame=0x53a. <a href="fliplot/index.html?vcd=../vcd/test_USBTokenDetectorTest_test_valid_start_of_frame.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_valid_start_of_frame: SOF token, frame 0x53a"}, "signal": [{"name": "clk", "wave": "p......"}, {"name": "\u2192 rx_active", "wave": "1...0.."}, {"name": "\u2192 rx_valid", "wave": "01...0."}, {"name": "\u2192 rx_data", "wave": "2345...", "data": ["0x0", "0xa5", "0x3a", "0x3d"]}, {"name": "new_token \u2192", "wave": "0......"}, {"name": "new_frame \u2192", "wave": "0....10"}, {"name": "frame \u2192", "wave": "2....3.", "data": ["0x0", "0x53a"]}]}</script>
 
 
@@ -745,7 +747,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 
-<li><b>test_token_to_other_device</b> (DUT: <code>USBTokenDetector</code>): Sends token to 0x3a when address=0x1f; verifies new_token=0 (filtered).</li>
+<li><b>test_token_to_other_device</b> (DUT: <code>USBTokenDetector</code>): Sends token to 0x3a when address=0x1f; verifies new_token=0 (filtered). <a href="fliplot/index.html?vcd=../vcd/test_USBTokenDetectorTest_test_token_to_other_device.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_token_to_other_device: token to 0x3a, device at 0x1f (mismatch)"}, "signal": [{"name": "clk", "wave": "p......"}, {"name": "\u2192 rx_active", "wave": "1...0.."}, {"name": "\u2192 rx_valid", "wave": "01...0."}, {"name": "\u2192 rx_data", "wave": "2345...", "data": ["0x0", "0xe1", "0x3a", "0x3d"]}, {"name": "new_token \u2192", "wave": "0......"}, {"name": "address \u2192", "wave": "0......"}]}</script>
 
 
@@ -761,9 +763,9 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 <ul>
-<li><b>test_ack</b> (DUT: <code>USBHandshakeDetector</code>): Detects ACK (PID 0xD2) via single-cycle PID observation.</li>
+<li><b>test_ack</b> (DUT: <code>USBHandshakeDetector</code>): Detects ACK (PID 0xD2) via single-cycle PID observation. <a href="fliplot/index.html?vcd=../vcd/test_USBHandshakeDetectorTest_test_ack.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 
-<li><b>test_nak</b> (DUT: <code>USBHandshakeDetector</code>): Detects NAK (PID 0x5A).</li>
+<li><b>test_nak</b> (DUT: <code>USBHandshakeDetector</code>): Detects NAK (PID 0x5A). <a href="fliplot/index.html?vcd=../vcd/test_USBHandshakeDetectorTest_test_nak.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_nak: NAK detection (PID 0x5A)"}, "signal": [{"name": "clk", "wave": "p...."}, {"name": "\u2192 rx_active", "wave": "1.0.."}, {"name": "\u2192 rx_valid", "wave": "1.0.."}, {"name": "\u2192 rx_data", "wave": "23...", "data": ["0x0", "0x5a"]}, {"name": "detected.nak \u2192", "wave": "0...1"}, {"name": "detected.ack \u2192", "wave": "0...."}]}</script>
 
 
@@ -773,7 +775,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 
-<li><b>test_stall</b> (DUT: <code>USBHandshakeDetector</code>): Detects STALL (PID 0x1E).</li>
+<li><b>test_stall</b> (DUT: <code>USBHandshakeDetector</code>): Detects STALL (PID 0x1E). <a href="fliplot/index.html?vcd=../vcd/test_USBHandshakeDetectorTest_test_stall.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_stall: STALL detection (PID 0x1E)"}, "signal": [{"name": "clk", "wave": "p...."}, {"name": "\u2192 rx_active", "wave": "1.0.."}, {"name": "\u2192 rx_valid", "wave": "1.0.."}, {"name": "\u2192 rx_data", "wave": "23...", "data": ["0x0", "0x1e"]}, {"name": "detected.stall \u2192", "wave": "0...."}, {"name": "detected.ack \u2192", "wave": "0...."}]}</script>
 
 
@@ -790,7 +792,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 <ul>
-<li><b>test_data_receive</b> (DUT: <code>USBDataPacketReceiver</code>, <code>USBDataPacketCRC</code>): Sends DATA0 + 8 data bytes + CRC16. Verifies stream valid after buffering, CRC exclusion, and rx_valid pause/resume.</li>
+<li><b>test_data_receive</b> (DUT: <code>USBDataPacketReceiver</code>, <code>USBDataPacketCRC</code>): Sends DATA0 + 8 data bytes + CRC16. Verifies stream valid after buffering, CRC exclusion, and rx_valid pause/resume. <a href="fliplot/index.html?vcd=../vcd/test_USBDataPacketReceiverTest_test_data_receive.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "USBDataPacketReceiver \u2014 DATA0 + 8 bytes + CRC16"}, "signal": [{"name": "clk", "wave": "p........................"}, {"name": "\u2192 rx_active", "wave": "1............0..........."}, {"name": "\u2192 rx_valid", "wave": "1....01......0..........."}, {"name": "\u2192 rx_data", "wave": "23245.2....67............", "data": ["0x0", "0xc3", "0x5", "0x8", "0xeb", "0xbc"]}, {"name": "stream.valid \u2192", "wave": "0...1.........0.........."}, {"name": "stream.next \u2192", "wave": "0...101......0..........."}, {"name": "stream.payload \u2192", "wave": "2.....342................", "data": ["0x0", "0x5", "0x8"]}]}</script>
 
 
@@ -800,7 +802,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 
-<li><b>test_zlp</b> (DUT: <code>USBDataPacketReceiver</code>, <code>USBDataPacketCRC</code>): Sends DATA1 + CRC only (zero-length payload); verifies packet_complete=1.</li>
+<li><b>test_zlp</b> (DUT: <code>USBDataPacketReceiver</code>, <code>USBDataPacketCRC</code>): Sends DATA1 + CRC only (zero-length payload); verifies packet_complete=1. <a href="fliplot/index.html?vcd=../vcd/test_USBDataPacketReceiverTest_test_zlp.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_zlp: Zero-Length Packet (DATA1 + CRC16 only)"}, "signal": [{"name": "clk", "wave": "p......"}, {"name": "\u2192 rx_active", "wave": "1....0."}, {"name": "\u2192 rx_valid", "wave": "1....0."}, {"name": "\u2192 rx_data", "wave": "23.2...", "data": ["0x0", "0x4b"]}, {"name": "stream.valid \u2192", "wave": "0...10."}]}</script>
 
 
@@ -816,7 +818,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 <ul>
-<li><b>test_packet_rx</b> (DUT: <code>USBDataPacketDeserializer</code>; uses <code>USBDataPacketReceiver</code>, <code>USBDataPacketCRC</code>): Sends PID + 4 bytes + CRC; verifies captured packet bytes.</li>
+<li><b>test_packet_rx</b> (DUT: <code>USBDataPacketDeserializer</code>; uses <code>USBDataPacketReceiver</code>, <code>USBDataPacketCRC</code>): Sends PID + 4 bytes + CRC; verifies captured packet bytes. <a href="fliplot/index.html?vcd=../vcd/test_USBDataPacketDeserializerTest_test_packet_rx.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "USBDataPacketDeserializer \u2014 4-byte packet capture"}, "signal": [{"name": "clk", "wave": "p.........."}, {"name": "\u2192 rx_active", "wave": "1........0."}, {"name": "\u2192 rx_data", "wave": "23456789...", "data": ["0x0", "0xc3", "0x23", "0x45", "0x67", "0x89", "0xe", "0x1c"]}, {"name": "new_packet \u2192", "wave": "0.........."}, {"name": "length \u2192", "wave": "2.........3", "data": ["0x0", "0x3"]}, {"name": "packet[0] \u2192", "wave": "2.........3", "data": ["0x0", "0x23"]}, {"name": "packet[1] \u2192", "wave": "2.........3", "data": ["0x0", "0x45"]}, {"name": "packet[2] \u2192", "wave": "2.........3", "data": ["0x0", "0x67"]}, {"name": "packet[3] \u2192", "wave": "2.........3", "data": ["0x0", "0x89"]}]}</script>
 
 
@@ -826,7 +828,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 
-<li><b>test_invalid_rx</b> (DUT: <code>USBDataPacketDeserializer</code>; uses <code>USBDataPacketReceiver</code>, <code>USBDataPacketCRC</code>): Sends corrupted CRC; verifies new_packet=0.</li>
+<li><b>test_invalid_rx</b> (DUT: <code>USBDataPacketDeserializer</code>; uses <code>USBDataPacketReceiver</code>, <code>USBDataPacketCRC</code>): Sends corrupted CRC; verifies new_packet=0. <a href="fliplot/index.html?vcd=../vcd/test_USBDataPacketDeserializerTest_test_invalid_rx.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_invalid_rx: corrupted CRC16 \u2192 new_packet=0"}, "signal": [{"name": "clk", "wave": "p.........."}, {"name": "\u2192 rx_active", "wave": "01.......0."}, {"name": "\u2192 rx_data", "wave": "2.34...56..", "data": ["0x0", "0xc3", "0xff", "0x1c", "0xe"]}, {"name": "new_packet \u2192", "wave": "0.........."}]}</script>
 
 
@@ -842,7 +844,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 <ul>
-<li><b>test_simple_data_generation</b> (DUT: <code>USBDataPacketGenerator</code>; uses <code>USBDataPacketCRC</code>): Feeds a stream with 8-byte payload; verifies TX emits PID + bytes + 2 CRC bytes in correct order.</li>
+<li><b>test_simple_data_generation</b> (DUT: <code>USBDataPacketGenerator</code>; uses <code>USBDataPacketCRC</code>): Feeds a stream with 8-byte payload; verifies TX emits PID + bytes + 2 CRC bytes in correct order. <a href="fliplot/index.html?vcd=../vcd/test_USBDataPacketGeneratorTest_test_simple_data_generation.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "USBDataPacketGenerator \u2014 8-byte stream to TX packet"}, "signal": [{"name": "clk", "wave": "p............."}, {"name": "\u2192 stream.first", "wave": "1..0.........."}, {"name": "\u2192 stream.last", "wave": "0........1...."}, {"name": "\u2192 stream.valid", "wave": "1.........0..."}, {"name": "\u2192 stream.payload", "wave": "2...342.......", "data": ["0x0", "0x5", "0x8"]}, {"name": "stream.ready \u2192", "wave": "0.1.......0..."}, {"name": "tx.valid \u2192", "wave": "0.1..........0"}, {"name": "tx.data \u2192", "wave": "2.32452....672", "data": ["0x0", "0xc3", "0x5", "0x8", "0xeb", "0xbc"]}]}</script>
 
 
@@ -852,7 +854,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 
-<li><b>test_single_byte</b> (DUT: <code>USBDataPacketGenerator</code>; uses <code>USBDataPacketCRC</code>): Single-byte stream; validates completion.</li>
+<li><b>test_single_byte</b> (DUT: <code>USBDataPacketGenerator</code>; uses <code>USBDataPacketCRC</code>): Single-byte stream; validates completion. <a href="fliplot/index.html?vcd=../vcd/test_USBDataPacketGeneratorTest_test_single_byte.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_single_byte: 1-byte stream \u2192 1-byte packet"}, "signal": [{"name": "clk", "wave": "p............."}, {"name": "\u2192 stream.first", "wave": "01..0........."}, {"name": "\u2192 stream.last", "wave": "01..0........."}, {"name": "\u2192 stream.valid", "wave": "01..0........."}, {"name": "\u2192 stream.payload", "wave": "23............", "data": ["0x0", "0xab"]}, {"name": "stream.ready \u2192", "wave": "0.1.0........."}, {"name": "tx.valid \u2192", "wave": "01...0........"}, {"name": "tx.data \u2192", "wave": "234.2.........", "data": ["0x0", "0xc3", "0xab"]}]}</script>
 
 
@@ -862,7 +864,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 
-<li><b>test_zlp_generation</b> (DUT: <code>USBDataPacketGenerator</code>; uses <code>USBDataPacketCRC</code>): ZLP request; verifies PID emitted then two zero CRC bytes.</li>
+<li><b>test_zlp_generation</b> (DUT: <code>USBDataPacketGenerator</code>; uses <code>USBDataPacketCRC</code>): ZLP request; verifies PID emitted then two zero CRC bytes. <a href="fliplot/index.html?vcd=../vcd/test_USBDataPacketGeneratorTest_test_zlp_generation.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_zlp_generation: zero-length packet"}, "signal": [{"name": "clk", "wave": "p...."}, {"name": "\u2192 stream.first", "wave": "0...."}, {"name": "\u2192 stream.last", "wave": "010.."}, {"name": "\u2192 stream.valid", "wave": "01.0."}, {"name": "\u2192 stream.payload", "wave": "0...."}, {"name": "stream.ready \u2192", "wave": "0...."}, {"name": "tx.valid \u2192", "wave": "0.1.."}, {"name": "tx.data \u2192", "wave": "2.32.", "data": ["0x0", "0xc3"]}]}</script>
 
 
@@ -878,7 +880,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 <ul>
-<li><b>test_ack_generation</b> (DUT: <code>USBHandshakeGenerator</code>): Pulses issue_ack; verifies TX emits ACK byte, stays valid until tx.ready.</li>
+<li><b>test_ack_generation</b> (DUT: <code>USBHandshakeGenerator</code>): Pulses issue_ack; verifies TX emits ACK byte, stays valid until tx.ready. <a href="fliplot/index.html?vcd=../vcd/test_USBHandshakeGeneratorTest_test_ack_generation.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "USBHandshakeGenerator \u2014 issue_ack strobe"}, "signal": [{"name": "clk", "wave": "p.............."}, {"name": "\u2192 issue_ack", "wave": "010............"}, {"name": "tx.valid \u2192", "wave": "01...........0."}, {"name": "tx.data \u2192", "wave": "23.............", "data": ["0x0", "0xd2"]}, {"name": "\u2192 tx.ready", "wave": "0...........1.."}]}</script>
 
 
@@ -888,7 +890,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 
-<li><b>test_already_ready</b> (DUT: <code>USBHandshakeGenerator</code>): Same with tx.ready=1 already high; verifies single-cycle valid.</li>
+<li><b>test_already_ready</b> (DUT: <code>USBHandshakeGenerator</code>): Same with tx.ready=1 already high; verifies single-cycle valid. <a href="fliplot/index.html?vcd=../vcd/test_USBHandshakeGeneratorTest_test_already_ready.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_already_ready: tx_ready=1 already high \u2192 single-cycle valid"}, "signal": [{"name": "clk", "wave": "p..."}, {"name": "\u2192 issue_ack", "wave": "0..."}, {"name": "tx.valid \u2192", "wave": "010."}, {"name": "tx.data \u2192", "wave": "23..", "data": ["0x0", "0xd2"]}, {"name": "\u2192 tx.ready", "wave": "1..."}]}</script>
 
 
@@ -902,7 +904,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <h4>Interpacket Timer Tests</h4>
 <ul>
-<li><b>test_resets_and_delays</b> (DUT: <code>USBInterpacketTimer</code>): Configures FS speed; checks tx_allowed at 11 cycles, tx_timeout at 33, rx_timeout at 81 after the reset pulse.</li>
+<li><b>test_resets_and_delays</b> (DUT: <code>USBInterpacketTimer</code>): Configures FS speed; checks tx_allowed at 11 cycles, tx_timeout at 33, rx_timeout at 81 after the reset pulse. <a href="fliplot/index.html?vcd=../vcd/test_USBInterpacketTimerTest_test_resets_and_delays.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 
 </ul>
 
@@ -944,7 +946,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <p><b>4 tests</b> covering IN transfer manager.</p>
 <ul>
-<li><b>test_normal_transfer</b> (DUT: <code>USBInTransferManager</code>): Double-buffering, DATA PID toggle, retransmission on NAK.</li>
+<li><b>test_normal_transfer</b> (DUT: <code>USBInTransferManager</code>): Double-buffering, DATA PID toggle, retransmission on NAK. <a href="fliplot/index.html?vcd=../vcd/test_USBInTransferManagerTest_test_normal_transfer.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_normal_transfer: NAK \u2192 retransmit same PID"}, "signal": [{"name": "clk", "wave": "p..........................................................."}, {"name": "\u2192 token.is_in", "wave": "01.........................................................."}, {"name": "tx.valid \u2192", "wave": "0.......................1.......0....1.......0.....1.......0"}, {"name": "data_pid \u2192", "wave": "1........0.....................................1............"}, {"name": "\u2192 ack", "wave": "0.............................................10............"}, {"name": "nak \u2192", "wave": "0..........................................................."}]}</script>
 
 <script type="WaveDrom">{"head": {"text": "USBInTransferManager \u2014 Double-buffered IN with PID toggle"}, "signal": [{"name": "clk", "wave": "p..........................................................."}, {"name": "\u2192 transfer.valid", "wave": "01.......0....1............................................."}, {"name": "\u2192 transfer.last", "wave": "0..........................................................."}, {"name": "data_pid \u2192", "wave": "1........0.....................................1............"}, {"name": "packet.valid \u2192", "wave": "0.......................1.......0....1.......0.....1.......0"}, {"name": "packet.payload \u2192", "wave": "2........3...............456789a3.....456789a3.b....cdefgh2b", "data": ["0x0", "0x11", "0x22", "0x33", "0x44", "0x55", "0x66", "0x77", "0x88", "0x99", "0xaa", "0xbb", "0xcc", "0xdd", "0xee", "0xff"]}]}</script>
@@ -962,7 +964,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 
-<li><b>test_nak_when_not_ready</b> (DUT: <code>USBInTransferManager</code>): NAK pulses when no data queued.</li>
+<li><b>test_nak_when_not_ready</b> (DUT: <code>USBInTransferManager</code>): NAK pulses when no data queued. <a href="fliplot/index.html?vcd=../vcd/test_USBInTransferManagerTest_test_nak_when_not_ready.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_nak_when_not_ready: IN token with empty buffer \u2192 NAK"}, "signal": [{"name": "clk", "wave": "p.."}, {"name": "\u2192 token.is_in", "wave": "01."}, {"name": "tx.valid \u2192", "wave": "0.."}, {"name": "nak \u2192", "wave": "10."}, {"name": "\u2192 ack", "wave": "0.."}, {"name": "\u2192 active", "wave": "01."}]}</script>
 
 
@@ -972,7 +974,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 
-<li><b>test_zlp_generation</b> (DUT: <code>USBInTransferManager</code>): ZLP after full last-packet; no ZLP after short last-packet.</li>
+<li><b>test_zlp_generation</b> (DUT: <code>USBInTransferManager</code>): ZLP after full last-packet; no ZLP after short last-packet. <a href="fliplot/index.html?vcd=../vcd/test_USBInTransferManagerTest_test_zlp_generation.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_zlp_generation: full last-packet \u2192 ZLP; short last-packet \u2192 no ZLP"}, "signal": [{"name": "clk", "wave": "p........................................................"}, {"name": "\u2192 transfer.last", "wave": "0..........................1.0..................10......."}, {"name": "\u2192 token.is_in", "wave": "1........................................................"}, {"name": "tx.valid \u2192", "wave": "0........1.......0............1.......0..10......1...0..."}, {"name": "tx.last \u2192", "wave": "0...............10...................10.............10..."}, {"name": "\u2192 generate_zlps", "wave": "01......................................................."}]}</script>
 
 
@@ -982,7 +984,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 
-<li><b>test_discard</b> (DUT: <code>USBInTransferManager</code>): Discard drops queued packet; subsequent transmission uses correct PID.</li>
+<li><b>test_discard</b> (DUT: <code>USBInTransferManager</code>): Discard drops queued packet; subsequent transmission uses correct PID. <a href="fliplot/index.html?vcd=../vcd/test_USBInTransferManagerTest_test_discard.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_discard: discard drops queued packet"}, "signal": [{"name": "clk", "wave": "p.........................................................."}, {"name": "\u2192 transfer.valid", "wave": "01...............0.......................1......0.........."}, {"name": "\u2192 discard", "wave": "0................................10........................"}, {"name": "\u2192 token.is_in", "wave": "1.........................................................."}, {"name": "tx.valid \u2192", "wave": "0................1........0......................1........0"}, {"name": "data_pid \u2192", "wave": "1.......0..................1......0.............1.........."}, {"name": "\u2192 ack", "wave": "0..........................10.............................."}]}</script>
 
 
@@ -999,7 +1001,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <p><b>3 tests</b> covering SETUP decoder.</p>
 <ul>
-<li><b>test_valid_sequence_receive</b> (DUT: <code>USBSetupDecoder</code>; uses <code>USBDataPacketDeserializer</code>, <code>USBHandshakeGenerator</code>): Full SETUP transaction → decoded SetupPacket fields verified.</li>
+<li><b>test_valid_sequence_receive</b> (DUT: <code>USBSetupDecoder</code>; uses <code>USBDataPacketDeserializer</code>, <code>USBHandshakeGenerator</code>): Full SETUP transaction → decoded SetupPacket fields verified. <a href="fliplot/index.html?vcd=../vcd/test_USBSetupDecoderTest_test_valid_sequence_receive.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_valid_sequence_receive: Full SETUP transaction \u2192 decoded SetupPacket"}, "signal": [{"name": "clk", "wave": "p....................."}, {"name": "\u2192 rx_active", "wave": "01...0.1..........0..."}, {"name": "\u2192 rx_data", "wave": "2.324...56789abcdef...", "data": ["0x0", "0x2d", "0x10", "0xc3", "0x42", "0xc", "0xcd", "0xab", "0x23", "0x1", "0x78", "0x56", "0x3b", "0xa2"]}, {"name": "ack \u2192", "wave": "0..................10."}, {"name": "packet.received \u2192", "wave": "0...................10"}]}</script>
 
 
@@ -1009,7 +1011,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 
-<li><b>test_fs_interpacket_delay</b> (DUT: <code>USBSetupDecoder</code>; uses <code>USBDataPacketDeserializer</code>, <code>USBHandshakeGenerator</code>): 10-cycle gap before ACK at FS speed.</li>
+<li><b>test_fs_interpacket_delay</b> (DUT: <code>USBSetupDecoder</code>; uses <code>USBDataPacketDeserializer</code>, <code>USBHandshakeGenerator</code>): 10-cycle gap before ACK at FS speed. <a href="fliplot/index.html?vcd=../vcd/test_USBSetupDecoderTest_test_fs_interpacket_delay.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_fs_interpacket_delay: 10-cycle interpacket gap at Full Speed"}, "signal": [{"name": "clk", "wave": "p..............................."}, {"name": "\u2192 start", "wave": "0..................10..........."}, {"name": "tx_allowed \u2192", "wave": "0........10....................1"}, {"name": "tx_timeout \u2192", "wave": "0..............................."}, {"name": "rx_timeout \u2192", "wave": "0..............................."}]}</script>
 
 
@@ -1019,7 +1021,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 
-<li><b>test_short_setup_packet</b> (DUT: <code>USBSetupDecoder</code>; uses <code>USBDataPacketDeserializer</code>): Truncated (4-byte) setup → packet.received=0.</li>
+<li><b>test_short_setup_packet</b> (DUT: <code>USBSetupDecoder</code>; uses <code>USBDataPacketDeserializer</code>): Truncated (4-byte) setup → packet.received=0. <a href="fliplot/index.html?vcd=../vcd/test_USBSetupDecoderTest_test_short_setup_packet.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_short_setup_packet: truncated 4-byte setup \u2192 ignored"}, "signal": [{"name": "clk", "wave": "p................."}, {"name": "\u2192 rx_active", "wave": "01...0.1.......0.."}, {"name": "\u2192 rx_data", "wave": "2.324...56789ab...", "data": ["0x0", "0x2d", "0x10", "0xc3", "0x23", "0x45", "0x67", "0x89", "0x1c", "0xe"]}, {"name": "packet.received \u2192", "wave": "0................."}, {"name": "error \u2192", "wave": "0................."}]}</script>
 
 
@@ -1036,7 +1038,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <p><b>1 test</b> covering the 14-state reset sequencer.</p>
 <ul>
-<li><b>test_full_speed_reset</b> (DUT: <code>USBResetSequencer</code>): SE0 → bus_reset pulse → HS detection → CHIRP mode transition.</li>
+<li><b>test_full_speed_reset</b> (DUT: <code>USBResetSequencer</code>): SE0 → bus_reset pulse → HS detection → CHIRP mode transition. <a href="fliplot/index.html?vcd=../vcd/test_USBResetSequencerTest_test_full_speed_reset.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 
 </ul>
 
@@ -1047,7 +1049,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <h4>ULPIRegisterWindow Tests (4 tests)</h4>
 <ul>
-<li><b>test_idle_behavior</b> (DUT: <code>ULPIRegisterWindow</code>): Asserts <code>ulpi_data_out == 0</code> when idle (NOP command).</li>
+<li><b>test_idle_behavior</b> (DUT: <code>ULPIRegisterWindow</code>): Asserts <code>ulpi_data_out == 0</code> when idle (NOP command). <a href="fliplot/index.html?vcd=../vcd/test_TestULPIRegisters_test_idle_behavior.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_idle_behavior: ULPIRegisterWindow idle state \u2014 NOP on data_out"}, "signal": [{"name": "clk", "wave": "p"}, {"name": "busy \u2192", "wave": "0"}, {"name": "ulpi_data_out \u2192", "wave": "0"}, {"name": "\u2192 read_request", "wave": "0"}, {"name": "\u2192 write_request", "wave": "0"}, {"name": "done \u2192", "wave": "0"}]}</script>
 
 
@@ -1057,7 +1059,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 
-<li><b>test_register_read</b> (DUT: <code>ULPIRegisterWindow</code>): Full read flow — REG_READ (0xC0) command, BUSY assert, NXT handshake, turnaround, data latch (0x07).</li>
+<li><b>test_register_read</b> (DUT: <code>ULPIRegisterWindow</code>): Full read flow — REG_READ (0xC0) command, BUSY assert, NXT handshake, turnaround, data latch (0x07). <a href="fliplot/index.html?vcd=../vcd/test_TestULPIRegisters_test_register_read.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_register_read: ULPIRegisterWindow read flow (REG_READ=0xC0)"}, "signal": [{"name": "clk", "wave": "p.................."}, {"name": "\u2192 read_request", "wave": "0...1...........0.."}, {"name": "busy \u2192", "wave": "0..1..............0"}, {"name": "ulpi_data_out \u2192", "wave": "2...3...........2..", "data": ["0x0", "0xc0"]}, {"name": "ulpi_out_req \u2192", "wave": "0..............1..."}, {"name": "\u2192 ulpi_nxt", "wave": "0.................."}, {"name": "\u2192 ulpi_dir", "wave": "0.................."}, {"name": "read_data \u2192", "wave": "2.................3", "data": ["0x0", "0x7"]}, {"name": "done \u2192", "wave": "0.................1"}]}</script>
 
 
@@ -1067,7 +1069,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 
-<li><b>test_interrupted_read</b> (DUT: <code>ULPIRegisterWindow</code>): DIR asserted mid-read → <code>ulpi_out_req</code> drops; DIR cleared → command re-driven; NXT → turnaround → data latched.</li>
+<li><b>test_interrupted_read</b> (DUT: <code>ULPIRegisterWindow</code>): DIR asserted mid-read → <code>ulpi_out_req</code> drops; DIR cleared → command re-driven; NXT → turnaround → data latched. <a href="fliplot/index.html?vcd=../vcd/test_TestULPIRegisters_test_interrupted_read.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_interrupted_read: DIR mid-read \u2192 ulpi_out_req dropped, then re-driven"}, "signal": [{"name": "clk", "wave": "p......................."}, {"name": "\u2192 read_request", "wave": "0..............1.0.1.0.."}, {"name": "busy \u2192", "wave": "0.1...................0."}, {"name": "ulpi_out_req \u2192", "wave": "0..................1...."}, {"name": "\u2192 ulpi_dir", "wave": "01............0.1.0....."}, {"name": "ulpi_data_out \u2192", "wave": "2..............3.....2..", "data": ["0x0", "0xc0"]}, {"name": "\u2192 ulpi_nxt", "wave": "0......................."}, {"name": "read_data \u2192", "wave": "2.....................3.", "data": ["0x0", "0x7"]}, {"name": "done \u2192", "wave": "0.....................10"}]}</script>
 
 
@@ -1077,7 +1079,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 
-<li><b>test_register_write</b> (DUT: <code>ULPIRegisterWindow</code>): REG_WRITE (0x80) with address=0x02, data=0xBC; verifies command, data, STOP, and BUSY deassert.</li>
+<li><b>test_register_write</b> (DUT: <code>ULPIRegisterWindow</code>): REG_WRITE (0x80) with address=0x02, data=0xBC; verifies command, data, STOP, and BUSY deassert. <a href="fliplot/index.html?vcd=../vcd/test_TestULPIRegisters_test_register_write.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_register_write: ULPIRegisterWindow write flow (REG_WRITE=0x80)"}, "signal": [{"name": "clk", "wave": "p............................."}, {"name": "\u2192 write_request", "wave": "0...1...........01..........0."}, {"name": "busy \u2192", "wave": "0..1.........................0"}, {"name": "ulpi_data_out \u2192", "wave": "2...3...........4...........2.", "data": ["0x0", "0x82", "0xbc"]}, {"name": "ulpi_out_req \u2192", "wave": "0..............10..........1.."}, {"name": "\u2192 ulpi_nxt", "wave": "0...........................10"}, {"name": "ulpi_stop \u2192", "wave": "0...........................1."}, {"name": "done \u2192", "wave": "0............................."}]}</script>
 
 
@@ -1091,7 +1093,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <h4>ULPIRxEventDecoder Test (1 test)</h4>
 <ul>
-<li><b>test_decode</b> (DUT: <code>ULPIRxEventDecoder</code>): DIR+NXT together → no RxEvent. DIR alone after turnaround → <code>line_state=0b10</code>, <code>vbus_valid=1</code>, <code>rx_active=1</code>, <code>rx_error=0</code>.</li>
+<li><b>test_decode</b> (DUT: <code>ULPIRxEventDecoder</code>): DIR+NXT together → no RxEvent. DIR alone after turnaround → <code>line_state=0b10</code>, <code>vbus_valid=1</code>, <code>rx_active=1</code>, <code>rx_error=0</code>. <a href="fliplot/index.html?vcd=../vcd/test_ULPIRxEventDecoderTest_test_decode.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_decode: ULPIRxEventDecoder \u2014 DIR+NXT ignored; DIR alone \u2192 rx_active"}, "signal": [{"name": "clk", "wave": "p........."}, {"name": "\u2192 ulpi_dir", "wave": "01....01.."}, {"name": "\u2192 ulpi_nxt", "wave": "1....0...."}, {"name": "\u2192 ulpi_data_i", "wave": "2.....34..", "data": ["0xab", "0x12", "0x1e"]}, {"name": "line_state \u2192", "wave": "01....01.."}, {"name": "vbus_valid \u2192", "wave": "01...0.1.."}, {"name": "rx_active \u2192", "wave": "0.......1."}]}</script>
 
 
@@ -1105,7 +1107,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <h4>ULPIControlTranslator Test (1 test)</h4>
 <ul>
-<li><b>test_multiwrite_behavior</b> (DUT: <code>ULPIControlTranslator</code>): Changing <code>op_mode</code>, <code>dp_pulldown</code>, <code>dm_pulldown</code> → function control (addr 0x04) then OTG control (addr 0x0A) sequenced via register window.</li>
+<li><b>test_multiwrite_behavior</b> (DUT: <code>ULPIControlTranslator</code>): Changing <code>op_mode</code>, <code>dp_pulldown</code>, <code>dm_pulldown</code> → function control (addr 0x04) then OTG control (addr 0x0A) sequenced via register window. <a href="fliplot/index.html?vcd=../vcd/test_ControlTranslatorTest_test_multiwrite_behavior.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_multiwrite_behavior: ULPIControlTranslator \u2014 func ctrl + OTG ctrl"}, "signal": [{"name": "clk", "wave": "p........................"}, {"name": "reg_04_value \u2192", "wave": "2................3.......", "data": ["0x41", "0x59"]}, {"name": "\u2192 reg_04_write", "wave": "0..........1.....0......."}, {"name": "\u2192 reg_04_wdata", "wave": "2...........3............", "data": ["0x0", "0x59"]}, {"name": "reg_04_done \u2192", "wave": "0...............10......."}, {"name": "reg_0a_value \u2192", "wave": "2.....................3..", "data": ["0x6", "0x0"]}, {"name": "\u2192 reg_0a_write", "wave": "10........1...........0.."}, {"name": "\u2192 reg_0a_wdata", "wave": "23.........2.............", "data": ["0x0", "0x86"]}, {"name": "reg_0a_done \u2192", "wave": "0....................10.."}]}</script>
 
 
@@ -1134,7 +1136,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 <ul>
-<li><b>test_simple_transmit</b> (DUT: <code>ULPITransmitTranslator</code>): <code>tx_valid=1</code>, <code>tx_data=0xA5</code> (SOF) → TRANSMIT_COMMAND (0x40) with PID[3:0], <code>tx_ready</code> after NXT, data byte passed through, STP after <code>tx_valid=0</code>.</li>
+<li><b>test_simple_transmit</b> (DUT: <code>ULPITransmitTranslator</code>): <code>tx_valid=1</code>, <code>tx_data=0xA5</code> (SOF) → TRANSMIT_COMMAND (0x40) with PID[3:0], <code>tx_ready</code> after NXT, data byte passed through, STP after <code>tx_valid=0</code>. <a href="fliplot/index.html?vcd=../vcd/test_ULPITransmitTranslatorTest_test_simple_transmit.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_simple_transmit: ULPITransmitTranslator SOF packet (0xA5)"}, "signal": [{"name": "clk", "wave": "p................."}, {"name": "\u2192 tx_valid", "wave": "0.........1....0.."}, {"name": "\u2192 tx_data", "wave": "2.........3...4...", "data": ["0x0", "0xa5", "0x11"]}, {"name": "ulpi_data_out \u2192", "wave": "2.........3..4.2..", "data": ["0x0", "0x45", "0x11"]}, {"name": "ulpi_out_req \u2192", "wave": "0...........1....0"}, {"name": "\u2192 ulpi_nxt", "wave": "0...........1....0"}, {"name": "ulpi_stp \u2192", "wave": "0...........1....."}, {"name": "tx_ready \u2192", "wave": "0..............10."}]}</script>
 
 
@@ -1144,7 +1146,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 
-<li><b>test_handshake</b> (DUT: <code>ULPITransmitTranslator</code>): ACK PID 0xD2 → TRANSMIT_COMMAND, NXT accepted, then STP and idle.</li>
+<li><b>test_handshake</b> (DUT: <code>ULPITransmitTranslator</code>): ACK PID 0xD2 → TRANSMIT_COMMAND, NXT accepted, then STP and idle. <a href="fliplot/index.html?vcd=../vcd/test_ULPITransmitTranslatorTest_test_handshake.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "test_handshake: ULPITransmitTranslator ACK handshake (PID 0xD2)"}, "signal": [{"name": "clk", "wave": "p...."}, {"name": "\u2192 tx_valid", "wave": "1.0.."}, {"name": "\u2192 tx_data", "wave": "2....", "data": ["0xd2"]}, {"name": "ulpi_data_out \u2192", "wave": "232..", "data": ["0x0", "0x42"]}, {"name": "ulpi_out_req \u2192", "wave": "01.0."}, {"name": "\u2192 ulpi_nxt", "wave": "0.10."}, {"name": "ulpi_stp \u2192", "wave": "01..."}, {"name": "tx_ready \u2192", "wave": "0.10."}]}</script>
 
 
@@ -1161,7 +1163,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <p><b>1 test</b> covering the boundary detector.</p>
 <ul>
-<li><b>test_boundary_detection</b> (DUT: <code>USBOutStreamBoundaryDetector</code>): 4-byte stream → first/last strobes verified after 2-cycle pipeline delay.</li>
+<li><b>test_boundary_detection</b> (DUT: <code>USBOutStreamBoundaryDetector</code>): 4-byte stream → first/last strobes verified after 2-cycle pipeline delay. <a href="fliplot/index.html?vcd=../vcd/test_USBOutStreamBoundaryDetectorTest_test_boundary_detection.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "USBOutStreamBoundaryDetector \u2014 first/last byte detection"}, "signal": [{"name": "clk", "wave": "p......"}, {"name": "\u2192 unproc.valid", "wave": "1...0.."}, {"name": "\u2192 unproc.payload", "wave": "2345...", "data": ["0x0", "0xaa", "0xbb", "0xdd"]}, {"name": "proc.valid \u2192", "wave": "0.1...0"}, {"name": "proc.payload \u2192", "wave": "2.3456.", "data": ["0x0", "0xaa", "0xbb", "0xcc", "0xdd"]}, {"name": "first \u2192", "wave": "010...."}, {"name": "last \u2192", "wave": "0......"}]}</script>
 
 
@@ -1177,9 +1179,9 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <p><b>3 tests</b> from <code>test_usb2_device.py</code> (now collected and run by pytest).</p>
 <ul>
-<li><b>test_enumeration</b> (DUT: <code>USBDevice</code>; exercises <code>USBControlEndpoint</code>, <code>StandardRequestHandler</code>, <code>GetDescriptorHandlerBlock</code>, <code>USBSetupDecoder</code>): Full USB enumeration sequence — 8-byte/64-byte GET_DESCRIPTOR(DEVICE), SET_ADDRESS, read descriptor at new address, device qualifier (expects STALL), config descriptor (with/without subordinates), string descriptors, SET_CONFIGURATION, GET_CONFIGURATION.</li>
+<li><b>test_enumeration</b> (DUT: <code>USBDevice</code>; exercises <code>USBControlEndpoint</code>, <code>StandardRequestHandler</code>, <code>GetDescriptorHandlerBlock</code>, <code>USBSetupDecoder</code>): Full USB enumeration sequence — 8-byte/64-byte GET_DESCRIPTOR(DEVICE), SET_ADDRESS, read descriptor at new address, device qualifier (expects STALL), config descriptor (with/without subordinates), string descriptors, SET_CONFIGURATION, GET_CONFIGURATION. <a href="fliplot/index.html?vcd=../vcd/test_TestFullDevice_test_enumeration.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 
-<li><b>test_long_descriptor</b> (DUT: <code>USBDevice</code>; exercises <code>GetDescriptorHandlerBlock</code>): Configuration descriptor with 30 endpoints (15 IN + 15 OUT).</li>
+<li><b>test_long_descriptor</b> (DUT: <code>USBDevice</code>; exercises <code>GetDescriptorHandlerBlock</code>): Configuration descriptor with 30 endpoints (15 IN + 15 OUT). <a href="fliplot/index.html?vcd=../vcd/test_TestLongDescriptor_test_long_descriptor.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "TestLongDescriptor::test_long_descriptor \u2014 30-endpoint config descriptor"}, "signal": [{"name": "clk", "wave": "p............................................................................................................................................................................................................................................................................................................................................................................"}, {"name": "\u2192 rx_active", "wave": "01..0..1............0.......1...0............................................................................1..0.1...0............................................................................1..0.1...0............................................................................1..0.1...0................................................1..0..1...0..1....0......."}, {"name": "\u2192 rx_valid", "wave": "01..0..1............0.......1...0............................................................................1..0.1...0............................................................................1..0.1...0............................................................................1..0.1...0................................................1..0..1...0..1....0......."}, {"name": "\u2192 rx_data", "wave": "2.34.....56.272.89a...........24..............................................................................b....c24..............................................................................b....c24..............................................................................b....c24..................................................b.....d24.....e2.........", "data": ["0x0", "0x2d", "0x10", "0xc3", "0x6", "0x2", "0xe4", "0xe3", "0x54", "0xd2", "0x69", "0xe1", "0x4b"]}, {"name": "tx_valid \u2192", "wave": "0........................10..............1..................................................................0..................1..................................................................0..................1..................................................................0..................1......................................0.......................10."}, {"name": "tx_data \u2192", "wave": "2.......................32...............45627.2894a2.bc..2de2525cde8525cde7525cdef525cde5.25cdeg525cdeh.5i2..................j25cdek525cdea525cdel525cde.525cdem525cden525cdeo525cded525cdep5.2q2..................r5cdes525cdet525cde4525cdeu525cdev525cdew525cdex525cdey525cdez52.5{2..................jcde|525cde}525cde~525cde\u007f525cde\u0080525.c\u00812...........................", "data": ["0x0", "0xd2", "0x9", "0x2", "0xe4", "0x1", "0x80", "0xfa", "0x4", "0x1e", "0xff", "0x7", "0x5", "0x81", "0x82", "0x3", "0x32", "0xc3", "0x83", "0x84", "0x85", "0x6", "0x86", "0x87", "0x79", "0x4b", "0x8", "0x88", "0x89", "0xa", "0x8a", "0xb", "0x8b", "0xc", "0xec", "0x8c", "0xd", "0x8d", "0xe", "0x8e", "0xab"]}]}</script>
 
 
@@ -1187,7 +1189,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 
 
-<li><b>test_descriptor_zlp</b> (DUT: <code>USBDevice</code>; exercises <code>GetDescriptorHandlerBlock</code>): Requests a multiple-of-max-packet-length config descriptor; verifies the device terminates with a zero-length packet.</li>
+<li><b>test_descriptor_zlp</b> (DUT: <code>USBDevice</code>; exercises <code>GetDescriptorHandlerBlock</code>): Requests a multiple-of-max-packet-length config descriptor; verifies the device terminates with a zero-length packet. <a href="fliplot/index.html?vcd=../vcd/test_TestLongDescriptor_test_descriptor_zlp.vcd" class="vcd-link" title="Open VCD in waveform viewer" target="_blank">[wave]</a></li>
 <script type="WaveDrom">{"head": {"text": "TestLongDescriptor::test_descriptor_zlp \u2014 max-length packet + ZLP"}, "signal": [{"name": "clk", "wave": "p.................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................."}, {"name": "\u2192 rx_active", "wave": "01...0..1...........0........1...0............................................................................1.0..1...0...........1.0...1...0..1...0.......1...0..1...........0........1...0............................................................................1.0..1...0............................................................................1.0..1...0............................................................................1.0..1...0...........1.0...1...0..1...0......."}, {"name": "\u2192 rx_valid", "wave": "01...0..1...........0........1...0............................................................................1.0..1...0...........1.0...1...0..1...0.......1...0..1...........0........1...0............................................................................1.0..1...0............................................................................1.0..1...0............................................................................1.0..1...0...........1.0...1...0..1...0......."}, {"name": "\u2192 rx_data", "wave": "2.324....567282.92ab..........c24..............................................................................d....c24.............d.....e24....f2..........324....567282.g2hi..........c24..............................................................................d....c24..............................................................................d....c24..............................................................................d....c24.............d.....e24....f2.........", "data": ["0x0", "0x2d", "0x10", "0xc3", "0x80", "0x6", "0x2", "0x40", "0x99", "0x94", "0x69", "0xd2", "0xe1", "0x4b", "0xc0", "0xf8", "0x54"]}, {"name": "tx_valid \u2192", "wave": "0.......................10..............1..................................................................0..................1.0..................................................10..............1..................................................................0..................1..................................................................0..................1..................................................................0..................1.0..........................."}, {"name": "tx_data \u2192", "wave": "2........................................34526.278392.ab..2cd2424bcd7424bcd6424bcde424bcd4.24bcdf424bcdg.4h2........................................................................................34526.278392.ab..2cd2424bcd7424bcd6424bcde424bcd4.24bcdf424bcdg.4h2....................4bcdi424bcd9424bcdj424bcd.424bcdk424bcdl424bcdm424bcdc424bcdn4.2o2...................4bcdp424bcdq424bcd3424bcdr424bcds424bcdt424bcdu424bcdv424bcdw42.4x2................................................", "data": ["0x0", "0x9", "0x2", "0xe4", "0x1", "0x80", "0xfa", "0x4", "0x1e", "0xff", "0x7", "0x5", "0x81", "0x82", "0x3", "0x32", "0x83", "0x84", "0x85", "0x6", "0x86", "0x87", "0x79", "0x8", "0x88", "0x89", "0xa", "0x8a", "0xb", "0x8b", "0xc", "0xec"]}]}</script>
 
 
