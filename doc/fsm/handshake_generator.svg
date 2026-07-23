@@ -39,8 +39,8 @@
 <!-- TRANSMIT&#45;&gt;IDLE -->
 <g id="edge2" class="edge">
 <title>TRANSMIT&#45;&gt;IDLE</title>
-<path fill="none" stroke="#888888" stroke-dasharray="5,2" d="M130.56,-32.49C119.79,-33.01 108.22,-33 97.47,-32.47"/>
-<polygon fill="#888888" stroke="#888888" points="97.95,-28.99 87.72,-31.78 97.46,-35.97 97.95,-28.99"/>
+<path fill="none" stroke="black" d="M130.56,-32.49C119.79,-33.01 108.22,-33 97.47,-32.47"/>
+<polygon fill="black" stroke="black" points="97.95,-28.99 87.72,-31.78 97.46,-35.97 97.95,-28.99"/>
 </g>
 </g>
 </svg>
