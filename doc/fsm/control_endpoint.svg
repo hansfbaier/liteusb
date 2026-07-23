@@ -20,38 +20,38 @@
 <!-- DATA_IN -->
 <g id="node2" class="node">
 <title>DATA_IN</title>
-<path fill="#e8e8e8" stroke="black" d="M166.75,-40C166.75,-40 122.25,-40 122.25,-40 116.25,-40 110.25,-34 110.25,-28 110.25,-28 110.25,-16 110.25,-16 110.25,-10 116.25,-4 122.25,-4 122.25,-4 166.75,-4 166.75,-4 172.75,-4 178.75,-10 178.75,-16 178.75,-16 178.75,-28 178.75,-28 178.75,-34 172.75,-40 166.75,-40"/>
-<text xml:space="preserve" text-anchor="middle" x="144.5" y="-16.95" font-family="Times,serif" font-size="14.00">DATA IN</text>
+<path fill="#e8e8e8" stroke="black" d="M166.75,-85C166.75,-85 122.25,-85 122.25,-85 116.25,-85 110.25,-79 110.25,-73 110.25,-73 110.25,-61 110.25,-61 110.25,-55 116.25,-49 122.25,-49 122.25,-49 166.75,-49 166.75,-49 172.75,-49 178.75,-55 178.75,-61 178.75,-61 178.75,-73 178.75,-73 178.75,-79 172.75,-85 166.75,-85"/>
+<text xml:space="preserve" text-anchor="middle" x="144.5" y="-61.95" font-family="Times,serif" font-size="14.00">DATA IN</text>
 </g>
 <!-- SETUP&#45;&gt;DATA_IN -->
 <g id="edge1" class="edge">
 <title>SETUP&#45;&gt;DATA_IN</title>
-<path fill="none" stroke="black" d="M65.7,-22C76.04,-22 87.7,-22 98.78,-22"/>
-<polygon fill="black" stroke="black" points="98.53,-25.5 108.53,-22 98.53,-18.5 98.53,-25.5"/>
+<path fill="none" stroke="black" d="M65.7,-35.14C76.26,-39.46 88.19,-44.35 99.48,-48.97"/>
+<polygon fill="black" stroke="black" points="98.07,-52.17 108.65,-52.73 100.72,-45.7 98.07,-52.17"/>
 </g>
 <!-- DATA_OUT -->
 <g id="node3" class="node">
 <title>DATA_OUT</title>
-<path fill="#e8e8e8" stroke="black" d="M293.75,-40C293.75,-40 235.75,-40 235.75,-40 229.75,-40 223.75,-34 223.75,-28 223.75,-28 223.75,-16 223.75,-16 223.75,-10 229.75,-4 235.75,-4 235.75,-4 293.75,-4 293.75,-4 299.75,-4 305.75,-10 305.75,-16 305.75,-16 305.75,-28 305.75,-28 305.75,-34 299.75,-40 293.75,-40"/>
-<text xml:space="preserve" text-anchor="middle" x="264.75" y="-16.95" font-family="Times,serif" font-size="14.00">DATA OUT</text>
+<path fill="#e8e8e8" stroke="black" d="M293.75,-85C293.75,-85 235.75,-85 235.75,-85 229.75,-85 223.75,-79 223.75,-73 223.75,-73 223.75,-61 223.75,-61 223.75,-55 229.75,-49 235.75,-49 235.75,-49 293.75,-49 293.75,-49 299.75,-49 305.75,-55 305.75,-61 305.75,-61 305.75,-73 305.75,-73 305.75,-79 299.75,-85 293.75,-85"/>
+<text xml:space="preserve" text-anchor="middle" x="264.75" y="-61.95" font-family="Times,serif" font-size="14.00">DATA OUT</text>
 </g>
 <!-- DATA_IN&#45;&gt;DATA_OUT -->
 <g id="edge2" class="edge">
 <title>DATA_IN&#45;&gt;DATA_OUT</title>
-<path fill="none" stroke="black" d="M179.07,-22C189.31,-22 200.81,-22 211.96,-22"/>
-<polygon fill="black" stroke="black" points="211.87,-25.5 221.87,-22 211.87,-18.5 211.87,-25.5"/>
+<path fill="none" stroke="black" d="M179.07,-67C189.31,-67 200.81,-67 211.96,-67"/>
+<polygon fill="black" stroke="black" points="211.87,-70.5 221.87,-67 211.87,-63.5 211.87,-70.5"/>
 </g>
 <!-- STATUS_IN -->
 <g id="node4" class="node">
 <title>STATUS_IN</title>
-<path fill="#e8e8e8" stroke="black" d="M421.5,-40C421.5,-40 362.75,-40 362.75,-40 356.75,-40 350.75,-34 350.75,-28 350.75,-28 350.75,-16 350.75,-16 350.75,-10 356.75,-4 362.75,-4 362.75,-4 421.5,-4 421.5,-4 427.5,-4 433.5,-10 433.5,-16 433.5,-16 433.5,-28 433.5,-28 433.5,-34 427.5,-40 421.5,-40"/>
-<text xml:space="preserve" text-anchor="middle" x="392.12" y="-16.95" font-family="Times,serif" font-size="14.00">STATUS IN</text>
+<path fill="#e8e8e8" stroke="black" d="M421.5,-85C421.5,-85 362.75,-85 362.75,-85 356.75,-85 350.75,-79 350.75,-73 350.75,-73 350.75,-61 350.75,-61 350.75,-55 356.75,-49 362.75,-49 362.75,-49 421.5,-49 421.5,-49 427.5,-49 433.5,-55 433.5,-61 433.5,-61 433.5,-73 433.5,-73 433.5,-79 427.5,-85 421.5,-85"/>
+<text xml:space="preserve" text-anchor="middle" x="392.12" y="-61.95" font-family="Times,serif" font-size="14.00">STATUS IN</text>
 </g>
 <!-- DATA_OUT&#45;&gt;STATUS_IN -->
 <g id="edge3" class="edge">
 <title>DATA_OUT&#45;&gt;STATUS_IN</title>
-<path fill="none" stroke="black" d="M306.11,-22C316.63,-22 328.11,-22 339.14,-22"/>
-<polygon fill="black" stroke="black" points="338.9,-25.5 348.9,-22 338.9,-18.5 338.9,-25.5"/>
+<path fill="none" stroke="black" d="M306.11,-67C316.63,-67 328.11,-67 339.14,-67"/>
+<polygon fill="black" stroke="black" points="338.9,-70.5 348.9,-67 338.9,-63.5 338.9,-70.5"/>
 </g>
 <!-- STATUS_OUT -->
 <g id="node5" class="node">
@@ -62,8 +62,14 @@
 <!-- STATUS_IN&#45;&gt;STATUS_OUT -->
 <g id="edge4" class="edge">
 <title>STATUS_IN&#45;&gt;STATUS_OUT</title>
-<path fill="none" stroke="black" d="M433.96,-22C444.34,-22 455.71,-22 466.8,-22"/>
-<polygon fill="black" stroke="black" points="466.68,-25.5 476.68,-22 466.68,-18.5 466.68,-25.5"/>
+<path fill="none" stroke="black" d="M433.96,-53.13C444.56,-49.53 456.19,-45.58 467.5,-41.74"/>
+<polygon fill="black" stroke="black" points="468.42,-45.13 476.76,-38.6 466.17,-38.5 468.42,-45.13"/>
+</g>
+<!-- STATUS_OUT&#45;&gt;SETUP -->
+<g id="edge5" class="edge">
+<title>STATUS_OUT&#45;&gt;SETUP</title>
+<path fill="none" stroke="#888888" stroke-dasharray="5,2" d="M478.29,-12.95C453.1,-8.89 421.54,-5 393.12,-5 143.5,-5 143.5,-5 143.5,-5 121.29,-5 96.85,-8.43 76.67,-12.22"/>
+<polygon fill="#888888" stroke="#888888" points="76.25,-8.73 67.12,-14.1 77.61,-15.6 76.25,-8.73"/>
 </g>
 <!-- IDLE -->
 <g id="node6" class="node">
@@ -72,7 +78,7 @@
 <text xml:space="preserve" text-anchor="middle" x="32.62" y="-85.95" font-family="Times,serif" font-size="14.00">IDLE</text>
 </g>
 <!-- IDLE&#45;&gt;IDLE -->
-<g id="edge5" class="edge">
+<g id="edge6" class="edge">
 <title>IDLE&#45;&gt;IDLE</title>
 <path fill="none" stroke="#888888" stroke-dasharray="5,2" d="M23.87,-108.35C20.12,-122.85 23.04,-138 32.62,-138 39.66,-138 43.11,-129.83 42.96,-119.75"/>
 <polygon fill="#888888" stroke="#888888" points="46.43,-119.28 41.59,-109.85 39.49,-120.24 46.43,-119.28"/>

@@ -2,7 +2,7 @@
 """Generate FSM state diagram SVGs for liteusb cores using graphviz."""
 import graphviz
 
-OUT = "doc/fsm"
+OUT = "liteusb/doc/fsm"
 SKIN = {
     "rankdir": "LR", "fontname": "Helvetica", "fontsize": "10",
     "nodesep": "0.4", "ranksep": "0.6",
@@ -88,11 +88,10 @@ for key, fsm in FSMS.items():
     for i in range(len(states) - 1):
         g.edge(states[i], states[i + 1])
 
-    # Loopbacks to IDLE for terminal/complete states
-    for s in states:
-        if "COMPLETE" in s or "DONE" in s:
-            if "IDLE" in states:
-                g.edge(s, "IDLE", style="dashed", color="#888")
+    # Always add a return edge from the last state back to the first (reset) state,
+    # so the diagram shows the FSM as a cycle rather than a dead-end chain.
+    if len(states) > 1:
+        g.edge(states[-1], states[0], style="dashed", color="#888")
 
     # Self-loops for idle
     g.edge("IDLE", "IDLE", "rx_active=0", style="dashed", color="#888")

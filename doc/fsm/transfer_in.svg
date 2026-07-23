@@ -20,26 +20,26 @@
 <!-- WAIT_TO_SEND -->
 <g id="node2" class="node">
 <title>WAIT_TO_SEND</title>
-<path fill="#e8e8e8" stroke="black" d="M271,-40C271,-40 184.5,-40 184.5,-40 178.5,-40 172.5,-34 172.5,-28 172.5,-28 172.5,-16 172.5,-16 172.5,-10 178.5,-4 184.5,-4 184.5,-4 271,-4 271,-4 277,-4 283,-10 283,-16 283,-16 283,-28 283,-28 283,-34 277,-40 271,-40"/>
-<text xml:space="preserve" text-anchor="middle" x="227.75" y="-16.95" font-family="Times,serif" font-size="14.00">WAIT TO SEND</text>
+<path fill="#e8e8e8" stroke="black" d="M271,-85C271,-85 184.5,-85 184.5,-85 178.5,-85 172.5,-79 172.5,-73 172.5,-73 172.5,-61 172.5,-61 172.5,-55 178.5,-49 184.5,-49 184.5,-49 271,-49 271,-49 277,-49 283,-55 283,-61 283,-61 283,-73 283,-73 283,-79 277,-85 271,-85"/>
+<text xml:space="preserve" text-anchor="middle" x="227.75" y="-61.95" font-family="Times,serif" font-size="14.00">WAIT TO SEND</text>
 </g>
 <!-- WAIT_FOR_DATA&#45;&gt;WAIT_TO_SEND -->
 <g id="edge1" class="edge">
 <title>WAIT_FOR_DATA&#45;&gt;WAIT_TO_SEND</title>
-<path fill="none" stroke="black" d="M127.85,-22C138.73,-22 150.06,-22 161.01,-22"/>
-<polygon fill="black" stroke="black" points="160.73,-25.5 170.73,-22 160.73,-18.5 160.73,-25.5"/>
+<path fill="none" stroke="black" d="M127.85,-39.53C138.84,-42.58 150.3,-45.76 161.35,-48.83"/>
+<polygon fill="black" stroke="black" points="160.21,-52.15 170.78,-51.45 162.08,-45.4 160.21,-52.15"/>
 </g>
 <!-- SEND_PACKET -->
 <g id="node3" class="node">
 <title>SEND_PACKET</title>
-<path fill="#e8e8e8" stroke="black" d="M422.75,-40C422.75,-40 340,-40 340,-40 334,-40 328,-34 328,-28 328,-28 328,-16 328,-16 328,-10 334,-4 340,-4 340,-4 422.75,-4 422.75,-4 428.75,-4 434.75,-10 434.75,-16 434.75,-16 434.75,-28 434.75,-28 434.75,-34 428.75,-40 422.75,-40"/>
-<text xml:space="preserve" text-anchor="middle" x="381.38" y="-16.95" font-family="Times,serif" font-size="14.00">SEND PACKET</text>
+<path fill="#e8e8e8" stroke="black" d="M422.75,-85C422.75,-85 340,-85 340,-85 334,-85 328,-79 328,-73 328,-73 328,-61 328,-61 328,-55 334,-49 340,-49 340,-49 422.75,-49 422.75,-49 428.75,-49 434.75,-55 434.75,-61 434.75,-61 434.75,-73 434.75,-73 434.75,-79 428.75,-85 422.75,-85"/>
+<text xml:space="preserve" text-anchor="middle" x="381.38" y="-61.95" font-family="Times,serif" font-size="14.00">SEND PACKET</text>
 </g>
 <!-- WAIT_TO_SEND&#45;&gt;SEND_PACKET -->
 <g id="edge2" class="edge">
 <title>WAIT_TO_SEND&#45;&gt;SEND_PACKET</title>
-<path fill="none" stroke="black" d="M283.49,-22C294.19,-22 305.5,-22 316.47,-22"/>
-<polygon fill="black" stroke="black" points="316.23,-25.5 326.23,-22 316.23,-18.5 316.23,-25.5"/>
+<path fill="none" stroke="black" d="M283.49,-67C294.19,-67 305.5,-67 316.47,-67"/>
+<polygon fill="black" stroke="black" points="316.23,-70.5 326.23,-67 316.23,-63.5 316.23,-70.5"/>
 </g>
 <!-- WAIT_FOR_ACK -->
 <g id="node4" class="node">
@@ -50,8 +50,14 @@
 <!-- SEND_PACKET&#45;&gt;WAIT_FOR_ACK -->
 <g id="edge3" class="edge">
 <title>SEND_PACKET&#45;&gt;WAIT_FOR_ACK</title>
-<path fill="none" stroke="black" d="M435.24,-22C445.83,-22 457.09,-22 468.07,-22"/>
-<polygon fill="black" stroke="black" points="467.87,-25.5 477.87,-22 467.87,-18.5 467.87,-25.5"/>
+<path fill="none" stroke="black" d="M435.24,-51.39C445.94,-48.23 457.32,-44.87 468.42,-41.59"/>
+<polygon fill="black" stroke="black" points="469.34,-44.97 477.94,-38.78 467.35,-38.25 469.34,-44.97"/>
+</g>
+<!-- WAIT_FOR_ACK&#45;&gt;WAIT_FOR_DATA -->
+<g id="edge4" class="edge">
+<title>WAIT_FOR_ACK&#45;&gt;WAIT_FOR_DATA</title>
+<path fill="none" stroke="#888888" stroke-dasharray="5,2" d="M479.53,-22C395.11,-22 233.79,-22 139.13,-22"/>
+<polygon fill="#888888" stroke="#888888" points="139.16,-18.5 129.16,-22 139.16,-25.5 139.16,-18.5"/>
 </g>
 <!-- IDLE -->
 <g id="node5" class="node">
@@ -60,7 +66,7 @@
 <text xml:space="preserve" text-anchor="middle" x="63.75" y="-85.95" font-family="Times,serif" font-size="14.00">IDLE</text>
 </g>
 <!-- IDLE&#45;&gt;IDLE -->
-<g id="edge4" class="edge">
+<g id="edge5" class="edge">
 <title>IDLE&#45;&gt;IDLE</title>
 <path fill="none" stroke="#888888" stroke-dasharray="5,2" d="M50.46,-107.38C43.99,-122.16 48.42,-138 63.75,-138 75.25,-138 80.61,-129.09 79.85,-118.4"/>
 <polygon fill="#888888" stroke="#888888" points="83.28,-117.67 77.42,-108.84 76.49,-119.4 83.28,-117.67"/>
