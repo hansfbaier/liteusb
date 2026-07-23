@@ -1,55 +1,68 @@
 {
-  "head": {
-    "text": "USBDataPacketReceiver \u2014 DATA0 + 8 bytes + CRC16"
-  },
   "signal": [
     {
       "name": "clk",
-      "wave": "p.............."
+      "wave": "p...................."
     },
     {
       "name": "rx_active",
-      "wave": "0.1...........0"
+      "wave": "01.........0........."
     },
     {
       "name": "rx_valid",
-      "wave": "0.1.0.....1...0"
+      "wave": "0.1........0........."
     },
     {
       "name": "rx_data",
-      "wave": "2.3.4.........2",
+      "wave": "2.3456789ab2.........",
       "data": [
-        "SYNC",
-        "PID=0xC3",
-        "payload+CRC",
-        "idle"
+        "0x0",
+        "0xc3",
+        "0xaa",
+        "0xbb",
+        "0xcc",
+        "0xdd",
+        "0x11",
+        "0x22",
+        "0x33",
+        "0x44"
       ]
     },
     {
       "name": "stream.valid",
-      "wave": "0........10...."
+      "wave": "0....1......0........"
     },
     {
       "name": "stream.next",
-      "wave": "0........1.0..."
+      "wave": "0....1.....0........."
     },
     {
       "name": "stream.payload",
-      "wave": "x........2x....",
+      "wave": "2....3456782.........",
       "data": [
-        "0xAA"
+        "0x0",
+        "0xaa",
+        "0xbb",
+        "0xcc",
+        "0xdd",
+        "0x11",
+        "0x22"
       ]
     },
     {
       "name": "packet_complete",
-      "wave": "0.........10..."
+      "wave": "0...................."
     },
     {
       "name": "active_pid",
-      "wave": "x........2x....",
+      "wave": "2..3.................",
       "data": [
-        "DATA0"
+        "0x0",
+        "0x3"
       ]
     }
-  ]
+  ],
+  "head": {
+    "text": "USBDataPacketReceiver \u2014 DATA0 + 8 bytes + CRC16"
+  }
 }

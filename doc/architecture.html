@@ -517,7 +517,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <h4>Token Detection Tests</h4>
 
-<script type="WaveDrom">{"head": {"text": "USBTokenDetector \u2014 OUT token to address 0x3a"}, "signal": [{"name": "clk", "wave": "p..........."}, {"name": "rx_active", "wave": "0.1.......0."}, {"name": "rx_valid", "wave": "0.1.......0."}, {"name": "rx_data", "wave": "2.3.4.5...2.", "data": ["SYNC", "PID=OUT", "ADDR[0:6]", "ENDP[0:3]", "CRC5"]}, {"name": "new_token", "wave": "0...10......"}, {"name": "pid", "wave": "x...2x......", "data": ["0x87(OUT)"]}, {"name": "address", "wave": "x...3x......", "data": ["0x3a"]}, {"name": "endpoint", "wave": "x...2x......", "data": ["0x0a"]}]}</script>
+<script type="WaveDrom">{"signal": [{"name": "clk", "wave": "p............"}, {"name": "rx_active", "wave": "01....0......"}, {"name": "rx_valid", "wave": "0.1...0......"}, {"name": "rx_data", "wave": "2345672......", "data": ["0x0", "0x80", "0x87", "0x50", "0x5", "0x2"]}, {"name": "new_token", "wave": "0............"}, {"name": "pid", "wave": "2............", "data": ["0x0"]}, {"name": "address", "wave": "2............", "data": ["0x0"]}, {"name": "endpoint", "wave": "2............", "data": ["0x0"]}], "head": {"text": "USBTokenDetector \u2014 OUT token to address 0x3a"}}</script>
 
 <ul>
 <li><b>test_valid_token</b> (DUT: <code>USBTokenDetector</code>): Sends an OUT token to address 0x3a; verifies new_token=1, pid=OUT, address=0x3a, endpoint=0xa.</li>
@@ -533,7 +533,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <h4>Handshake Detection Tests</h4>
 
-<script type="WaveDrom">{"head": {"text": "USBHandshakeDetector \u2014 ACK detection"}, "signal": [{"name": "clk", "wave": "p......"}, {"name": "rx_active", "wave": "0.10..0"}, {"name": "rx_valid", "wave": "0.10..0"}, {"name": "rx_data", "wave": "2.3.2..2", "data": ["SYNC", "0xD2(ACK)"]}, {"name": "detected.ack", "wave": "0..10.."}, {"name": "detected.nak", "wave": "0......"}, {"name": "detected.stall", "wave": "0......"}]}</script>
+<script type="WaveDrom">{"signal": [{"name": "clk", "wave": "p........"}, {"name": "rx_active", "wave": "01.0....."}, {"name": "rx_valid", "wave": "0.10....."}, {"name": "rx_data", "wave": "2342.....", "data": ["0x0", "0x80", "0xd2"]}, {"name": "ack", "wave": "0...10..."}, {"name": "nak", "wave": "0........"}, {"name": "stall", "wave": "0........"}], "head": {"text": "USBHandshakeDetector \u2014 ACK detection"}}</script>
 
 <ul>
 <li><b>test_ack</b> (DUT: <code>USBHandshakeDetector</code>): Detects ACK (PID 0xD2) via single-cycle PID observation.</li>
@@ -551,7 +551,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <h4>Data Packet Receiver Tests</h4>
 
-<script type="WaveDrom">{"head": {"text": "USBDataPacketReceiver \u2014 DATA0 + 8 bytes + CRC16"}, "signal": [{"name": "clk", "wave": "p.............."}, {"name": "rx_active", "wave": "0.1...........0"}, {"name": "rx_valid", "wave": "0.1.0.....1...0"}, {"name": "rx_data", "wave": "2.3.4.........2", "data": ["SYNC", "PID=0xC3", "payload+CRC", "idle"]}, {"name": "stream.valid", "wave": "0........10...."}, {"name": "stream.next", "wave": "0........1.0..."}, {"name": "stream.payload", "wave": "x........2x....", "data": ["0xAA"]}, {"name": "packet_complete", "wave": "0.........10..."}, {"name": "active_pid", "wave": "x........2x....", "data": ["DATA0"]}]}</script>
+<script type="WaveDrom">{"signal": [{"name": "clk", "wave": "p...................."}, {"name": "rx_active", "wave": "01.........0........."}, {"name": "rx_valid", "wave": "0.1........0........."}, {"name": "rx_data", "wave": "2.3456789ab2.........", "data": ["0x0", "0xc3", "0xaa", "0xbb", "0xcc", "0xdd", "0x11", "0x22", "0x33", "0x44"]}, {"name": "stream.valid", "wave": "0....1......0........"}, {"name": "stream.next", "wave": "0....1.....0........."}, {"name": "stream.payload", "wave": "2....3456782.........", "data": ["0x0", "0xaa", "0xbb", "0xcc", "0xdd", "0x11", "0x22"]}, {"name": "packet_complete", "wave": "0...................."}, {"name": "active_pid", "wave": "2..3.................", "data": ["0x0", "0x3"]}], "head": {"text": "USBDataPacketReceiver \u2014 DATA0 + 8 bytes + CRC16"}}</script>
 
 <ul>
 <li><b>test_data_receive</b> (DUT: <code>USBDataPacketReceiver</code>, <code>USBDataPacketCRC</code>): Sends DATA0 + 8 data bytes + CRC16. Verifies stream valid after buffering, CRC exclusion, and rx_valid pause/resume.</li>
@@ -577,7 +577,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <h4>Data Packet Generator Tests</h4>
 
-<script type="WaveDrom">{"head": {"text": "USBDataPacketGenerator \u2014 8-byte stream to TX packet"}, "signal": [{"name": "clk", "wave": "p............."}, {"name": "stream.first", "wave": "0.10.........."}, {"name": "stream.last", "wave": "0...........10"}, {"name": "stream.valid", "wave": "0...........10"}, {"name": "stream.payload", "wave": "x.4..........x", "data": ["0xAA", "0xBB", "..."]}, {"name": "tx.valid", "wave": "0..1.........0"}, {"name": "tx.data", "wave": "x..4.........x", "data": ["PID=0xC3", "8 bytes", "CRC16"]}, {"name": "stream.ready", "wave": "0..1.........0"}]}</script>
+<script type="WaveDrom">{"signal": [{"name": "clk", "wave": "p...................."}, {"name": "stream.first", "wave": "10..................."}, {"name": "stream.last", "wave": "0...................."}, {"name": "stream.valid", "wave": "1..0................."}, {"name": "stream.payload", "wave": "2345.................", "data": ["0xaa", "0xbb", "0xcc", "0x0"]}, {"name": "tx.valid", "wave": "01..01.0............."}, {"name": "tx.data", "wave": "23..2452.............", "data": ["0x0", "0xc3", "0x40", "0xbf"]}, {"name": "stream.ready", "wave": "0...10..............."}], "head": {"text": "USBDataPacketGenerator \u2014 8-byte stream to TX packet"}}</script>
 
 <ul>
 <li><b>test_simple_data_generation</b> (DUT: <code>USBDataPacketGenerator</code>; uses <code>USBDataPacketCRC</code>): Feeds a stream with 8-byte payload; verifies TX emits PID + bytes + 2 CRC bytes in correct order.</li>
@@ -593,7 +593,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <h4>Handshake Generator Tests</h4>
 
-<script type="WaveDrom">{"head": {"text": "USBHandshakeGenerator \u2014 issue_ack strobe"}, "signal": [{"name": "clk", "wave": "p....."}, {"name": "issue_ack", "wave": "0.10.."}, {"name": "tx.valid", "wave": "0..10."}, {"name": "tx.data", "wave": "x..2x..", "data": ["0xD2(ACK)"]}, {"name": "tx.ready", "wave": "0...10"}]}</script>
+<script type="WaveDrom">{"signal": [{"name": "clk", "wave": "p......."}, {"name": "issue_ack", "wave": "01......"}, {"name": "tx_valid", "wave": "0.1.01.."}, {"name": "tx_data", "wave": "2.3.....", "data": ["0x0", "0xd2"]}, {"name": "tx_ready", "wave": "0..10..."}], "head": {"text": "USBHandshakeGenerator \u2014 issue_ack strobe"}}</script>
 
 <ul>
 <li><b>test_ack_generation</b> (DUT: <code>USBHandshakeGenerator</code>): Pulses issue_ack; verifies TX emits ACK byte, stays valid until tx.ready.</li>
@@ -623,7 +623,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <h3>10.3 Descriptor Tests</h3>
 
-<script type="WaveDrom">{"head": {"text": "USBDescriptorStreamGenerator \u2014 ROM data to USB stream"}, "signal": [{"name": "clk", "wave": "p.........."}, {"name": "start", "wave": "0.10......."}, {"name": "tx.valid", "wave": "0..1......0"}, {"name": "tx.first", "wave": "0..10......"}, {"name": "tx.last", "wave": "0.....1...0"}, {"name": "tx.payload", "wave": "x..3......x", "data": ["desc[0]", "desc[1]", "desc[n-1]"]}, {"name": "tx.ready", "wave": "0..1......0"}, {"name": "stall", "wave": "0.........."}]}</script>
+<script type="WaveDrom">{"signal": [{"name": "clk", "wave": "p.............................."}, {"name": "start", "wave": "010............................"}, {"name": "tx.valid", "wave": "0.............................."}, {"name": "tx.first", "wave": "0.............................."}, {"name": "tx.last", "wave": "0.............................."}, {"name": "tx.payload", "wave": "2..............................", "data": ["0x0"]}, {"name": "tx.ready", "wave": "0..1..........................."}], "head": {"text": "USBDescriptorStreamGenerator \u2014 ROM data to USB stream"}}</script>
 
 <p><b>7 tests</b> covering all descriptor types, offsets, truncation, ZLP, and error cases.</p>
 
@@ -656,7 +656,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <h3>10.4 Transfer Tests</h3>
 
-<script type="WaveDrom">{"head": {"text": "USBInTransferManager \u2014 Double-buffered IN with PID toggle"}, "signal": [{"name": "clk", "wave": "p..............."}, {"name": "transfer.valid", "wave": "0.10...10......"}, {"name": "transfer.last", "wave": "0.....10......."}, {"name": "token.is_in", "wave": "0......10....10"}, {"name": "data_pid", "wave": "x.2........3..2", "data": ["DATA0", "DATA1", "DATA0"]}, {"name": "tx.valid", "wave": "0.......10....1"}, {"name": "tx.payload", "wave": "x.......2x....2", "data": ["pkt[0]", "pkt[1]"]}, {"name": "ack", "wave": "0........10.."}, {"name": "nak", "wave": "0............."}]}</script>
+<script type="WaveDrom">{"signal": [{"name": "clk", "wave": "p..............."}, {"name": "transfer.valid", "wave": "1.......0......."}, {"name": "transfer.last", "wave": "0......10......."}, {"name": "data_pid", "wave": "2.......3.......", "data": ["0x1", "0x0"]}, {"name": "packet.valid", "wave": "0..............."}, {"name": "packet.payload", "wave": "2.......3.......", "data": ["0x0", "0x42"]}], "head": {"text": "USBInTransferManager \u2014 Double-buffered IN with PID toggle"}}</script>
 
 <p><b>4 tests</b> covering IN transfer manager.</p>
 <ul>
@@ -693,7 +693,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <h3>10.6 Reset Tests</h3>
 
-<script type="WaveDrom">{"head": {"text": "USBResetSequencer \u2014 Full Speed Reset to HS Detection"}, "signal": [{"name": "clk", "wave": "p............."}, {"name": "line_state", "wave": "2.3..........2", "data": ["0b01(J)", "0b00(SE0)", "0b01(J)"]}, {"name": "vbus_connected", "wave": "0.1..........."}, {"name": "bus_reset", "wave": "0....10......."}, {"name": "current_speed", "wave": "x.2...2x...2x.", "data": ["FULL", "HIGH"]}, {"name": "operating_mode", "wave": "x.2.....2x....", "data": ["NORMAL", "CHIRP"]}]}</script>
+<script type="WaveDrom">{"signal": [{"name": "clk", "wave": "p................................................................................"}, {"name": "line_state", "wave": "2...3.........................2..................................................", "data": ["0x1", "0x0"]}, {"name": "vbus_connected", "wave": "1................................................................................"}, {"name": "bus_reset", "wave": "0................................................................................"}, {"name": "current_speed", "wave": "2................................................................................", "data": ["0x1"]}, {"name": "operating_mode", "wave": "2................................................................................", "data": ["0x0"]}], "head": {"text": "USBResetSequencer \u2014 Full Speed Reset to HS Detection"}}</script>
 
 <p><b>1 test</b> covering the 14-state reset sequencer.</p>
 <ul>
@@ -750,7 +750,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <h3>10.8 Stream Tests</h3>
 
-<script type="WaveDrom">{"head": {"text": "USBOutStreamBoundaryDetector \u2014 first/last byte detection"}, "signal": [{"name": "clk", "wave": "p.........."}, {"name": "unproc.valid", "wave": "0.1......0."}, {"name": "unproc.payload", "wave": "x.4......x.", "data": ["0xAA", "0xBB", "0xCC", "0xDD"]}, {"name": "proc.valid", "wave": "0...1.....0"}, {"name": "proc.payload", "wave": "x...4....x.", "data": ["0xAA", "0xBB", "0xCC", "0xDD"]}, {"name": "first", "wave": "0....10...."}, {"name": "last", "wave": "0........10"}]}</script>
+<script type="WaveDrom">{"signal": [{"name": "clk", "wave": "p............"}, {"name": "unproc.valid", "wave": "01...0......."}, {"name": "unproc.payload", "wave": "234562.......", "data": ["0x0", "0xaa", "0xbb", "0xcc", "0xdd"]}, {"name": "proc.valid", "wave": "0..1...0....."}, {"name": "proc.payload", "wave": "2..3456......", "data": ["0x0", "0xaa", "0xbb", "0xcc", "0xdd"]}, {"name": "first", "wave": "0..10........"}, {"name": "last", "wave": "0.....10....."}], "head": {"text": "USBOutStreamBoundaryDetector \u2014 first/last byte detection"}}</script>
 
 <p><b>1 test</b> covering the boundary detector.</p>
 <ul>
@@ -760,7 +760,7 @@ data receive/deserialize, data generate, handshake generate, and interpacket tim
 
 <h3>10.9 Device-Level Tests</h3>
 
-<script type="WaveDrom">{"head": {"text": "USBControlEndpoint \u2014 EP0 stages: SETUP, DATA_IN, STATUS_OUT"}, "signal": [{"name": "clk", "wave": "p..............."}, {"name": "setup.received", "wave": "0.10............"}, {"name": "fsm_state", "wave": "2.3.4.5.2.......", "data": ["SETUP", "DATA_IN", "STATUS_OUT", "IDLE"]}, {"name": "rx.valid", "wave": "0.10.0..10.0...."}, {"name": "tx.valid", "wave": "0..0..1.0..0.10."}, {"name": "tx.first", "wave": "0..0..10.0.0...."}, {"name": "tx.last", "wave": "0...........10.."}]}</script>
+<script type="WaveDrom">{"signal": [{"name": "clk", "wave": "p...................."}, {"name": "rx.active", "wave": "01.........0........."}, {"name": "rx.valid", "wave": "0.1........0........."}, {"name": "rx.data", "wave": "2.345262.72..........", "data": ["0x0", "0x2d", "0x80", "0x6", "0x1", "0x40"]}, {"name": "tx.valid", "wave": "0...................."}, {"name": "tx.data", "wave": "2....................", "data": ["0x0"]}], "head": {"text": "USBControlEndpoint \u2014 EP0 stages: SETUP, DATA_IN, STATUS_OUT"}}</script>
 
 <p><b>2 tests</b> from <code>test_usb2_device.py</code> (requires the custom <code>run_tests.py</code> runner).</p>
 <ul>

@@ -1,30 +1,31 @@
 {
-  "head": {
-    "text": "USBHandshakeGenerator \u2014 issue_ack strobe"
-  },
   "signal": [
     {
       "name": "clk",
-      "wave": "p....."
+      "wave": "p......."
     },
     {
       "name": "issue_ack",
-      "wave": "0.10.."
+      "wave": "01......"
     },
     {
-      "name": "tx.valid",
-      "wave": "0..10."
+      "name": "tx_valid",
+      "wave": "0.1.01.."
     },
     {
-      "name": "tx.data",
-      "wave": "x..2x..",
+      "name": "tx_data",
+      "wave": "2.3.....",
       "data": [
-        "0xD2(ACK)"
+        "0x0",
+        "0xd2"
       ]
     },
     {
-      "name": "tx.ready",
-      "wave": "0...10"
+      "name": "tx_ready",
+      "wave": "0..10..."
     }
-  ]
+  ],
+  "head": {
+    "text": "USBHandshakeGenerator \u2014 issue_ack strobe"
+  }
 }

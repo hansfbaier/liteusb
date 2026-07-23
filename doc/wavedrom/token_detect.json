@@ -1,55 +1,56 @@
 {
-  "head": {
-    "text": "USBTokenDetector \u2014 OUT token to address 0x3a"
-  },
   "signal": [
     {
       "name": "clk",
-      "wave": "p..........."
+      "wave": "p............"
     },
     {
       "name": "rx_active",
-      "wave": "0.1.......0."
+      "wave": "01....0......"
     },
     {
       "name": "rx_valid",
-      "wave": "0.1.......0."
+      "wave": "0.1...0......"
     },
     {
       "name": "rx_data",
-      "wave": "2.3.4.5...2.",
+      "wave": "2345672......",
       "data": [
-        "SYNC",
-        "PID=OUT",
-        "ADDR[0:6]",
-        "ENDP[0:3]",
-        "CRC5"
+        "0x0",
+        "0x80",
+        "0x87",
+        "0x50",
+        "0x5",
+        "0x2"
       ]
     },
     {
       "name": "new_token",
-      "wave": "0...10......"
+      "wave": "0............"
     },
     {
       "name": "pid",
-      "wave": "x...2x......",
+      "wave": "2............",
       "data": [
-        "0x87(OUT)"
+        "0x0"
       ]
     },
     {
       "name": "address",
-      "wave": "x...3x......",
+      "wave": "2............",
       "data": [
-        "0x3a"
+        "0x0"
       ]
     },
     {
       "name": "endpoint",
-      "wave": "x...2x......",
+      "wave": "2............",
       "data": [
-        "0x0a"
+        "0x0"
       ]
     }
-  ]
+  ],
+  "head": {
+    "text": "USBTokenDetector \u2014 OUT token to address 0x3a"
+  }
 }

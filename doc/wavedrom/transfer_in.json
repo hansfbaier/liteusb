@@ -1,7 +1,4 @@
 {
-  "head": {
-    "text": "USBInTransferManager \u2014 Double-buffered IN with PID toggle"
-  },
   "signal": [
     {
       "name": "clk",
@@ -9,44 +6,34 @@
     },
     {
       "name": "transfer.valid",
-      "wave": "0.10...10......"
+      "wave": "1.......0......."
     },
     {
       "name": "transfer.last",
-      "wave": "0.....10......."
-    },
-    {
-      "name": "token.is_in",
-      "wave": "0......10....10"
+      "wave": "0......10......."
     },
     {
       "name": "data_pid",
-      "wave": "x.2........3..2",
+      "wave": "2.......3.......",
       "data": [
-        "DATA0",
-        "DATA1",
-        "DATA0"
+        "0x1",
+        "0x0"
       ]
     },
     {
-      "name": "tx.valid",
-      "wave": "0.......10....1"
+      "name": "packet.valid",
+      "wave": "0..............."
     },
     {
-      "name": "tx.payload",
-      "wave": "x.......2x....2",
+      "name": "packet.payload",
+      "wave": "2.......3.......",
       "data": [
-        "pkt[0]",
-        "pkt[1]"
+        "0x0",
+        "0x42"
       ]
-    },
-    {
-      "name": "ack",
-      "wave": "0........10.."
-    },
-    {
-      "name": "nak",
-      "wave": "0............."
     }
-  ]
+  ],
+  "head": {
+    "text": "USBInTransferManager \u2014 Double-buffered IN with PID toggle"
+  }
 }

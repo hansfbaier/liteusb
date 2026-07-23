@@ -1,44 +1,38 @@
 {
-  "head": {
-    "text": "USBDescriptorStreamGenerator \u2014 ROM data to USB stream"
-  },
   "signal": [
     {
       "name": "clk",
-      "wave": "p.........."
+      "wave": "p.............................."
     },
     {
       "name": "start",
-      "wave": "0.10......."
+      "wave": "010............................"
     },
     {
       "name": "tx.valid",
-      "wave": "0..1......0"
+      "wave": "0.............................."
     },
     {
       "name": "tx.first",
-      "wave": "0..10......"
+      "wave": "0.............................."
     },
     {
       "name": "tx.last",
-      "wave": "0.....1...0"
+      "wave": "0.............................."
     },
     {
       "name": "tx.payload",
-      "wave": "x..3......x",
+      "wave": "2..............................",
       "data": [
-        "desc[0]",
-        "desc[1]",
-        "desc[n-1]"
+        "0x0"
       ]
     },
     {
       "name": "tx.ready",
-      "wave": "0..1......0"
-    },
-    {
-      "name": "stall",
-      "wave": "0.........."
+      "wave": "0..1..........................."
     }
-  ]
+  ],
+  "head": {
+    "text": "USBDescriptorStreamGenerator \u2014 ROM data to USB stream"
+  }
 }

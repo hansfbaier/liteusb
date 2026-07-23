@@ -1,39 +1,40 @@
 {
-  "head": {
-    "text": "USBHandshakeDetector \u2014 ACK detection"
-  },
   "signal": [
     {
       "name": "clk",
-      "wave": "p......"
+      "wave": "p........"
     },
     {
       "name": "rx_active",
-      "wave": "0.10..0"
+      "wave": "01.0....."
     },
     {
       "name": "rx_valid",
-      "wave": "0.10..0"
+      "wave": "0.10....."
     },
     {
       "name": "rx_data",
-      "wave": "2.3.2..2",
+      "wave": "2342.....",
       "data": [
-        "SYNC",
-        "0xD2(ACK)"
+        "0x0",
+        "0x80",
+        "0xd2"
       ]
     },
     {
-      "name": "detected.ack",
-      "wave": "0..10.."
+      "name": "ack",
+      "wave": "0...10..."
     },
     {
-      "name": "detected.nak",
-      "wave": "0......"
+      "name": "nak",
+      "wave": "0........"
     },
     {
-      "name": "detected.stall",
-      "wave": "0......"
+      "name": "stall",
+      "wave": "0........"
     }
-  ]
+  ],
+  "head": {
+    "text": "USBHandshakeDetector \u2014 ACK detection"
+  }
 }
