@@ -1,0 +1,357 @@
+$scope module USBTokenDetector $end
+$var wire 8 ! rx_data $end
+$var wire 1 " rx_active $end
+$var wire 1 # rx_valid $end
+$var wire 4 $ usbtokendetector_pid $end
+$var wire 7 % usbtokendetector_address $end
+$var wire 4 & usbtokendetector_endpoint $end
+$var wire 1 ' usbtokendetector_new_token $end
+$var wire 1 ( usbtokendetector_ready_for_response $end
+$var wire 11 ) usbtokendetector_frame $end
+$var wire 1 * usbtokendetector_new_frame $end
+$var wire 1 + usbtokendetector_is_in $end
+$var wire 1 , usbtokendetector_is_out $end
+$var wire 1 - usbtokendetector_is_setup $end
+$var wire 1 . usbtokendetector_is_ping $end
+$var wire 2 / usbtokendetector0 $end
+$var wire 7 0 usbtokendetector1 $end
+$var wire 11 1 usbtokendetector_token_data $end
+$var wire 4 2 usbtokendetector_current_pid $end
+$var wire 5 3 usbtokendetector_expected_crc $end
+$var wire 1 4 usbtokendetector_token_applicable $end
+$var wire 2 5 usbtokendetector_usbinterpackettimer0 $end
+$var wire 1 6 usbtokendetector_usbinterpackettimer1 $end
+$var wire 1 7 usbtokendetector_usbinterpackettimer2 $end
+$var wire 1 8 usbtokendetector_usbinterpackettimer3 $end
+$var wire 10 9 usbtokendetector_usbinterpackettimer_counter $end
+$var wire 1 : usbtokendetector_usbinterpackettimer4 $end
+$var wire 1 ; usbtokendetector_timer_start $end
+$var wire 1 < usbtokendetector_timer_tx_allowed $end
+$var wire 1 = usbtokendetector_timer_tx_timeout $end
+$var wire 1 > usbtokendetector_timer_rx_timeout $end
+$var wire 1 ? sys_clk $end
+$var wire 1 @ sys_rst $end
+$var wire 1 A usb_clk $end
+$var wire 1 B usb_rst $end
+$var wire 112 C fsm0 $end
+$var wire 128 D fsm1 $end
+$var wire 4 E usbtokendetector_current_pid_next_value0 $end
+$var wire 1 F usbtokendetector_current_pid_next_value_ce0 $end
+$var wire 11 G usbtokendetector_token_data_next_value1 $end
+$var wire 1 H usbtokendetector_token_data_next_value_ce1 $end
+$var wire 3 I fsm_next_value0 $end
+$var wire 1 J fsm_next_value_ce0 $end
+$var wire 11 K usbtokendetector_frame_next_value2 $end
+$var wire 1 L usbtokendetector_frame_next_value_ce2 $end
+$var wire 1 M usbtokendetector_new_frame_next_value3 $end
+$var wire 1 N usbtokendetector_new_frame_next_value_ce3 $end
+$var wire 4 O usbtokendetector_pid_next_value4 $end
+$var wire 1 P usbtokendetector_pid_next_value_ce4 $end
+$var wire 1 Q usbtokendetector_new_token_next_value5 $end
+$var wire 1 R usbtokendetector_new_token_next_value_ce5 $end
+$var wire 11 S fsm_next_value1 $end
+$var wire 1 T fsm_next_value_ce1 $end
+$enddefinitions $end
+$dumpvars
+$end
+#0
+b00000000 !
+0"
+0#
+b0000 $
+b0000000 %
+b0000 &
+0'
+0(
+b00000000000 )
+0*
+0+
+0,
+0-
+0.
+b00 /
+b0000000 0
+b00000000000 1
+b0000 2
+b00000 3
+04
+b00 5
+06
+07
+08
+b0000000000 9
+0:
+0;
+0<
+0=
+0>
+0?
+0@
+0A
+0B
+b01001001010001000100110001000101 C
+b001100000011101001001001010001000100110001000101 D
+b0000 E
+0F
+b00000000000 G
+0H
+b000 I
+0J
+b00000000000 K
+0L
+0M
+0N
+b0000 O
+0P
+0Q
+0R
+b00000000000 S
+0T
+14
+#0.0
+#0.0
+b0111010 0
+1?
+1A
+04
+1(
+16
+b0000000001 9
+1<
+#0.0
+0A
+0?
+#0.0
+0(
+06
+1?
+b0000000010 9
+1A
+0<
+#0.0
+0A
+0?
+#0.0
+b0000000011 9
+1A
+1?
+#0.0
+0A
+0?
+#0.0
+b0000000100 9
+1A
+1?
+#0.0
+0A
+0?
+#0.0
+b0000000101 9
+1A
+1?
+#0.0
+0A
+0?
+#0.0
+b0000000110 9
+1A
+1?
+#0.0
+0A
+0?
+#0.0
+b0000000111 9
+1A
+1?
+#0.0
+0A
+0?
+#0.0
+b0000001000 9
+1A
+1?
+#0.0
+0A
+0?
+#0.0
+b0000001001 9
+1A
+1?
+#0.0
+0A
+0?
+#0.0
+b0000001010 9
+1A
+1?
+#0.0
+0A
+0?
+#0.0
+b00110001001110100101001001000101010000010100010001011111010100000100100101000100 D
+1"
+1?
+1#
+b0000001011 9
+1A
+#0.0
+0A
+0?
+#0.0
+b0011001000111010010100100100010101000001010001000101111101010100010011110100101101000101010011100101111100110000 D
+b0001 E
+1F
+b11100001 !
+1?
+b0000001100 9
+1A
+b0101001001000101010000010100010001011111010100000100100101000100 C
+#0.0
+0A
+0?
+#0.0
+b0000 E
+0F
+b00111010 !
+b0001 2
+1?
+b00000111010 G
+1A
+1H
+b010100100100010101000001010001000101111101010100010011110100101101000101010011100101111100110000 C
+b0011001100111010010100100100010101000001010001000101111101010100010011110100101101000101010011100101111100110001 D
+b0000001101 9
+#0.0
+0A
+0?
+#0.0
+b00000111010 1
+b00111101 !
+1?
+b00000000000 G
+1A
+0H
+b00111 3
+b010100100100010101000001010001000101111101010100010011110100101101000101010011100101111100110001 C
+14
+b00110100001110100101010001001111010010110100010101001110010111110100001101001111010011010101000001001100010001010101010001000101 D
+b101 I
+1J
+b0000001110 9
+#0.0
+0A
+0?
+#0.0
+b10100111010 1
+b0001 O
+1P
+1Q
+1R
+b00000 3
+b10100111010 S
+1T
+b0000001111 9
+1:
+0"
+1?
+0#
+1A
+b0101010001001111010010110100010101001110010111110100001101001111010011010101000001001100010001010101010001000101 C
+b001100000011101001001001010001000100110001000101 D
+b000 I
+0J
+1;
+#0.0
+0A
+0?
+#0.0
+b0000 O
+1?
+0P
+b0001 $
+1A
+b0111010 %
+0Q
+b1010 &
+b01001001010001000100110001000101 C
+1'
+0R
+b00000000000 S
+0T
+1,
+0;
+b0000000000 9
+0:
+#0.0
+0A
+0?
+#0.0
+1(
+16
+1?
+b0000000001 9
+1A
+1<
+0'
+#0.0
+0A
+0?
+#0.0
+0(
+06
+1?
+b0000000010 9
+1A
+0<
+b00000000 !
+0"
+0#
+b0000 $
+b0000000 %
+b0000 &
+0'
+0(
+b00000000000 )
+0*
+0+
+0,
+0-
+0.
+b00 /
+b0000000 0
+b00000000000 1
+b0000 2
+b00000 3
+04
+b00 5
+06
+07
+08
+b0000000000 9
+0:
+0;
+0<
+0=
+0>
+0?
+0@
+0A
+0B
+b01001001010001000100110001000101 C
+b001100000011101001001001010001000100110001000101 D
+b0000 E
+0F
+b00000000000 G
+0H
+b000 I
+0J
+b00000000000 K
+0L
+0M
+0N
+b0000 O
+0P
+0Q
+0R
+b00000000000 S
+0T

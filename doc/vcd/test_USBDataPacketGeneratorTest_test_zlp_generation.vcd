@@ -1,0 +1,188 @@
+$scope module USBDataPacketGenerator $end
+$var wire 2 ! usbdatapacketgenerator $end
+$var wire 1 " usbdatapacketgenerator_datacrcinterface_start $end
+$var wire 16 # usbdatapacketgenerator_datacrcinterface_crc $end
+$var wire 1 $ usbdatapacketgenerator_usbinstreaminterface_valid $end
+$var wire 1 % usbdatapacketgenerator_usbinstreaminterface_ready $end
+$var wire 1 & usbdatapacketgenerator_usbinstreaminterface_first $end
+$var wire 1 ' usbdatapacketgenerator_usbinstreaminterface_last $end
+$var wire 8 ( usbdatapacketgenerator_usbinstreaminterface_payload $end
+$var wire 1 ) usbdatapacketgenerator_utmitransmitinterface_valid $end
+$var wire 8 * usbdatapacketgenerator_utmitransmitinterface_data $end
+$var wire 1 + usbdatapacketgenerator_utmitransmitinterface_ready $end
+$var wire 8 , usbdatapacketgenerator_current_data_pid $end
+$var wire 8 - usbdatapacketgenerator_remaining_crc $end
+$var wire 1 . usbdatapacketgenerator_is_zlp $end
+$var wire 8 / usbdatapacketgenerator_usbdatapacketcrc_rx_data $end
+$var wire 1 0 usbdatapacketgenerator_usbdatapacketcrc_rx_valid $end
+$var wire 8 1 usbdatapacketgenerator_usbdatapacketcrc_tx_data $end
+$var wire 1 2 usbdatapacketgenerator_usbdatapacketcrc_tx_valid $end
+$var wire 16 3 usbdatapacketgenerator_usbdatapacketcrc_crc0 $end
+$var wire 16 4 usbdatapacketgenerator_usbdatapacketcrc_crc1 $end
+$var wire 16 5 usbdatapacketgenerator_usbdatapacketcrc_output_crc $end
+$var wire 1 6 usbdatapacketgenerator_usbdatapacketcrc_clear_internal $end
+$var wire 1 7 sys_clk $end
+$var wire 1 8 sys_rst $end
+$var wire 1 9 usb_clk $end
+$var wire 1 : usb_rst $end
+$var wire 120 ; fsm0 $end
+$var wire 136 < fsm1 $end
+$var wire 8 = usbdatapacketgenerator_current_data_pid_next_value0 $end
+$var wire 1 > usbdatapacketgenerator_current_data_pid_next_value_ce0 $end
+$var wire 1 ? usbdatapacketgenerator_is_zlp_next_value1 $end
+$var wire 1 @ usbdatapacketgenerator_is_zlp_next_value_ce1 $end
+$var wire 8 A usbdatapacketgenerator_remaining_crc_next_value2 $end
+$var wire 1 B usbdatapacketgenerator_remaining_crc_next_value_ce2 $end
+$enddefinitions $end
+$dumpvars
+$end
+#0
+b00 !
+0"
+b0000000000000000 #
+0$
+0%
+0&
+0'
+b00000000 (
+0)
+b00000000 *
+0+
+b00000000 ,
+b00000000 -
+0.
+b00000000 /
+00
+b00000000 1
+02
+b1111111111111111 3
+b1111111111111111 4
+b0000000000000000 5
+06
+07
+08
+09
+0:
+b01001001010001000100110001000101 ;
+b001100000011101001001001010001000100110001000101 <
+b00000000 =
+0>
+0?
+0@
+b00000000 A
+0B
+b0000000000000000 3
+b11000011 =
+1>
+#0.0
+#0.0
+17
+1'
+19
+1+
+b00110001001110100101001101000101010011100100010001011111010100000100100101000100 <
+b11000011 ,
+1?
+1@
+1$
+12
+#0.0
+07
+09
+#0.0
+17
+b1011111101000000 3
+0'
+b1111110100000010 4
+19
+b1011111101000000 5
+1)
+16
+b0101001101000101010011100100010001011111010100000100100101000100 ;
+b11000011 *
+b00110011001110100101001101000101010011100100010001011111010000110101001001000011010111110100011001001001010100100101001101010100 <
+b00000000 =
+0>
+0?
+1.
+0@
+1"
+b1011111101000000 #
+#0.0
+07
+09
+#0.0
+17
+b0000000000000000 3
+b1111111111111111 4
+19
+b0000000000000000 5
+1B
+06
+b0101001101000101010011100100010001011111010000110101001001000011010111110100011001001001010100100101001101010100 ;
+b00000000 *
+b0011010000111010010100110100010101001110010001000101111101000011010100100100001101011111010100110100010101000011010011110100111001000100 <
+0"
+b0000000000000000 #
+0$
+#0.0
+07
+09
+#0.0
+17
+b1011111101000000 3
+b1111110100000010 4
+19
+b1011111101000000 5
+0B
+b010100110100010101001110010001000101111101000011010100100100001101011111010100110100010101000011010011110100111001000100 ;
+b001100000011101001001001010001000100110001000101 <
+b1011111101000000 #
+#0.0
+07
+09
+#0.0
+17
+b0100111111111110 3
+b1000000000001101 4
+19
+b0100111111111110 5
+0)
+b01001001010001000100110001000101 ;
+b11000011 =
+1>
+b0100111111111110 #
+b00 !
+0"
+b0000000000000000 #
+0$
+0%
+0&
+0'
+b00000000 (
+0)
+b00000000 *
+0+
+b00000000 ,
+b00000000 -
+0.
+b00000000 /
+00
+b00000000 1
+02
+b1111111111111111 3
+b1111111111111111 4
+b0000000000000000 5
+06
+07
+08
+09
+0:
+b01001001010001000100110001000101 ;
+b001100000011101001001001010001000100110001000101 <
+b00000000 =
+0>
+0?
+0@
+b00000000 A
+0B

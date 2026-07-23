@@ -1,0 +1,261 @@
+$scope module USBInTransferManager $end
+$var wire 1 ! active $end
+$var wire 1 " transfer_stream_valid $end
+$var wire 1 # transfer_stream_ready $end
+$var wire 1 $ transfer_stream_last $end
+$var wire 8 % transfer_stream_payload $end
+$var wire 1 & packet_stream_valid $end
+$var wire 1 ' packet_stream_ready $end
+$var wire 1 ( packet_stream_first $end
+$var wire 1 ) packet_stream_last $end
+$var wire 8 * packet_stream_payload $end
+$var wire 1 + flush $end
+$var wire 1 , discard $end
+$var wire 2 - data_pid $end
+$var wire 1 . buffer_toggle $end
+$var wire 1 / tokenizer_new_token $end
+$var wire 1 0 tokenizer_ready_for_response $end
+$var wire 1 1 tokenizer_is_in $end
+$var wire 1 2 handshakes_in_ack $end
+$var wire 1 3 handshakes_out_nak $end
+$var wire 1 4 generate_zlps $end
+$var wire 1 5 start_with_data1 $end
+$var wire 1 6 reset_sequence $end
+$var wire 3 7 memory0_adr0 $end
+$var wire 8 8 memory0_dat_r0 $end
+$var wire 1 9 memory0_we $end
+$var wire 8 : memory0_dat_w $end
+$var wire 3 ; memory1_adr0 $end
+$var wire 8 < memory1_dat_r0 $end
+$var wire 1 = memory1_we $end
+$var wire 8 > memory1_dat_w $end
+$var wire 3 ? memory0_adr1 $end
+$var wire 8 @ memory0_dat_r1 $end
+$var wire 3 A memory1_adr1 $end
+$var wire 8 B memory1_dat_r1 $end
+$var wire 4 C fill_count_0 $end
+$var wire 4 D fill_count_1 $end
+$var wire 1 E stream_ended_in_buffer0 $end
+$var wire 1 F stream_ended_in_buffer1 $end
+$var wire 4 G send_position $end
+$var wire 1 H is_ongoing0 $end
+$var wire 1 I is_ongoing1 $end
+$var wire 1 J is_ongoing2 $end
+$var wire 1 K is_ongoing3 $end
+$var wire 1 L sys_clk $end
+$var wire 1 M sys_rst $end
+$var wire 1 N usb_clk $end
+$var wire 1 O usb_rst $end
+$var wire 104 P fsm0 $end
+$var wire 120 Q fsm1 $end
+$var wire 4 R send_position_next_value0 $end
+$var wire 1 S send_position_next_value_ce0 $end
+$var wire 1 T fsm_next_value $end
+$var wire 1 U fsm_next_value_ce $end
+$var wire 2 V data_pid_next_value1 $end
+$var wire 1 W data_pid_next_value_ce1 $end
+$var wire 1 X packet_stream_first_next_value2 $end
+$var wire 1 Y packet_stream_first_next_value_ce2 $end
+$var wire 8 Z transmit_buffer_0_data_0 $end
+$var wire 8 [ transmit_buffer_0_data_1 $end
+$var wire 8 \ transmit_buffer_0_data_2 $end
+$var wire 8 ] transmit_buffer_0_data_3 $end
+$var wire 8 ^ transmit_buffer_0_data_4 $end
+$var wire 8 _ transmit_buffer_0_data_5 $end
+$var wire 8 ` transmit_buffer_0_data_6 $end
+$var wire 8 a transmit_buffer_0_data_7 $end
+$var wire 3 b adr_reg0 $end
+$var wire 3 c adr_reg1 $end
+$var wire 8 d transmit_buffer_1_data_0 $end
+$var wire 8 e transmit_buffer_1_data_1 $end
+$var wire 8 f transmit_buffer_1_data_2 $end
+$var wire 8 g transmit_buffer_1_data_3 $end
+$var wire 8 h transmit_buffer_1_data_4 $end
+$var wire 8 i transmit_buffer_1_data_5 $end
+$var wire 8 j transmit_buffer_1_data_6 $end
+$var wire 8 k transmit_buffer_1_data_7 $end
+$var wire 3 l adr_reg2 $end
+$var wire 3 m adr_reg3 $end
+$enddefinitions $end
+$dumpvars
+$end
+#0
+0!
+0"
+0#
+0$
+b00000000 %
+0&
+0'
+0(
+0)
+b00000000 *
+0+
+0,
+b01 -
+0.
+0/
+00
+01
+02
+03
+04
+05
+06
+b000 7
+b00000000 8
+09
+b00000000 :
+b000 ;
+b00000000 <
+0=
+b00000000 >
+b000 ?
+b00000000 @
+b000 A
+b00000000 B
+b0000 C
+b0000 D
+0E
+0F
+b0000 G
+0H
+0I
+0J
+0K
+0L
+0M
+0N
+0O
+b01010111010000010100100101010100010111110100011001001111010100100101111101000100010000010101010001000001 P
+b001100000011101001010111010000010100100101010100010111110100011001001111010100100101111101000100010000010101010001000001 Q
+b0000 R
+0S
+0T
+0U
+b00 V
+0W
+0X
+0Y
+b00000000 Z
+b00000000 [
+b00000000 \
+b00000000 ]
+b00000000 ^
+b00000000 _
+b00000000 `
+b00000000 a
+b000 b
+b000 c
+b00000000 d
+b00000000 e
+b00000000 f
+b00000000 g
+b00000000 h
+b00000000 i
+b00000000 j
+b00000000 k
+b000 l
+b000 m
+1H
+1#
+#0.0
+#0.0
+13
+1L
+1!
+1N
+10
+11
+1'
+#0.0
+0N
+0L
+#0.0
+03
+1N
+00
+1L
+#0.0
+0N
+0L
+#0.0
+1N
+1L
+0!
+0"
+0#
+0$
+b00000000 %
+0&
+0'
+0(
+0)
+b00000000 *
+0+
+0,
+b01 -
+0.
+0/
+00
+01
+02
+03
+04
+05
+06
+b000 7
+b00000000 8
+09
+b00000000 :
+b000 ;
+b00000000 <
+0=
+b00000000 >
+b000 ?
+b00000000 @
+b000 A
+b00000000 B
+b0000 C
+b0000 D
+0E
+0F
+b0000 G
+0H
+0I
+0J
+0K
+0L
+0M
+0N
+0O
+b01010111010000010100100101010100010111110100011001001111010100100101111101000100010000010101010001000001 P
+b001100000011101001010111010000010100100101010100010111110100011001001111010100100101111101000100010000010101010001000001 Q
+b0000 R
+0S
+0T
+0U
+b00 V
+0W
+0X
+0Y
+b00000000 Z
+b00000000 [
+b00000000 \
+b00000000 ]
+b00000000 ^
+b00000000 _
+b00000000 `
+b00000000 a
+b000 b
+b000 c
+b00000000 d
+b00000000 e
+b00000000 f
+b00000000 g
+b00000000 h
+b00000000 i
+b00000000 j
+b00000000 k
+b000 l
+b000 m

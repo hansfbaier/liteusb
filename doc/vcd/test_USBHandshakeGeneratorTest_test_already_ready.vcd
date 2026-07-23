@@ -1,0 +1,83 @@
+$scope module USBHandshakeGenerator $end
+$var wire 1 ! usbhandshakegenerator0 $end
+$var wire 1 " usbhandshakegenerator1 $end
+$var wire 1 # usbhandshakegenerator2 $end
+$var wire 1 $ usbhandshakegenerator_valid $end
+$var wire 8 % usbhandshakegenerator_data $end
+$var wire 1 & usbhandshakegenerator_ready $end
+$var wire 1 ' sys_clk $end
+$var wire 1 ( sys_rst $end
+$var wire 1 ) usb_clk $end
+$var wire 1 * usb_rst $end
+$var wire 64 + fsm0 $end
+$var wire 80 , fsm1 $end
+$var wire 8 - usbhandshakegenerator_data_next_value $end
+$var wire 1 . usbhandshakegenerator_data_next_value_ce $end
+$enddefinitions $end
+$dumpvars
+$end
+#0
+0!
+0"
+0#
+0$
+b00000000 %
+0&
+0'
+0(
+0)
+0*
+b01001001010001000100110001000101 +
+b001100000011101001001001010001000100110001000101 ,
+b00000000 -
+0.
+#0.0
+#0.0
+1)
+1.
+b00110001001110100101010001010010010000010100111001010011010011010100100101010100 ,
+1&
+b11010010 -
+1'
+1!
+#0.0
+0)
+0'
+#0.0
+1)
+b0101010001010010010000010100111001010011010011010100100101010100 +
+b001100000011101001001001010001000100110001000101 ,
+b00000000 -
+0.
+0!
+1$
+b11010010 %
+1'
+#0.0
+0)
+0'
+#0.0
+1)
+0$
+b01001001010001000100110001000101 +
+1'
+#0.0
+0)
+0'
+#0.0
+1)
+1'
+0!
+0"
+0#
+0$
+b00000000 %
+0&
+0'
+0(
+0)
+0*
+b01001001010001000100110001000101 +
+b001100000011101001001001010001000100110001000101 ,
+b00000000 -
+0.

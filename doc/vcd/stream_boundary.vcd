@@ -1,0 +1,239 @@
+$scope module USBOutStreamBoundaryDetector $end
+$var wire 1 ! usboutstreamboundarydetector_usboutstreaminterface0_valid $end
+$var wire 1 " usboutstreamboundarydetector_usboutstreaminterface0_next $end
+$var wire 8 # usboutstreamboundarydetector_usboutstreaminterface0_payload $end
+$var wire 1 $ usboutstreamboundarydetector_usboutstreaminterface1_valid $end
+$var wire 1 % usboutstreamboundarydetector_usboutstreaminterface1_next $end
+$var wire 8 & usboutstreamboundarydetector_usboutstreaminterface1_payload $end
+$var wire 1 ' usboutstreamboundarydetector0 $end
+$var wire 1 ( usboutstreamboundarydetector1 $end
+$var wire 1 ) usboutstreamboundarydetector2 $end
+$var wire 1 * usboutstreamboundarydetector3 $end
+$var wire 1 + usboutstreamboundarydetector4 $end
+$var wire 1 , usboutstreamboundarydetector5 $end
+$var wire 8 - usboutstreamboundarydetector_buffered_byte $end
+$var wire 1 . usboutstreamboundarydetector_is_first_byte $end
+$var wire 1 / usboutstreamboundarydetector_buffered_complete $end
+$var wire 1 0 usboutstreamboundarydetector_buffered_invalid $end
+$var wire 1 1 usboutstreamboundarydetector_is_ongoing0 $end
+$var wire 1 2 usboutstreamboundarydetector_is_ongoing1 $end
+$var wire 1 3 usboutstreamboundarydetector_is_ongoing2 $end
+$var wire 1 4 usb_clk $end
+$var wire 1 5 usb_rst $end
+$var wire 160 6 fsm0 $end
+$var wire 176 7 fsm1 $end
+$var wire 8 8 usboutstreamboundarydetector_buffered_byte_next_value0 $end
+$var wire 1 9 usboutstreamboundarydetector_buffered_byte_next_value_ce0 $end
+$var wire 1 : usboutstreamboundarydetector_is_first_byte_next_value1 $end
+$var wire 1 ; usboutstreamboundarydetector_is_first_byte_next_value_ce1 $end
+$var wire 1 < usboutstreamboundarydetector_buffered_complete_next_value2 $end
+$var wire 1 = usboutstreamboundarydetector_buffered_complete_next_value_ce2 $end
+$var wire 1 > usboutstreamboundarydetector_buffered_invalid_next_value3 $end
+$var wire 1 ? usboutstreamboundarydetector_buffered_invalid_next_value_ce3 $end
+$var wire 1 @ sys_clk $end
+$enddefinitions $end
+$dumpvars
+$end
+#0
+0!
+0"
+b00000000 #
+0$
+0%
+b00000000 &
+0'
+0(
+0)
+0*
+0+
+0,
+b00000000 -
+0.
+0/
+00
+01
+02
+03
+04
+05
+b01010111010000010100100101010100010111110100011001001111010100100101111101000110010010010101001001010011010101000101111101000010010110010101010001000101 6
+b001100000011101001010111010000010100100101010100010111110100011001001111010100100101111101000110010010010101001001010011010101000101111101000010010110010101010001000101 7
+b00000000 8
+09
+0:
+0;
+0<
+0=
+0>
+0?
+1@
+11
+#0.0
+0@
+#0.0
+14
+1@
+#0.0
+04
+0@
+#0.0
+1!
+14
+1"
+b10101010 #
+b00110001001110100101001001000101010000110100010101001001010101100100010101011111010000010100111001000100010111110101010001010010010000010100111001010011010011010100100101010100 7
+b10101010 8
+19
+1:
+1;
+1@
+#0.0
+04
+0@
+#0.0
+b10101010 -
+1=
+1.
+1?
+14
+b10111011 #
+b0101001001000101010000110100010101001001010101100100010101011111010000010100111001000100010111110101010001010010010000010100111001010011010011010100100101010100 6
+b10111011 8
+01
+0:
+1@
+12
+#0.0
+04
+0@
+#0.0
+b10111011 -
+0.
+14
+b11001100 #
+1$
+1%
+b10101010 &
+b11001100 8
+1@
+1+
+#0.0
+04
+0@
+#0.0
+0+
+b11001100 -
+b10111011 &
+b11011101 8
+14
+1@
+b11011101 #
+#0.0
+04
+0@
+#0.0
+b11011101 -
+0!
+14
+0"
+b00000000 #
+b00110010001110100100111101010101010101000101000001010101010101000101111101010011010101000101001001001111010000100100010101010011 7
+b11001100 &
+b00000000 8
+09
+1@
+#0.0
+04
+0@
+#0.0
+1,
+13
+14
+b0100111101010101010101000101000001010101010101000101111101010011010101000101001001001111010000100100010101010011 6
+b001100000011101001010111010000010100100101010100010111110100011001001111010100100101111101000110010010010101001001010011010101000101111101000010010110010101010001000101 7
+b11011101 &
+0;
+1@
+02
+#0.0
+04
+0@
+#0.0
+0,
+0=
+0?
+03
+14
+b01010111010000010100100101010100010111110100011001001111010100100101111101000110010010010101001001010011010101000101111101000010010110010101010001000101 6
+0$
+0%
+11
+1@
+#0.0
+04
+0@
+#0.0
+14
+1@
+#0.0
+04
+0@
+#0.0
+14
+1@
+#0.0
+04
+0@
+#0.0
+14
+1@
+#0.0
+04
+0@
+#0.0
+14
+1@
+#0.0
+04
+0@
+#0.0
+14
+1@
+#0.0
+04
+0@
+#0.0
+14
+1@
+0!
+0"
+b00000000 #
+0$
+0%
+b00000000 &
+0'
+0(
+0)
+0*
+0+
+0,
+b00000000 -
+0.
+0/
+00
+01
+02
+03
+04
+05
+b01010111010000010100100101010100010111110100011001001111010100100101111101000110010010010101001001010011010101000101111101000010010110010101010001000101 6
+b001100000011101001010111010000010100100101010100010111110100011001001111010100100101111101000110010010010101001001010011010101000101111101000010010110010101010001000101 7
+b00000000 8
+09
+0:
+0;
+0<
+0=
+0>
+0?
+1@

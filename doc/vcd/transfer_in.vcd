@@ -1,0 +1,441 @@
+$scope module USBInTransferManager $end
+$var wire 1 ! active $end
+$var wire 1 " transfer_stream_valid $end
+$var wire 1 # transfer_stream_ready $end
+$var wire 1 $ transfer_stream_last $end
+$var wire 8 % transfer_stream_payload $end
+$var wire 1 & packet_stream_valid $end
+$var wire 1 ' packet_stream_ready $end
+$var wire 1 ( packet_stream_first $end
+$var wire 1 ) packet_stream_last $end
+$var wire 8 * packet_stream_payload $end
+$var wire 1 + flush $end
+$var wire 1 , discard $end
+$var wire 2 - data_pid $end
+$var wire 1 . buffer_toggle $end
+$var wire 1 / tokenizer_new_token $end
+$var wire 1 0 tokenizer_ready_for_response $end
+$var wire 1 1 tokenizer_is_in $end
+$var wire 1 2 handshakes_in_ack $end
+$var wire 1 3 handshakes_out_nak $end
+$var wire 1 4 generate_zlps $end
+$var wire 1 5 start_with_data1 $end
+$var wire 1 6 reset_sequence $end
+$var wire 3 7 memory0_adr0 $end
+$var wire 8 8 memory0_dat_r0 $end
+$var wire 1 9 memory0_we $end
+$var wire 8 : memory0_dat_w $end
+$var wire 3 ; memory1_adr0 $end
+$var wire 8 < memory1_dat_r0 $end
+$var wire 1 = memory1_we $end
+$var wire 8 > memory1_dat_w $end
+$var wire 3 ? memory0_adr1 $end
+$var wire 8 @ memory0_dat_r1 $end
+$var wire 3 A memory1_adr1 $end
+$var wire 8 B memory1_dat_r1 $end
+$var wire 4 C fill_count_0 $end
+$var wire 4 D fill_count_1 $end
+$var wire 1 E stream_ended_in_buffer0 $end
+$var wire 1 F stream_ended_in_buffer1 $end
+$var wire 4 G send_position $end
+$var wire 1 H is_ongoing0 $end
+$var wire 1 I is_ongoing1 $end
+$var wire 1 J is_ongoing2 $end
+$var wire 1 K is_ongoing3 $end
+$var wire 1 L usb_clk $end
+$var wire 1 M usb_rst $end
+$var wire 104 N fsm0 $end
+$var wire 120 O fsm1 $end
+$var wire 4 P send_position_next_value0 $end
+$var wire 1 Q send_position_next_value_ce0 $end
+$var wire 1 R fsm_next_value $end
+$var wire 1 S fsm_next_value_ce $end
+$var wire 2 T data_pid_next_value1 $end
+$var wire 1 U data_pid_next_value_ce1 $end
+$var wire 1 V packet_stream_first_next_value2 $end
+$var wire 1 W packet_stream_first_next_value_ce2 $end
+$var wire 8 X transmit_buffer_0_data_0 $end
+$var wire 8 Y transmit_buffer_0_data_1 $end
+$var wire 8 Z transmit_buffer_0_data_2 $end
+$var wire 8 [ transmit_buffer_0_data_3 $end
+$var wire 8 \ transmit_buffer_0_data_4 $end
+$var wire 8 ] transmit_buffer_0_data_5 $end
+$var wire 8 ^ transmit_buffer_0_data_6 $end
+$var wire 8 _ transmit_buffer_0_data_7 $end
+$var wire 3 ` adr_reg0 $end
+$var wire 3 a adr_reg1 $end
+$var wire 8 b transmit_buffer_1_data_0 $end
+$var wire 8 c transmit_buffer_1_data_1 $end
+$var wire 8 d transmit_buffer_1_data_2 $end
+$var wire 8 e transmit_buffer_1_data_3 $end
+$var wire 8 f transmit_buffer_1_data_4 $end
+$var wire 8 g transmit_buffer_1_data_5 $end
+$var wire 8 h transmit_buffer_1_data_6 $end
+$var wire 8 i transmit_buffer_1_data_7 $end
+$var wire 3 j adr_reg2 $end
+$var wire 3 k adr_reg3 $end
+$var wire 1 l sys_clk $end
+$var wire 1 m transfer_stream_first $end
+$enddefinitions $end
+$dumpvars
+$end
+#0
+0!
+0"
+0#
+0$
+b00000000 %
+0&
+0'
+0(
+0)
+b00000000 *
+0+
+0,
+b01 -
+0.
+0/
+00
+01
+02
+03
+04
+05
+06
+b000 7
+b00000000 8
+09
+b00000000 :
+b000 ;
+b00000000 <
+0=
+b00000000 >
+b000 ?
+b00000000 @
+b000 A
+b00000000 B
+b0000 C
+b0000 D
+0E
+0F
+b0000 G
+0H
+0I
+0J
+0K
+0L
+0M
+b01010111010000010100100101010100010111110100011001001111010100100101111101000100010000010101010001000001 N
+b001100000011101001010111010000010100100101010100010111110100011001001111010100100101111101000100010000010101010001000001 O
+b0000 P
+0Q
+0R
+0S
+b00 T
+0U
+0V
+0W
+b00000000 X
+b00000000 Y
+b00000000 Z
+b00000000 [
+b00000000 \
+b00000000 ]
+b00000000 ^
+b00000000 _
+b000 `
+b000 a
+b00000000 b
+b00000000 c
+b00000000 d
+b00000000 e
+b00000000 f
+b00000000 g
+b00000000 h
+b00000000 i
+b000 j
+b000 k
+1l
+1H
+1#
+#0.0
+0l
+#0.0
+19
+b01000010 >
+1L
+1!
+1"
+1m
+b01000010 %
+1l
+b01000010 :
+#0.0
+0L
+0l
+#0.0
+b001 ;
+b01000011 >
+1L
+b01000010 X
+b01000010 @
+0m
+b01000011 %
+b001 7
+1l
+b0001 C
+b01000010 8
+b01000011 :
+#0.0
+0L
+0l
+#0.0
+b010 ;
+b01000100 >
+1L
+b01000011 8
+b01000011 Y
+b001 j
+b01000100 %
+b010 7
+1l
+b0010 C
+b001 `
+b01000100 :
+#0.0
+0L
+0l
+#0.0
+b011 ;
+b01000101 >
+1L
+b01000100 8
+b01000100 Z
+b010 j
+b01000101 %
+b011 7
+1l
+b0011 C
+b010 `
+b01000101 :
+#0.0
+0L
+0l
+#0.0
+b100 ;
+b01000110 >
+1L
+b01000101 8
+b01000101 [
+b011 j
+b01000110 %
+b100 7
+1l
+b0100 C
+b011 `
+b01000110 :
+#0.0
+0L
+0l
+#0.0
+b101 ;
+b01000111 >
+1L
+b01000110 8
+b100 j
+b01000110 \
+b01000111 %
+b101 7
+1l
+b0101 C
+b100 `
+b01000111 :
+#0.0
+0L
+0l
+#0.0
+b110 ;
+b01001000 >
+1L
+b01000111 8
+b101 j
+b01001000 %
+b01000111 ]
+b110 7
+1l
+b0110 C
+b101 `
+b01001000 :
+#0.0
+0L
+0l
+#0.0
+b111 ;
+b01001001 >
+1L
+b01001000 8
+b0011000100111010010101110100000101001001010101000101111101010100010011110101111101010011010001010100111001000100 O
+b111 7
+b110 j
+1$
+b01001001 %
+b01001000 ^
+1l
+b0111 C
+b110 `
+b01001001 :
+#0.0
+0L
+0l
+#0.0
+b000 ;
+b00 -
+1.
+b00000000 >
+0H
+1L
+b010101110100000101001001010101000101111101010100010011110101111101010011010001010100111001000100 N
+b111 j
+1I
+1l
+b1000 C
+b01001001 8
+1E
+1Q
+09
+0"
+0$
+b00000000 %
+b000 7
+b01001001 _
+b111 `
+b00000000 :
+b01000010 *
+#0.0
+0L
+0l
+#0.0
+b000 j
+1l
+b01000010 8
+1L
+b000 `
+#0.0
+0L
+0l
+#0.0
+1L
+1l
+#0.0
+0L
+0l
+#0.0
+1L
+1l
+#0.0
+0L
+0l
+#0.0
+1L
+1l
+#0.0
+0L
+0l
+#0.0
+1L
+1l
+#0.0
+0L
+0l
+#0.0
+1L
+1l
+#0.0
+0L
+0l
+#0.0
+1L
+1l
+#0.0
+0L
+0l
+#0.0
+1L
+1l
+0!
+0"
+0#
+0$
+b00000000 %
+0&
+0'
+0(
+0)
+b00000000 *
+0+
+0,
+b01 -
+0.
+0/
+00
+01
+02
+03
+04
+05
+06
+b000 7
+b00000000 8
+09
+b00000000 :
+b000 ;
+b00000000 <
+0=
+b00000000 >
+b000 ?
+b00000000 @
+b000 A
+b00000000 B
+b0000 C
+b0000 D
+0E
+0F
+b0000 G
+0H
+0I
+0J
+0K
+0L
+0M
+b01010111010000010100100101010100010111110100011001001111010100100101111101000100010000010101010001000001 N
+b001100000011101001010111010000010100100101010100010111110100011001001111010100100101111101000100010000010101010001000001 O
+b0000 P
+0Q
+0R
+0S
+b00 T
+0U
+0V
+0W
+b00000000 X
+b00000000 Y
+b00000000 Z
+b00000000 [
+b00000000 \
+b00000000 ]
+b00000000 ^
+b00000000 _
+b000 `
+b000 a
+b00000000 b
+b00000000 c
+b00000000 d
+b00000000 e
+b00000000 f
+b00000000 g
+b00000000 h
+b00000000 i
+b000 j
+b000 k
+1l
+0m

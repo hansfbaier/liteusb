@@ -1,0 +1,1213 @@
+$scope module USBSetupDecoder $end
+$var wire 8 ! rx_data $end
+$var wire 1 " rx_active $end
+$var wire 1 # rx_valid $end
+$var wire 1 $ usbsetupdecoder_datacrcinterface_start $end
+$var wire 16 % usbsetupdecoder_datacrcinterface_crc $end
+$var wire 4 & usbsetupdecoder_pid $end
+$var wire 7 ' usbsetupdecoder_address $end
+$var wire 4 ( usbsetupdecoder_endpoint $end
+$var wire 1 ) usbsetupdecoder_new_token $end
+$var wire 1 * usbsetupdecoder_ready_for_response $end
+$var wire 11 + usbsetupdecoder_frame $end
+$var wire 1 , usbsetupdecoder_new_frame $end
+$var wire 1 - usbsetupdecoder_is_in $end
+$var wire 1 . usbsetupdecoder_is_out $end
+$var wire 1 / usbsetupdecoder_is_setup $end
+$var wire 1 0 usbsetupdecoder_is_ping $end
+$var wire 1 1 usbsetupdecoder_interpackettimerinterface_start $end
+$var wire 1 2 usbsetupdecoder_interpackettimerinterface_tx_allowed $end
+$var wire 1 3 usbsetupdecoder_interpackettimerinterface_tx_timeout $end
+$var wire 1 4 usbsetupdecoder_interpackettimerinterface_rx_timeout $end
+$var wire 2 5 usbsetupdecoder0 $end
+$var wire 5 6 usbsetupdecoder_recipient $end
+$var wire 2 7 usbsetupdecoder_type $end
+$var wire 1 8 usbsetupdecoder_is_in_request $end
+$var wire 8 9 usbsetupdecoder_request $end
+$var wire 16 : usbsetupdecoder_value $end
+$var wire 16 ; usbsetupdecoder_index $end
+$var wire 16 < usbsetupdecoder_length $end
+$var wire 1 = usbsetupdecoder_received $end
+$var wire 1 > usbsetupdecoder1 $end
+$var wire 1 ? sys_clk $end
+$var wire 1 @ sys_rst $end
+$var wire 1 A usb_clk $end
+$var wire 1 B usb_rst $end
+$var wire 4 C usbtokendetector_pid $end
+$var wire 7 D usbtokendetector_address $end
+$var wire 4 E usbtokendetector_endpoint $end
+$var wire 1 F usbtokendetector_new_token $end
+$var wire 1 G usbtokendetector_ready_for_response $end
+$var wire 11 H usbtokendetector_frame $end
+$var wire 1 I usbtokendetector_new_frame $end
+$var wire 1 J usbtokendetector_is_in $end
+$var wire 1 K usbtokendetector_is_out $end
+$var wire 1 L usbtokendetector_is_setup $end
+$var wire 1 M usbtokendetector_is_ping $end
+$var wire 2 N usbtokendetector0 $end
+$var wire 7 O usbtokendetector1 $end
+$var wire 11 P usbtokendetector_token_data $end
+$var wire 4 Q usbtokendetector_current_pid $end
+$var wire 5 R usbtokendetector_expected_crc $end
+$var wire 1 S usbtokendetector_token_applicable $end
+$var wire 2 T usbtokendetector_usbinterpackettimer0 $end
+$var wire 1 U usbtokendetector_usbinterpackettimer1 $end
+$var wire 1 V usbtokendetector_usbinterpackettimer2 $end
+$var wire 1 W usbtokendetector_usbinterpackettimer3 $end
+$var wire 10 X usbtokendetector_usbinterpackettimer_counter $end
+$var wire 1 Y usbtokendetector_usbinterpackettimer4 $end
+$var wire 1 Z usbtokendetector_timer_start $end
+$var wire 1 [ usbtokendetector_timer_tx_allowed $end
+$var wire 1 \ usbtokendetector_timer_tx_timeout $end
+$var wire 1 ] usbtokendetector_timer_rx_timeout $end
+$var wire 2 ^ usbinterpackettimer0 $end
+$var wire 1 _ usbinterpackettimer1 $end
+$var wire 1 ` usbinterpackettimer2 $end
+$var wire 1 a usbinterpackettimer3 $end
+$var wire 10 b usbinterpackettimer_counter $end
+$var wire 1 c usbinterpackettimer4 $end
+$var wire 1 d usbdatapacketdeserializer_datacrcinterface_start $end
+$var wire 16 e usbdatapacketdeserializer_datacrcinterface_crc $end
+$var wire 1 f usbdatapacketdeserializer0 $end
+$var wire 4 g usbdatapacketdeserializer1 $end
+$var wire 8 h usbdatapacketdeserializer_packet_0 $end
+$var wire 8 i usbdatapacketdeserializer_packet_1 $end
+$var wire 8 j usbdatapacketdeserializer_packet_2 $end
+$var wire 8 k usbdatapacketdeserializer_packet_3 $end
+$var wire 8 l usbdatapacketdeserializer_packet_4 $end
+$var wire 8 m usbdatapacketdeserializer_packet_5 $end
+$var wire 8 n usbdatapacketdeserializer_packet_6 $end
+$var wire 8 o usbdatapacketdeserializer_packet_7 $end
+$var wire 4 p usbdatapacketdeserializer2 $end
+$var wire 8 q usbdatapacketdeserializer_usbdatapacketcrc_rx_data $end
+$var wire 1 r usbdatapacketdeserializer_usbdatapacketcrc_rx_valid $end
+$var wire 8 s usbdatapacketdeserializer_usbdatapacketcrc_tx_data $end
+$var wire 1 t usbdatapacketdeserializer_usbdatapacketcrc_tx_valid $end
+$var wire 16 u usbdatapacketdeserializer_usbdatapacketcrc_crc0 $end
+$var wire 16 v usbdatapacketdeserializer_usbdatapacketcrc_crc1 $end
+$var wire 16 w usbdatapacketdeserializer_usbdatapacketcrc_output_crc $end
+$var wire 1 x usbdatapacketdeserializer_usbdatapacketcrc_clear_internal $end
+$var wire 16 y usbdatapacketdeserializer_last_byte_crc $end
+$var wire 16 z usbdatapacketdeserializer_last_word_crc $end
+$var wire 4 { usbdatapacketdeserializer_active_pid $end
+$var wire 8 | usbdatapacketdeserializer_active_packet0 $end
+$var wire 8 } usbdatapacketdeserializer_active_packet1 $end
+$var wire 8 ~ usbdatapacketdeserializer_active_packet2 $end
+$var wire 8 "! usbdatapacketdeserializer_active_packet3 $end
+$var wire 8 "" usbdatapacketdeserializer_active_packet4 $end
+$var wire 8 "# usbdatapacketdeserializer_active_packet5 $end
+$var wire 8 "$ usbdatapacketdeserializer_active_packet6 $end
+$var wire 8 "% usbdatapacketdeserializer_active_packet7 $end
+$var wire 8 "& usbdatapacketdeserializer_active_packet8 $end
+$var wire 8 "' usbdatapacketdeserializer_active_packet9 $end
+$var wire 4 "( usbdatapacketdeserializer_position_in_packet $end
+$var wire 16 ") usbdatapacketdeserializer_last_word $end
+$var wire 112 "* usbtokendetector_fsm0 $end
+$var wire 128 "+ usbtokendetector_fsm1 $end
+$var wire 4 ", usbtokendetector_current_pid_usbtokendetector_next_value0 $end
+$var wire 1 "- usbtokendetector_current_pid_usbtokendetector_next_value_ce0 $end
+$var wire 11 ". usbtokendetector_token_data_usbtokendetector_next_value1 $end
+$var wire 1 "/ usbtokendetector_token_data_usbtokendetector_next_value_ce1 $end
+$var wire 3 "0 usbtokendetector_fsm_next_value0 $end
+$var wire 1 "1 usbtokendetector_fsm_next_value_ce0 $end
+$var wire 11 "2 usbtokendetector_frame_usbtokendetector_next_value2 $end
+$var wire 1 "3 usbtokendetector_frame_usbtokendetector_next_value_ce2 $end
+$var wire 1 "4 usbtokendetector_new_frame_usbtokendetector_next_value3 $end
+$var wire 1 "5 usbtokendetector_new_frame_usbtokendetector_next_value_ce3 $end
+$var wire 4 "6 usbtokendetector_pid_usbtokendetector_next_value4 $end
+$var wire 1 "7 usbtokendetector_pid_usbtokendetector_next_value_ce4 $end
+$var wire 1 "8 usbtokendetector_new_token_usbtokendetector_next_value5 $end
+$var wire 1 "9 usbtokendetector_new_token_usbtokendetector_next_value_ce5 $end
+$var wire 11 ": usbtokendetector_fsm_next_value1 $end
+$var wire 1 "; usbtokendetector_fsm_next_value_ce1 $end
+$var wire 96 "< usbdatapacketdeserializer_fsm0 $end
+$var wire 112 "= usbdatapacketdeserializer_fsm1 $end
+$var wire 4 "> usbdatapacketdeserializer_active_pid_usbdatapacketdeserializer_next_value0 $end
+$var wire 1 "? usbdatapacketdeserializer_active_pid_usbdatapacketdeserializer_next_value_ce0 $end
+$var wire 4 "@ usbdatapacketdeserializer_position_in_packet_usbdatapacketdeserializer_next_value1 $end
+$var wire 1 "A usbdatapacketdeserializer_position_in_packet_usbdatapacketdeserializer_next_value_ce1 $end
+$var wire 8 "B usbdatapacketdeserializer_fsm_next_value $end
+$var wire 1 "C usbdatapacketdeserializer_fsm_next_value_ce $end
+$var wire 16 "D usbdatapacketdeserializer_last_word_usbdatapacketdeserializer_next_value2 $end
+$var wire 1 "E usbdatapacketdeserializer_last_word_usbdatapacketdeserializer_next_value_ce2 $end
+$var wire 16 "F usbdatapacketdeserializer_last_word_crc_usbdatapacketdeserializer_next_value3 $end
+$var wire 1 "G usbdatapacketdeserializer_last_word_crc_usbdatapacketdeserializer_next_value_ce3 $end
+$var wire 16 "H usbdatapacketdeserializer_last_byte_crc_usbdatapacketdeserializer_next_value4 $end
+$var wire 1 "I usbdatapacketdeserializer_last_byte_crc_usbdatapacketdeserializer_next_value_ce4 $end
+$var wire 4 "J usbdatapacketdeserializer1_usbdatapacketdeserializer_next_value5 $end
+$var wire 1 "K usbdatapacketdeserializer1_usbdatapacketdeserializer_next_value_ce5 $end
+$var wire 4 "L usbdatapacketdeserializer2_usbdatapacketdeserializer_next_value6 $end
+$var wire 1 "M usbdatapacketdeserializer2_usbdatapacketdeserializer_next_value_ce6 $end
+$var wire 1 "N usbdatapacketdeserializer0_usbdatapacketdeserializer_next_value7 $end
+$var wire 1 "O usbdatapacketdeserializer0_usbdatapacketdeserializer_next_value_ce7 $end
+$var wire 8 "P usbdatapacketdeserializer_packet_0_usbdatapacketdeserializer_next_value8 $end
+$var wire 1 "Q usbdatapacketdeserializer_packet_0_usbdatapacketdeserializer_next_value_ce8 $end
+$var wire 8 "R usbdatapacketdeserializer_packet_1_usbdatapacketdeserializer_next_value9 $end
+$var wire 1 "S usbdatapacketdeserializer_packet_1_usbdatapacketdeserializer_next_value_ce9 $end
+$var wire 8 "T usbdatapacketdeserializer_packet_2_usbdatapacketdeserializer_next_value10 $end
+$var wire 1 "U usbdatapacketdeserializer_packet_2_usbdatapacketdeserializer_next_value_ce10 $end
+$var wire 8 "V usbdatapacketdeserializer_packet_3_usbdatapacketdeserializer_next_value11 $end
+$var wire 1 "W usbdatapacketdeserializer_packet_3_usbdatapacketdeserializer_next_value_ce11 $end
+$var wire 8 "X usbdatapacketdeserializer_packet_4_usbdatapacketdeserializer_next_value12 $end
+$var wire 1 "Y usbdatapacketdeserializer_packet_4_usbdatapacketdeserializer_next_value_ce12 $end
+$var wire 8 "Z usbdatapacketdeserializer_packet_5_usbdatapacketdeserializer_next_value13 $end
+$var wire 1 "[ usbdatapacketdeserializer_packet_5_usbdatapacketdeserializer_next_value_ce13 $end
+$var wire 8 "\ usbdatapacketdeserializer_packet_6_usbdatapacketdeserializer_next_value14 $end
+$var wire 1 "] usbdatapacketdeserializer_packet_6_usbdatapacketdeserializer_next_value_ce14 $end
+$var wire 8 "^ usbdatapacketdeserializer_packet_7_usbdatapacketdeserializer_next_value15 $end
+$var wire 1 "_ usbdatapacketdeserializer_packet_7_usbdatapacketdeserializer_next_value_ce15 $end
+$var wire 136 "` clockdomainsrenamer_fsm0 $end
+$var wire 152 "a clockdomainsrenamer_fsm1 $end
+$var wire 5 "b usbsetupdecoder_recipient_clockdomainsrenamer_next_value0 $end
+$var wire 1 "c usbsetupdecoder_recipient_clockdomainsrenamer_next_value_ce0 $end
+$var wire 2 "d usbsetupdecoder_type_clockdomainsrenamer_next_value1 $end
+$var wire 1 "e usbsetupdecoder_type_clockdomainsrenamer_next_value_ce1 $end
+$var wire 1 "f usbsetupdecoder_is_in_request_clockdomainsrenamer_next_value2 $end
+$var wire 1 "g usbsetupdecoder_is_in_request_clockdomainsrenamer_next_value_ce2 $end
+$var wire 8 "h usbsetupdecoder_request_clockdomainsrenamer_next_value3 $end
+$var wire 1 "i usbsetupdecoder_request_clockdomainsrenamer_next_value_ce3 $end
+$var wire 16 "j usbsetupdecoder_value_clockdomainsrenamer_next_value4 $end
+$var wire 1 "k usbsetupdecoder_value_clockdomainsrenamer_next_value_ce4 $end
+$var wire 16 "l usbsetupdecoder_index_clockdomainsrenamer_next_value5 $end
+$var wire 1 "m usbsetupdecoder_index_clockdomainsrenamer_next_value_ce5 $end
+$var wire 16 "n usbsetupdecoder_length_clockdomainsrenamer_next_value6 $end
+$var wire 1 "o usbsetupdecoder_length_clockdomainsrenamer_next_value_ce6 $end
+$var wire 1 "p usbsetupdecoder_received_clockdomainsrenamer_next_value7 $end
+$var wire 1 "q usbsetupdecoder_received_clockdomainsrenamer_next_value_ce7 $end
+$enddefinitions $end
+$dumpvars
+$end
+#0
+b00000000 !
+0"
+0#
+0$
+b0000000000000000 %
+b0000 &
+b0000000 '
+b0000 (
+0)
+0*
+b00000000000 +
+0,
+0-
+0.
+0/
+00
+01
+02
+03
+04
+b00 5
+b00000 6
+b00 7
+08
+b00000000 9
+b0000000000000000 :
+b0000000000000000 ;
+b0000000000000000 <
+0=
+0>
+0?
+0@
+0A
+0B
+b0000 C
+b0000000 D
+b0000 E
+0F
+0G
+b00000000000 H
+0I
+0J
+0K
+0L
+0M
+b00 N
+b0000000 O
+b00000000000 P
+b0000 Q
+b00000 R
+0S
+b00 T
+0U
+0V
+0W
+b0000000000 X
+0Y
+0Z
+0[
+0\
+0]
+b00 ^
+0_
+0`
+0a
+b0000000000 b
+0c
+0d
+b0000000000000000 e
+0f
+b0000 g
+b00000000 h
+b00000000 i
+b00000000 j
+b00000000 k
+b00000000 l
+b00000000 m
+b00000000 n
+b00000000 o
+b0000 p
+b00000000 q
+0r
+b00000000 s
+0t
+b1111111111111111 u
+b1111111111111111 v
+b0000000000000000 w
+0x
+b0000000000000000 y
+b0000000000000000 z
+b0000 {
+b00000000 |
+b00000000 }
+b00000000 ~
+b00000000 "!
+b00000000 ""
+b00000000 "#
+b00000000 "$
+b00000000 "%
+b00000000 "&
+b00000000 "'
+b0000 "(
+b0000000000000000 ")
+b01001001010001000100110001000101 "*
+b001100000011101001001001010001000100110001000101 "+
+b0000 ",
+0"-
+b00000000000 ".
+0"/
+b000 "0
+0"1
+b00000000000 "2
+0"3
+0"4
+0"5
+b0000 "6
+0"7
+0"8
+0"9
+b00000000000 ":
+0";
+b01001001010001000100110001000101 "<
+b001100000011101001001001010001000100110001000101 "=
+b0000 ">
+0"?
+b0000 "@
+0"A
+b00000000 "B
+0"C
+b0000000000000000 "D
+0"E
+b0000000000000000 "F
+0"G
+b0000000000000000 "H
+0"I
+b0000 "J
+0"K
+b0000 "L
+0"M
+0"N
+0"O
+b00000000 "P
+0"Q
+b00000000 "R
+0"S
+b00000000 "T
+0"U
+b00000000 "V
+0"W
+b00000000 "X
+0"Y
+b00000000 "Z
+0"[
+b00000000 "\
+0"]
+b00000000 "^
+0"_
+b01001001010001000100110001000101 "`
+b001100000011101001001001010001000100110001000101 "a
+b00000 "b
+0"c
+b00 "d
+0"e
+0"f
+0"g
+b00000000 "h
+0"i
+b0000000000000000 "j
+0"k
+b0000000000000000 "l
+0"m
+b0000000000000000 "n
+0"o
+0"p
+0"q
+b0000000000000000 u
+1S
+#0.0
+#0.0
+1#
+1A
+1r
+b0000000001 b
+1G
+b00110001001110100101001001000101010000010100010001011111010100000100100101000100 "+
+1*
+1[
+b01 5
+1U
+b00110001001110100101001001000101010000010100010001011111010100000100100101000100 "=
+b0000000001 X
+1?
+b01 ^
+1"
+#0.0
+0?
+0A
+#0.0
+b00101101 !
+b00101101 q
+1A
+1$
+b0000000010 b
+b0101001001000101010000010100010001011111010100000100100101000100 "*
+b1011111101000000 u
+b0011001000111010010100100100010101000001010001000101111101010100010011110100101101000101010011100101111100110000 "+
+b1111110100000010 v
+0G
+b1011111101000000 w
+1x
+0*
+0[
+b1101 ",
+1"-
+1d
+b1011111101000000 e
+0U
+b0000000010 X
+1?
+b0101001001000101010000010100010001011111010100000100100101000100 "<
+b001100110011101001001001010100100101001001000101010011000100010101010110010000010100111001010100 "=
+#0.0
+0?
+0A
+#0.0
+b00000000 !
+b00000000 q
+1A
+0$
+b0000000011 b
+b010100100100010101000001010001000101111101010100010011110100101101000101010011100101111100110000 "*
+b0000000000000000 u
+b0011001100111010010100100100010101000001010001000101111101010100010011110100101101000101010011100101111100110001 "+
+b1111111111111111 v
+b0000000000000000 w
+0x
+b0000 ",
+0"-
+b1101 Q
+1"/
+0d
+b0000000000000000 e
+b0000000011 X
+1?
+b01001001010100100101001001000101010011000100010101010110010000010100111001010100 "<
+#0.0
+0?
+0A
+#0.0
+b00010000 !
+b00010000 q
+0"/
+b0000000100 b
+b00010 R
+b010100100100010101000001010001000101111101010100010011110100101101000101010011100101111100110001 "*
+b1011111101000000 u
+b00110100001110100101010001001111010010110100010101001110010111110100001101001111010011010101000001001100010001010101010001000101 "+
+b1111110100000010 v
+1"1
+b1011111101000000 w
+b1011111101000000 e
+b0000000100 X
+1?
+1A
+#0.0
+0?
+0A
+#0.0
+0#
+0r
+b0000000101 b
+b0101010001001111010010110100010101001110010111110100001101001111010011010101000001001100010001010101010001000101 "*
+b1000001111111111 u
+b001100000011101001001001010001000100110001000101 "+
+b0000000000111110 v
+0"1
+b1000001111111111 w
+1Z
+b1101 "6
+1"7
+1"8
+b00000 R
+1"9
+b1000001111111111 e
+b001100000011101001001001010001000100110001000101 "=
+1";
+b0000000101 X
+1Y
+1?
+1A
+0"
+#0.0
+0?
+0A
+#0.0
+b1101 C
+1A
+b0000000110 b
+1F
+b01001001010001000100110001000101 "*
+b1101 &
+1)
+0Z
+1L
+1/
+b0000 "6
+0"7
+0"8
+0"9
+0";
+b0000000000 X
+0Y
+b0011000100111010010100100100010101000001010001000101111101000100010000010101010001000001 "a
+1?
+b01001001010001000100110001000101 "<
+#0.0
+0?
+0A
+#0.0
+1#
+1r
+b0000000111 b
+0F
+1G
+b00110001001110100101001001000101010000010100010001011111010100000100100101000100 "+
+1U
+b00110001001110100101001001000101010000010100010001011111010100000100100101000100 "=
+0)
+1*
+b0000000001 X
+1[
+b010100100100010101000001010001000101111101000100010000010101010001000001 "`
+1?
+1A
+1"
+#0.0
+0?
+0A
+#0.0
+b11000011 !
+b11000011 q
+1A
+1$
+b0000001000 b
+b0101001001000101010000010100010001011111010100000100100101000100 "*
+b0011001110000010 u
+b001101010011101001001001010100100101001001000101010011000100010101010110010000010100111001010100 "+
+b1011111000110011 v
+b0011 ">
+b0011001110000010 w
+1"?
+1x
+0G
+0*
+0[
+1"A
+1d
+b0011001110000010 e
+0U
+b0000000010 X
+1?
+b0101001001000101010000010100010001011111010100000100100101000100 "<
+b0011001000111010010000110100000101010000010101000101010101010010010001010101111101000100010000010101010001000001 "=
+#0.0
+0?
+0A
+#0.0
+b01000010 !
+b01000010 q
+1A
+0$
+b0000001001 b
+b01001001010100100101001001000101010011000100010101010110010000010100111001010100 "*
+b0000000000000000 u
+b1111111111111111 v
+b0000 ">
+b0000000000000000 w
+0"?
+0x
+b0001 "@
+b01000010 "B
+1"C
+b0100001000000000 "D
+1"E
+0d
+b0000000000000000 e
+1"G
+1"I
+b0000000011 X
+1?
+b010000110100000101010000010101000101010101010010010001010101111101000100010000010101010001000001 "<
+b0011 {
+#0.0
+0?
+0A
+#0.0
+b01000010 |
+b00001100 q
+1A
+b0000001010 b
+b1000111011000000 u
+b1111110010001110 v
+b1000111011000000 w
+b0010 "@
+b0001 "(
+b0100001000000000 ")
+b00001100 "B
+12
+b0000110001000010 "D
+b1000111011000000 e
+b1000111011000000 "H
+b0000000100 X
+1?
+b00001100 !
+1_
+#0.0
+0?
+0A
+#0.0
+b11001101 q
+b00001100 }
+1A
+b0000001011 b
+b1110101011001110 u
+b1000110010101000 v
+b1110101011001110 w
+b0011 "@
+b0010 "(
+b0000110001000010 ")
+b11001101 "B
+02
+b1100110100001100 "D
+b1000111011000000 "F
+b1110101011001110 e
+b1110101011001110 "H
+b0000000101 X
+1?
+b1000111011000000 y
+b11001101 !
+0_
+#0.0
+0?
+0A
+#0.0
+b10101011 q
+1A
+b11001101 ~
+b0000001100 b
+b1011111011101010 u
+b1010100010000010 v
+b1011111011101010 w
+b0100 "@
+b0011 "(
+b1100110100001100 ")
+b1000111011000000 z
+b10101011 "B
+b1010101111001101 "D
+b1110101011001110 "F
+b1011111011101010 e
+b1011111011101010 "H
+b0000000110 X
+1?
+b1110101011001110 y
+b10101011 !
+#0.0
+0?
+0A
+#0.0
+b00100011 q
+1A
+b0000001101 b
+b10101011 "!
+b1000111100111110 u
+b1000001100001110 v
+b1000111100111110 w
+b0101 "@
+b0100 "(
+b1010101111001101 ")
+b1110101011001110 z
+b00100011 "B
+b0010001110101011 "D
+b1011111011101010 "F
+b1000111100111110 e
+b1000111100111110 "H
+b0000000111 X
+1?
+b1011111011101010 y
+b00100011 !
+#0.0
+0?
+0A
+#0.0
+b00000001 q
+1A
+b0000001110 b
+b00100011 ""
+b1011011000001111 u
+b0000111110010010 v
+b1011011000001111 w
+b0110 "@
+b0101 "(
+b0010001110101011 ")
+b1011111011101010 z
+b00000001 "B
+b0000000100100011 "D
+b1000111100111110 "F
+b1011011000001111 e
+b1011011000001111 "H
+b0000001000 X
+1?
+b1000111100111110 y
+b00000001 !
+#0.0
+0?
+0A
+#0.0
+b01111000 q
+1A
+b0000001111 b
+b0111101101110111 u
+b0001000100100001 v
+b00000001 "#
+b0111101101110111 w
+b0111 "@
+b0110 "(
+b0000000100100011 ")
+b1000111100111110 z
+b01111000 "B
+b0111100000000001 "D
+b1011011000001111 "F
+b0111101101110111 e
+b0111101101110111 "H
+b0000001001 X
+1?
+b1011011000001111 y
+b01111000 !
+#0.0
+0?
+0A
+#0.0
+b01010110 q
+1A
+b0000010000 b
+b1011101101111011 u
+b0010000100100010 v
+b01111000 "$
+b1011101101111011 w
+b1000 "@
+b0111 "(
+b0111100000000001 ")
+b1011011000001111 z
+b01010110 "B
+b0101011001111000 "D
+b0111101101110111 "F
+b1011101101111011 e
+b1011101101111011 "H
+b0000001010 X
+1?
+b0111101101110111 y
+b01010110 !
+#0.0
+0?
+0A
+#0.0
+b00111011 q
+1A
+b0000010001 b
+b1010001000111011 u
+b0010001110111010 v
+b1010001000111011 w
+b01010110 "%
+b1001 "@
+b1000 "(
+b0101011001111000 ")
+b0111101101110111 z
+b00111011 "B
+b0011101101010110 "D
+b1011101101111011 "F
+b1010001000111011 e
+b1010001000111011 "H
+b0000001011 X
+1?
+b1011101101111011 y
+b00111011 !
+#0.0
+0?
+0A
+#0.0
+b10100010 q
+1A
+b0000010010 b
+b1011111111100010 u
+b1011100000000010 v
+b1011111111100010 w
+b00111011 "&
+b1010 "@
+b1001 "(
+b0011101101010110 ")
+b1011101101111011 z
+b10100010 "B
+b1010001000111011 "D
+b1010001000111011 "F
+b1011111111100010 e
+b1011111111100010 "H
+b0000001100 X
+1?
+b1010001000111011 y
+b10100010 !
+#0.0
+0?
+0A
+#0.0
+0#
+b0000010011 b
+b001100000011101001001001010001000100110001000101 "+
+b0000 "@
+0"A
+b00000000 "B
+0"C
+b0000000000000000 "D
+0"E
+b0000000000000000 "F
+b0100111111111110 e
+0"G
+b0000000000000000 "H
+0"I
+b0011 "J
+1"K
+b1000 "L
+1?
+1"M
+b1011111111100010 y
+1"N
+b1010001000111011 z
+1A
+1"O
+b01000010 "P
+0r
+1"Q
+b00001100 "R
+1"S
+b0100111111111110 u
+b1000000000001101 v
+b11001101 "T
+b0100111111111110 w
+1"U
+b10101011 "V
+b10100010 "'
+1"W
+b1010 "(
+b00100011 "X
+b1010001000111011 ")
+1"Y
+b00000001 "Z
+1"[
+b01111000 "\
+1"]
+b01010110 "^
+1"_
+b001100000011101001001001010001000100110001000101 "=
+b0000001101 X
+0"
+#0.0
+0?
+0A
+#0.0
+b10 "d
+1"e
+b0000010100 b
+b01001001010001000100110001000101 "*
+1"g
+1c
+b00001100 "h
+1"i
+b1010101111001101 "j
+1"k
+b0000000100100011 "l
+1"m
+b0101011001111000 "n
+11
+1"o
+1"p
+1"q
+1f
+b0011 g
+b01000010 h
+b00001100 i
+b11001101 j
+b0000 "J
+b10101011 k
+0"K
+b00100011 l
+b00000001 m
+b0000 "L
+b01111000 n
+1?
+b01010110 o
+0"M
+1A
+b1000 p
+0"N
+0"O
+b00000000 "P
+0"Q
+b00000000 "R
+0"S
+b00000000 "T
+0"U
+b00000000 "V
+0"W
+b00000000 "X
+0"Y
+b00000000 "Z
+0"[
+b00000000 "\
+0"]
+b00000000 "^
+b00010 "b
+0"_
+b0000001110 X
+b00110010001110100100100101001110010101000100010101010010010100000100000101000011010010110100010101010100010111110100010001000101010011000100000101011001 "a
+b01001001010001000100110001000101 "<
+1"c
+#0.0
+0?
+0A
+#0.0
+b00 "d
+0"e
+b0000000000 b
+0c
+0"g
+b00000000 "h
+0"i
+b0000000000000000 "j
+0"k
+b0000000000000000 "l
+0"m
+b0000000000000000 "n
+01
+0"o
+0"p
+0"q
+b00000 "b
+b00010 6
+0f
+b10 7
+b00001100 9
+b1010101111001101 :
+b0000001111 X
+b0000000100100011 ;
+b0101011001111000 <
+b0100100101001110010101000100010101010010010100000100000101000011010010110100010101010100010111110100010001000101010011000100000101011001 "`
+1=
+1?
+1A
+0"c
+#0.0
+0?
+0A
+#0.0
+b0000010000 X
+0=
+b0000000001 b
+1?
+1A
+#0.0
+0?
+0A
+#0.0
+b0000010001 X
+1A
+b0000000010 b
+1?
+#0.0
+0?
+0A
+#0.0
+b0000010010 X
+1A
+b0000000011 b
+1?
+#0.0
+0?
+0A
+#0.0
+b0000010011 X
+1A
+b0000000100 b
+1?
+#0.0
+0?
+0A
+#0.0
+b0000010100 X
+1A
+b0000000101 b
+1?
+#0.0
+0?
+0A
+#0.0
+b0000010101 X
+1A
+b0000000110 b
+1?
+#0.0
+0?
+0A
+#0.0
+b0000010110 X
+1A
+b0000000111 b
+1?
+#0.0
+0?
+0A
+#0.0
+b0000010111 X
+1A
+b0000001000 b
+1?
+#0.0
+0?
+0A
+#0.0
+b0000011000 X
+1\
+1V
+b0000001001 b
+1?
+1A
+#0.0
+0?
+0A
+#0.0
+b0000001010 b
+0V
+b0000011001 X
+0\
+b001100000011101001001001010001000100110001000101 "a
+1>
+1?
+1A
+12
+1_
+#0.0
+0?
+0A
+#0.0
+b0000011010 X
+b01001001010001000100110001000101 "`
+b0000001011 b
+0>
+1?
+1A
+02
+0_
+b00000000 !
+0"
+0#
+0$
+b0000000000000000 %
+b0000 &
+b0000000 '
+b0000 (
+0)
+0*
+b00000000000 +
+0,
+0-
+0.
+0/
+00
+01
+02
+03
+04
+b00 5
+b00000 6
+b00 7
+08
+b00000000 9
+b0000000000000000 :
+b0000000000000000 ;
+b0000000000000000 <
+0=
+0>
+0?
+0@
+0A
+0B
+b0000 C
+b0000000 D
+b0000 E
+0F
+0G
+b00000000000 H
+0I
+0J
+0K
+0L
+0M
+b00 N
+b0000000 O
+b00000000000 P
+b0000 Q
+b00000 R
+0S
+b00 T
+0U
+0V
+0W
+b0000000000 X
+0Y
+0Z
+0[
+0\
+0]
+b00 ^
+0_
+0`
+0a
+b0000000000 b
+0c
+0d
+b0000000000000000 e
+0f
+b0000 g
+b00000000 h
+b00000000 i
+b00000000 j
+b00000000 k
+b00000000 l
+b00000000 m
+b00000000 n
+b00000000 o
+b0000 p
+b00000000 q
+0r
+b00000000 s
+0t
+b1111111111111111 u
+b1111111111111111 v
+b0000000000000000 w
+0x
+b0000000000000000 y
+b0000000000000000 z
+b0000 {
+b00000000 |
+b00000000 }
+b00000000 ~
+b00000000 "!
+b00000000 ""
+b00000000 "#
+b00000000 "$
+b00000000 "%
+b00000000 "&
+b00000000 "'
+b0000 "(
+b0000000000000000 ")
+b01001001010001000100110001000101 "*
+b001100000011101001001001010001000100110001000101 "+
+b0000 ",
+0"-
+b00000000000 ".
+0"/
+b000 "0
+0"1
+b00000000000 "2
+0"3
+0"4
+0"5
+b0000 "6
+0"7
+0"8
+0"9
+b00000000000 ":
+0";
+b01001001010001000100110001000101 "<
+b001100000011101001001001010001000100110001000101 "=
+b0000 ">
+0"?
+b0000 "@
+0"A
+b00000000 "B
+0"C
+b0000000000000000 "D
+0"E
+b0000000000000000 "F
+0"G
+b0000000000000000 "H
+0"I
+b0000 "J
+0"K
+b0000 "L
+0"M
+0"N
+0"O
+b00000000 "P
+0"Q
+b00000000 "R
+0"S
+b00000000 "T
+0"U
+b00000000 "V
+0"W
+b00000000 "X
+0"Y
+b00000000 "Z
+0"[
+b00000000 "\
+0"]
+b00000000 "^
+0"_
+b01001001010001000100110001000101 "`
+b001100000011101001001001010001000100110001000101 "a
+b00000 "b
+0"c
+b00 "d
+0"e
+0"f
+0"g
+b00000000 "h
+0"i
+b0000000000000000 "j
+0"k
+b0000000000000000 "l
+0"m
+b0000000000000000 "n
+0"o
+0"p
+0"q
