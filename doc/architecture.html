@@ -85,30 +85,29 @@ routing, transfer management, and finally to application-level streams.</p>
 <div class="arch">
 <pre>
 ┌─────────────────────────────────────────────────────────┐
-│                   Application Logic                      │
-│  (e.g. CDC-ACM serial, bulk loopback, vendor requests)   │
+│                   Application Logic                     │
+│   (CDC-ACM serial, bulk loopback, vendor requests)      │
 ├─────────────────────────────────────────────────────────┤
-│  Stream Interfaces          USBInStreamInterface         │
-│  (USBOutStreamInterface)    USBOutStreamInterface        │
-├──────────────┬──────────────────┬───────────────────────┤
-│   Endpoints  │  Control (EP0)   │  Transfer Managers     │
-│              │  Bulk / Interrupt│  (Double-buffered IN)  │
-│              │  Isochronous     │                        │
-├──────────────┴──────────────────┴───────────────────────┤
-│               USBEndpointMultiplexer                     │
-│  (Priority-encoder OR-tree: routes tokens to endpoints)  │
+│                    Stream Interfaces                    │
+│         USBInStreamInterface / USBOutStreamInterface    │
+├───────────────┬──────────────────┬──────────────────────┤
+│   Endpoints   │  Control  (EP0)  │  Transfer Managers   │
+│               │  Bulk / Interrupt│  (Double‑buffered IN)│
+│               │  Isochronous     │                      │
+├───────────────┴──────────────────┴──────────────────────┤
+│               USBEndpointMultiplexer                    │
+│   (Priority-encoder OR-tree: routes tokens to endpoints)│
 ├─────────────────────────────────────────────────────────┤
-│               USB2Device / USBDevice                     │
-│  Token detection, handshake generation, CRC, timing      │
+│                 USB2Device / USBDevice                  │
+│    Token detection, handshake generation, CRC, timing   │
 ├─────────────────────────────────────────────────────────┤
-│               USBResetSequencer                          │
-│  Bus reset, HS chirp handshake, suspend/resume           │
+│                  USBResetSequencer                      │
+│     Bus reset, HS chirp handshake, suspend/resume       │
 ├─────────────────────────────────────────────────────────┤
-│               PHY Interface                              │
-│  ULPI (8-bit, 60 MHz)  |  UTMI (simulation)             │
-│  Gateware PHY (raw I/O) |                               │
+│                    PHY Interface                        │
+│    ULPI (8‑bit, 60 MHz)  │  UTMI (simulation)           │
 ├─────────────────────────────────────────────────────────┤
-│               Physical USB Bus (D+/D-)                   │
+│              Physical USB Bus (D+/D−)                   │
 └─────────────────────────────────────────────────────────┘
 </pre>
 </div>
