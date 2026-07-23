@@ -252,6 +252,11 @@
                     dt.items.add(file);
                     input.files = dt.files;
                     input.dispatchEvent(new Event('change', {bubbles: true}));
+                    // Auto-trigger zoom-fit after parsing completes
+                    setTimeout(() => {
+                        const zf = document.getElementById('zoom-fit');
+                        if (zf) zf.click();
+                    }, 500);
                 })
                 .catch(e => alert('VCD load failed: ' + e.message));
         }
