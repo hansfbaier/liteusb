@@ -1,15 +1,26 @@
 #!/usr/bin/env python3
 """Generate FSM state diagram SVGs by parsing actual source code transitions.
 
-Replaces the old hand-curated (and incomplete) linear-chain approach with
-AST-based extraction of all NextState calls from fsm.act() blocks.
+Usage:
+    python3 liteusb/doc/scripts/generate_fsm_svgs.py              # all FSMs
+    python3 liteusb/doc/scripts/generate_fsm_svgs.py token_detector control_endpoint
+    python3 liteusb/doc/scripts/generate_fsm_svgs.py --list       # list available keys
+
+Automatically locates the LiteX workspace root from its own path, so it can
+be invoked from any working directory.
 """
 import ast
 import os
+import sys
 
 import graphviz
 
-OUT = "liteusb/doc/fsm"
+# Locate the workspace root relative to this script (3 levels up).
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR)))
+
+OUT = os.path.join(ROOT, "liteusb", "doc", "fsm")
+
 SKIN = {
     "rankdir": "LR",
     "fontname": "Helvetica",
@@ -18,18 +29,18 @@ SKIN = {
     "ranksep": "0.6",
 }
 
-# Map diagram key → (source_file_relative_to_liteusb_root, class_name)
+# Map diagram key → (source_file_relative_to_workspace_root, class_name)
 FSMS: dict[str, tuple[str, str]] = {
-    "token_detector":      ("liteusb/gateware/usb/usb2/packet.py",     "USBTokenDetector"),
-    "handshake_detector":  ("liteusb/gateware/usb/usb2/packet.py",     "USBHandshakeDetector"),
-    "data_packet_receiver":("liteusb/gateware/usb/usb2/packet.py",     "USBDataPacketReceiver"),
-    "data_packet_generator":("liteusb/gateware/usb/usb2/packet.py",    "USBDataPacketGenerator"),
-    "handshake_generator": ("liteusb/gateware/usb/usb2/packet.py",     "USBHandshakeGenerator"),
-    "reset_sequencer":     ("liteusb/gateware/usb/usb2/reset.py",      "USBResetSequencer"),
-    "control_endpoint":    ("liteusb/gateware/usb/usb2/control.py",    "USBControlEndpoint"),
-    "transfer_in":         ("liteusb/gateware/usb/usb2/transfer.py",   "USBInTransferManager"),
-    "descriptor_generator":("liteusb/gateware/usb/usb2/descriptor.py", "USBDescriptorStreamGenerator"),
-    "stream_boundary":     ("liteusb/gateware/usb/stream.py",          "USBOutStreamBoundaryDetector"),
+    "token_detector":       ("liteusb/liteusb/gateware/usb/usb2/packet.py",     "USBTokenDetector"),
+    "handshake_detector":   ("liteusb/liteusb/gateware/usb/usb2/packet.py",     "USBHandshakeDetector"),
+    "data_packet_receiver": ("liteusb/liteusb/gateware/usb/usb2/packet.py",     "USBDataPacketReceiver"),
+    "data_packet_generator":("liteusb/liteusb/gateware/usb/usb2/packet.py",     "USBDataPacketGenerator"),
+    "handshake_generator":  ("liteusb/liteusb/gateware/usb/usb2/packet.py",     "USBHandshakeGenerator"),
+    "reset_sequencer":      ("liteusb/liteusb/gateware/usb/usb2/reset.py",      "USBResetSequencer"),
+    "control_endpoint":     ("liteusb/liteusb/gateware/usb/usb2/control.py",    "USBControlEndpoint"),
+    "transfer_in":          ("liteusb/liteusb/gateware/usb/usb2/transfer.py",   "USBInTransferManager"),
+    "descriptor_generator": ("liteusb/liteusb/gateware/usb/usb2/descriptor.py", "USBDescriptorStreamGenerator"),
+    "stream_boundary":      ("liteusb/liteusb/gateware/usb/stream.py",          "USBOutStreamBoundaryDetector"),
 }
 
 
@@ -121,7 +132,7 @@ def extract_fsm_graph(filepath: str, class_name: str) -> dict:
     }
 
 
-def build_diagram(key: str, graph: dict) -> None:
+def build_diagram(key: str, graph: dict, out_dir: str) -> None:
     """Render a graphviz SVG from the extracted FSM graph."""
     g = graphviz.Digraph(key, graph_attr=SKIN)
     g.attr(label=f"State Machine: {graph['title']}", labelloc="t", fontsize="12")
@@ -130,7 +141,6 @@ def build_diagram(key: str, graph: dict) -> None:
     reset = graph["reset"]
     edges = graph["edges"]
 
-    # Add state nodes
     for s in states:
         attrs = {"shape": "box", "style": "rounded,filled", "fillcolor": "#e8e8e8"}
         if s == reset:
@@ -140,27 +150,47 @@ def build_diagram(key: str, graph: dict) -> None:
             attrs["fillcolor"] = "#e0c0c0"
         g.node(s, label=s.replace("_", " "), **attrs)
 
-    # Draw all extracted transitions as solid edges
     for src, dst in edges:
         g.edge(src, dst)
 
-    # IDLE self-loop annotation: useful visual reminder that IDLE is quiescent
     if "IDLE" in states:
         g.edge("IDLE", "IDLE", "rx_active=0", style="dashed", color="#888")
 
-    g.render(filename=key, directory=OUT, format="svg", cleanup=True)
+    g.render(filename=key, directory=out_dir, format="svg", cleanup=True)
     print(f"  {key}.svg  ({len(states)} states, {len(edges)} edges)")
 
 
 def main() -> None:
+    args = sys.argv[1:]
+
+    if "--list" in args or "-l" in args:
+        print("Available FSM diagrams:")
+        for key in sorted(FSMS):
+            _, cls = FSMS[key]
+            print(f"  {key:26s}  {cls}")
+        return
+
+    if "--help" in args or "-h" in args:
+        print(__doc__)
+        return
+
+    # If specific keys are given, generate only those.
+    keys = args if args else list(FSMS)
+    unknown = [k for k in keys if k not in FSMS]
+    if unknown:
+        print(f"Error: unknown FSM key(s): {', '.join(unknown)}", file=sys.stderr)
+        print(f"Use --list to see available keys.", file=sys.stderr)
+        sys.exit(1)
+
     os.makedirs(OUT, exist_ok=True)
 
-    for key, (rel_path, class_name) in FSMS.items():
-        filepath = os.path.join("liteusb", rel_path)
+    for key in keys:
+        rel_path, class_name = FSMS[key]
+        filepath = os.path.join(ROOT, rel_path)
         graph = extract_fsm_graph(filepath, class_name)
-        build_diagram(key, graph)
+        build_diagram(key, graph, OUT)
 
-    print(f"\nAll FSM diagrams generated in {OUT}/")
+    print(f"\n{len(keys)} FSM diagram(s) generated in {OUT}/")
 
 
 if __name__ == "__main__":
