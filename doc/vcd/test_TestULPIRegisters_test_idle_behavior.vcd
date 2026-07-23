@@ -30,10 +30,10 @@ $var wire 1 < is_ongoing8 $end
 $var wire 144 = fsm0 $end
 $var wire 160 > fsm1 $end
 $enddefinitions $end
-$timescale 1ns $end
+$timescale 17ns $end
 $dumpvars
 $end
-#2
+#1
 b00000000 !
 b00000000 "
 0#
@@ -66,8 +66,8 @@ b01001001010001000100110001000101 =
 b001100000011101001001001010001000100110001000101 >
 15
 14
-#4
-#6
+#2
+#3
 10
 12
 b00000000 !

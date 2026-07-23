@@ -77,10 +77,10 @@ $var wire 8 k transmit_buffer_1_data_7 $end
 $var wire 3 l adr_reg2 $end
 $var wire 3 m adr_reg3 $end
 $enddefinitions $end
-$timescale 1ns $end
+$timescale 17ns $end
 $dumpvars
 $end
-#2
+#1
 0!
 0"
 0#
@@ -160,8 +160,8 @@ b000 l
 b000 m
 1H
 1#
-#4
-#6
+#2
+#3
 13
 1L
 1!
@@ -169,18 +169,18 @@ b000 m
 10
 11
 1'
-#8
+#4
 0N
 0L
-#10
+#5
 03
 1N
 00
 1L
-#12
+#6
 0N
 0L
-#14
+#7
 1N
 1L
 0!
