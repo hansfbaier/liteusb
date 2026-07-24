@@ -44,6 +44,8 @@ Usage (in an example):
     deca_main(_DecaSoC, "My Device on Terasic DECA")
 """
 
+import os
+
 from migen import *
 
 from litex.gen import *
@@ -108,7 +110,7 @@ class DecaUSBCrg(LiteXModule):
             # always present.  The original ALTPLL Instance also leaves reset
             # unconnected, letting the PLL free-run.
             pll.create_clkout(self.cd_usb, 60e6,
-                phase=int(__import__("os").getenv("USB_PLL_PHASE", "-120")),
+                phase=int(os.getenv("USB_PLL_PHASE", "-120")),
                 with_reset=False)
 
             # Drive ULPI REFCLK (W3) from the usb clock — same PLL output
@@ -165,16 +167,19 @@ class DecaUSBSoC(SoCCore):
         # output mode (PHY generates the 60MHz, as wired on the DECA):
         #   FPGA -> PHY: setup 6.0ns, hold 0ns
         #   PHY -> FPGA: output delay 1.2ns .. 5.0ns
-        # Constrain against the PHY's 60MHz clock (clk600 pin).  With the
-        # single-PLL architecture (ulpi.clk driven from the same PLL output
-        # as cd_usb), the PLL's phase compensation covers the pin→PLL→register
-        # path natively.
-        platform.toolchain.additional_sdc_commands += [
-            "set_input_delay  -clock [get_clocks {clk600}] -max 5.0 [get_ports {ulpi0_dir ulpi0_nxt ulpi0_data[*]}]",
-            "set_input_delay  -clock [get_clocks {clk600}] -min 1.2 [get_ports {ulpi0_dir ulpi0_nxt ulpi0_data[*]}]",
-            "set_output_delay -clock [get_clocks {clk600}] -max 6.0 [get_ports {ulpi0_stp ulpi0_data[*]}]",
-            "set_output_delay -clock [get_clocks {clk600}] -min 0.0 [get_ports {ulpi0_stp ulpi0_data[*]}]",
-        ]
+        # Constrain against the PHY's 60MHz clock (clk600 pin).
+        #
+        # Set LITEUSB_NO_ULPI_TIMING=1 to skip these constraints (LUNA-style
+        # "just let the fitter handle it" approach — higher Fmax on MAX10
+        # where the combinational ULPI path is too deep to meet the datasheet
+        # numbers, but risks fit-dependent byte dup/drop).
+        if not int(os.getenv("LITEUSB_NO_ULPI_TIMING", "0")):
+            platform.toolchain.additional_sdc_commands += [
+                "set_input_delay  -clock [get_clocks {clk600}] -max 5.0 [get_ports {ulpi0_dir ulpi0_nxt ulpi0_data[*]}]",
+                "set_input_delay  -clock [get_clocks {clk600}] -min 1.2 [get_ports {ulpi0_dir ulpi0_nxt ulpi0_data[*]}]",
+                "set_output_delay -clock [get_clocks {clk600}] -max 6.0 [get_ports {ulpi0_stp ulpi0_data[*]}]",
+                "set_output_delay -clock [get_clocks {clk600}] -min 0.0 [get_ports {ulpi0_stp ulpi0_data[*]}]",
+            ]
         # The POR counter runs on the raw clk50 pin; its CDC into the usb
         # domain is quasi-static (counts down once, then constant).
         platform.toolchain.additional_sdc_commands += [
