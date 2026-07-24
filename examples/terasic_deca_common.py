@@ -11,17 +11,26 @@
 Factored-out, hardware-specific glue so every example can be built as a
 DECA bitstream with minimal code:
 
-- ``DecaUSBCrg``    — sys PLL (clk50) + usb PLL (clk60 from PHY, -120° phase)
+- ``DecaUSBCrg``    — Single-PLL clock/reset generator
 - ``DecaUSBSoC``    — SoCCore base: ULPI hookup, status/diagnostic LEDs
 - ``deca_main``     — shared command line (build/load, --debug-leds)
 
-Clock architecture:
+Clock architecture — mirrors the original Amaranth/LUNA DECA design:
+  https://github.com/amaranth-farm/deca-usb2-audio-interface
+  (see gateware/arrow_deca.py, class ArrowDECAClockAndResetController)
+
   TUSB1210 PHY → clk60 (H11, input) → MAX10 PLL → cd_usb (60MHz, -120°)
-                                                → ulpi.clk (W3, REFCLK back to PHY)
+               ulpi.clk (W3, REFCLK to PHY) ←─── same PLL output
+
+  Single PLL from clk60 drives both the internal usb/sync domains AND
+  the ULPI REFCLK (W3) — one PLL, one clock net, no separate REFCLK
+  domain.  The original design uses an ALTPLL Instance directly; the
+  Max10PLL wrapper here produces the same single-PLL structure.
 
 NOTE: the usb clock is created with ``with_reset=False``. The PHY only
 produces its 60MHz CLOCK output once it sees REFCLK; gating the usb domain
 reset on PLL lock would hold the PHY in reset and deadlock the clock loop.
+The PLL free-runs at power-on, driving REFCLK to bootstrap the PHY.
 
 Usage (in an example):
 
@@ -50,12 +59,18 @@ from liteusb.gateware.interface.ulpi import ULPIInterface
 # CRG (Clock/Reset Generator) -----------------------------------------------
 
 class DecaUSBCrg(LiteXModule):
-    """DECA clock/reset generator: 50MHz sys + 60MHz ULPI usb domains.
+    """DECA clock/reset generator — single-PLL architecture.
 
-    With ``sys_from_usb=True`` the sys domain is driven directly from the usb
-    clock (LUNA DECA style, ``ClockSignal("sys") = ClockSignal("usb")``): the
-    whole design then runs on a single clock net, which avoids CDC issues
-    between sys-clocked logic (CPU, UART, ACM FIFOs) and the usb domain.
+    A single MAX10 PLL from the PHY's clk60 (H11) generates the usb clock,
+    which also drives the ULPI REFCLK (W3) and (with sys_from_usb=True)
+    the sys/sync domains.  This mirrors the original Amaranth/LUNA clock
+    generator at
+      https://github.com/amaranth-farm/deca-usb2-audio-interface
+      (gateware/arrow_deca.py, ArrowDECAClockAndResetController)
+
+    A second clk50 PLL is created only when sys_from_usb=False (for the
+    standalone sys clock).  When sys_from_usb=True, no clk50 PLL is
+    instantiated — the raw 50MHz oscillator drives the POR counter directly.
     """
     def __init__(self, platform, sys_clk_freq, ulpi=None, clk60=None, sys_from_usb=True, with_por=True):
         self.rst     = Signal()
@@ -64,43 +79,46 @@ class DecaUSBCrg(LiteXModule):
 
         clk50 = platform.request("clk50")
 
-        # clk50-fed PLL: always created. Generates the sys clock (unless
-        # sys_from_usb) AND the 60MHz PHY REFCLK (ulpi.clk), which must be
-        # stable from power-on (see note at the usb PLL below).
-        self.pll = pll = Max10PLL(speedgrade="-6")
-        self.comb += pll.reset.eq(self.rst)
-        pll.register_clkin(clk50, 50e6)
+        # clk50-fed PLL: only needed when sys is NOT derived from usb.
+        # When sys_from_usb=True, the raw clk50 pin is used directly for the
+        # POR counter (below); no PLL is needed here at all.
         if not sys_from_usb:
+            self.pll = pll = Max10PLL(speedgrade="-6")
+            self.comb += pll.reset.eq(self.rst)
+            pll.register_clkin(clk50, 50e6)
             pll.create_clkout(self.cd_sys, sys_clk_freq)
 
-        # USB ULPI PLL — 60MHz from PHY, -120° phase shift
+        # ── USB PLL (single-PLL, matches the original design) ────────────
+        #   https://github.com/amaranth-farm/deca-usb2-audio-interface
+        #   gateware/arrow_deca.py, ArrowDECAClockAndResetController
+        #
+        # Single PLL from PHY clk60 drives:
+        #   1. cd_usb (internal usb/sync domains)
+        #   2. ulpi.clk (W3, REFCLK to PHY)
+        # The original uses an ALTPLL Instance directly (output 0 feeds both
+        # ClockSignal("usb") and ClockSignal("sync")).  The PLL free-runs at
+        # power-on, driving REFCLK to bootstrap the PHY.
         if clk60 is not None and ulpi is not None:
-            # Constrain the 60MHz input from the PHY so the usb domain is
-            # covered by timing analysis (LiteX does not add it automatically).
             platform.add_period_constraint(clk60, 1e9/60e6)
 
             self.usb_pll = pll = Max10PLL(speedgrade="-6")
             self.comb += pll.reset.eq(self.rst)
             pll.register_clkin(clk60, 60e6)
-            # with_reset=False: do NOT gate the usb domain reset on PLL lock.
-            # The PHY only produces its 60MHz CLOCK output once it sees REFCLK
-            # (driven by our usb clock); if usb_rst is held while the PLL is
-            # unlocked, the PHY is held in reset and the clock loop never
-            # bootstraps (deadlock). LUNA leaves the PHY reset deasserted too.
-            # usb domain clock: 60MHz from the PHY clkout, phase -120°
-            # (same shift as the reference LUNA DECA design).
-            pll.create_clkout(self.cd_usb, 60e6, phase=int(__import__("os").getenv("USB_PLL_PHASE", "-120")), with_reset=False)
+            # with_reset=False: PLL free-runs without locking, so REFCLK is
+            # always present.  The original ALTPLL Instance also leaves reset
+            # unconnected, letting the PLL free-run.
+            pll.create_clkout(self.cd_usb, 60e6,
+                phase=int(__import__("os").getenv("USB_PLL_PHASE", "-120")),
+                with_reset=False)
 
-            # Power-on PHY reset pulse (~42ms, clocked by the raw 50MHz
-            # oscillator which is always present — NOT by the usb clock,
-            # which free-runs at an arbitrary rate while the PHY's CLOCK
-            # output is off and would stretch the pulse to minutes).
-            # The PHY (TUSB1210) can be stuck e.g. in suspend across FPGA
-            # reconfigures (it keeps its register state and stops CLOCK in
-            # suspend, so the usb PLL would never lock). Pulsing the usb
-            # domain reset at startup resets the PHY via UTMITranslator
-            # (ulpi.rst = ResetSignal("usb")) and always re-bootstraps the
-            # clock loop: PHY reset -> REFCLK seen -> CLOCK out -> PLL lock.
+            # Drive ULPI REFCLK (W3) from the usb clock — same PLL output
+            # that drives the internal domains.  The original does the same:
+            # ArrowDECAClockAndResetController feeds ulpi.clk from the PLL's
+            # 60MHz output.
+            self.comb += ulpi.clk.eq(ClockSignal("usb"))
+
+            # Power-on PHY reset pulse (~42ms), clocked by the raw 50MHz
+            # oscillator (always present, independent of PHY state).
             if with_por:
                 self.cd_por = ClockDomain()
                 self.comb += self.cd_por.clk.eq(clk50)
@@ -110,29 +128,12 @@ class DecaUSBCrg(LiteXModule):
             else:
                 self.por = Signal(21, reset_less=True)
 
-            # Drive the ULPI REFCLK (W3) from the clk50-fed PLL (second
-            # output), NOT from the usb PLL output. The usb PLL is fed by the
-            # PHY's CLOCK output, so sourcing REFCLK from it made the clock
-            # loop circular: PHY CLOCK only exists once the PHY locks to
-            # REFCLK, which was the free-running usb PLL at an arbitrary
-            # frequency. Convergence was luck (flaky HS/FS/no-enumerate).
-            # A REFCLK that is stable from power-on makes the bootstrap
-            # deterministic: REFCLK ok -> PHY CLOCK out -> usb PLL lock.
-            self.cd_ref = ClockDomain()
-            self.pll.create_clkout(self.cd_ref, 60e6)
-            self.comb += ulpi.clk.eq(ClockSignal("ref"))
-
-            self.ref_toggle = Signal()
-            self.sync.ref += self.ref_toggle.eq(~self.ref_toggle)
-
-            # sys and usb are asynchronous to each other (different PLLs);
-            # legitimate CDC paths (async FIFOs, LED sticky flags) must not
-            # be timing-analyzed.
-            platform.add_false_path_constraints(self.cd_sys.clk, self.cd_usb.clk)
-
             # Optionally run sys on the usb clock (single clock net).
             if sys_from_usb:
                 self.comb += ClockSignal("sys").eq(ClockSignal("usb"))
+            else:
+                # sys and usb are asynchronous (different PLLs).
+                platform.add_false_path_constraints(self.cd_sys.clk, self.cd_usb.clk)
 
 # SoC base -------------------------------------------------------------------
 
@@ -164,17 +165,16 @@ class DecaUSBSoC(SoCCore):
         # output mode (PHY generates the 60MHz, as wired on the DECA):
         #   FPGA -> PHY: setup 6.0ns, hold 0ns
         #   PHY -> FPGA: output delay 1.2ns .. 5.0ns
-        # Constrain against the PHY's 60MHz clock (clk600 pin) so the fitter
-        # must place/route the ULPI registers to meet them; without these,
-        # NXT/data sampling vs the PHY is fit-dependent (byte dup/drop).
+        # Constrain against the PHY's 60MHz clock (clk600 pin).  With the
+        # single-PLL architecture (ulpi.clk driven from the same PLL output
+        # as cd_usb), the PLL's phase compensation covers the pin→PLL→register
+        # path natively.
         platform.toolchain.additional_sdc_commands += [
             "set_input_delay  -clock [get_clocks {clk600}] -max 5.0 [get_ports {ulpi0_dir ulpi0_nxt ulpi0_data[*]}]",
             "set_input_delay  -clock [get_clocks {clk600}] -min 1.2 [get_ports {ulpi0_dir ulpi0_nxt ulpi0_data[*]}]",
             "set_output_delay -clock [get_clocks {clk600}] -max 6.0 [get_ports {ulpi0_stp ulpi0_data[*]}]",
             "set_output_delay -clock [get_clocks {clk600}] -min 0.0 [get_ports {ulpi0_stp ulpi0_data[*]}]",
         ]
-        # The ULPI TX path is an 11-level comb chain (translator -> muxes ->
-        # pin); help the fitter close it with physical synthesis.
         # The POR counter runs on the raw clk50 pin; its CDC into the usb
         # domain is quasi-static (counts down once, then constant).
         platform.toolchain.additional_sdc_commands += [
