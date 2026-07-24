@@ -48,12 +48,16 @@ liteusb/tests/__init__.py
 liteusb/tests/device_test.py
 liteusb/tests/test_case.py
 liteusb/tests/test_ulpi.py
+liteusb/tests/test_ulpi_rx_gaps.py
 liteusb/tests/test_usb2_descriptor.py
 liteusb/tests/test_usb2_device.py
 liteusb/tests/test_usb2_endpoints.py
+liteusb/tests/test_usb2_loopback.py
 liteusb/tests/test_usb2_packet.py
 liteusb/tests/test_usb2_request.py
 liteusb/tests/test_usb2_reset.py
+liteusb/tests/test_usb2_stream_out_gaps.py
+liteusb/tests/test_usb2_stress.py
 liteusb/tests/test_usb2_transfer.py
 liteusb/tests/test_usb_stream.py
 liteusb/tests/usb2.py
@@ -63,6 +67,7 @@ liteusb/tests/contrib/__init__.py
 liteusb/tests/contrib/usb_packet.py
 tests/README.md
 tests/__init__.py
+tests/test_case.py
 tests/test_ulpi.py
 tests/test_usb2_descriptor.py
 tests/test_usb2_device.py
@@ -72,6 +77,7 @@ tests/test_usb2_request.py
 tests/test_usb2_reset.py
 tests/test_usb2_transfer.py
 tests/test_usb_stream.py
+tests/test_wavedrom.py
 tests/usb2.py
 tests/usb_packet.py
 tests/utils.py
