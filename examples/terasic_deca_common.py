@@ -109,6 +109,10 @@ class DecaUSBCrg(LiteXModule):
             # with_reset=False: PLL free-runs without locking, so REFCLK is
             # always present.  The original ALTPLL Instance also leaves reset
             # unconnected, letting the PLL free-run.
+            # -120° (-5556 ps) compensates for the SN74AVC1T45 level-shifter
+            # delay on the PHY→FPGA clock line; required for ULPI timing.
+            # The PCB delay is also modeled with set_clock_latency -source
+            # (see DecaUSBSoC) for accurate I/O timing reports.
             pll.create_clkout(self.cd_usb, 60e6,
                 phase=int(os.getenv("USB_PLL_PHASE", "-120")),
                 with_reset=False)
