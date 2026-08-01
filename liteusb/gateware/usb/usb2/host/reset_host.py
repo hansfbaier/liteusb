@@ -3,6 +3,8 @@
 #
 # Copyright (c) 2026 Hans Baier <foss@hans-baier.de>
 # SPDX-License-Identifier: BSD-3-Clause
+#
+# Generated using DeepSeek V4.0 Pro
 
 """ Host-side USB reset sequencer and speed detection.
 

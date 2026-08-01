@@ -3,6 +3,8 @@
 #
 # Copyright (c) 2026 Hans Baier <foss@hans-baier.de>
 # SPDX-License-Identifier: BSD-3-Clause
+#
+# Generated using DeepSeek V4.0 Pro
 
 """ EHCI USB 2.0 Host Controller — liteusb-based host controller gateware.
 
