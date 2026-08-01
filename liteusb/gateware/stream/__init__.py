@@ -79,14 +79,22 @@ class StreamInterface(Record):
             rhs_fields = [field for field in rhs_fields if field not in omit]
             lhs_fields = [field for field in lhs_fields if field not in omit]
 
+        # Helper: extract the attribute name from a field entry.
+        # Plain strings are used as-is; tuples/lists use their first element.
+        def _name(field):
+            if isinstance(field, (tuple, list)):
+                return field[0]
+            return field
 
         # Create each of our assignments.
         # migen Records use attribute access (getattr), not subscript notation.
         for field in rhs_fields:
-            assignment = getattr(interface, field).eq(getattr(self, field))
+            name = _name(field)
+            assignment = getattr(interface, name).eq(getattr(self, name))
             assignments.append(assignment)
         for field in lhs_fields:
-            assignment = getattr(self, field).eq(getattr(interface, field))
+            name = _name(field)
+            assignment = getattr(self, name).eq(getattr(interface, name))
             assignments.append(assignment)
 
         return assignments
