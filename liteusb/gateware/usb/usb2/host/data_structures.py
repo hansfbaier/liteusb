@@ -355,6 +355,7 @@ class EHCIRegisters:
     PORTSC_LINE_STATUS_J    = 0x00000800
     PORTSC_LINE_STATUS_SE0  = 0x00000C00
     PORTSC_PP               = 0x00001000  # Port Power
+    PORTSC_PO               = 0x00002000  # Port Owner (1=EHCI owns, 0=companion)
     PORTSC_PTC_MASK         = 0x000F0000  # Port Test Control
     PORTSC_PIC_MASK         = 0x00C00000  # Port Indicator Control
     PORTSC_WKOC_E           = 0x00400000  # Wake on Over-current Enable

@@ -34,34 +34,72 @@ def _crc5_token(data_11bit):
 # ── SOF Counter ─────────────────────────────────────────────────────────────
 
 class USBSOFCounter(Module):
-    """ Maintains the 11-bit frame number and issues SOF strobes.
+    """ TT-aware SOF counter with per-speed timing.
 
-    In high-speed mode, SOF tokens must be sent every 125µs (microframe).
-    At 60 MHz UTMI clock, that's 7500 cycles per microframe.
-
-    The frame number increments every 8 microframes (1 ms frame).
+    HS: 125µs microframes (7500 cycles at 60MHz)
+    FS/LS: 1ms frames (60000 cycles at 60MHz)
+    When sof_hold is asserted (TT busy), SOF is queued.
     """
 
     def __init__(self, domain_clock=60e6):
-        # I/O
-        self.frame_number      = Signal(11)  # Current 11-bit frame number
-        self.microframe_number = Signal(3)   # 0-7 within current frame
-        self.issue_sof         = Signal()    # Strobe: send SOF token now
-        self.new_frame         = Signal()    # Strobe: new frame boundary
+        self.frame_number      = Signal(11)
+        self.microframe_number = Signal(3)
+        self.issue_sof         = Signal()
+        self.new_frame         = Signal()
+        self.speed             = Signal(2)
+        self.sof_hold          = Signal()
 
-        # Microframe counter: (domain_clock * 125e-6) cycles
-        microframe_period = int(domain_clock * 125e-6)
-        self._period = microframe_period
+        self._hs_period = int(domain_clock * 125e-6)
+        self._fs_period = int(domain_clock * 1e-3)
 
     def do_finalize(self):
-        counter = Signal(max=self._period + 1, reset=0)
+        hs_period = self._hs_period
+        fs_period = self._fs_period
+        max_period = max(hs_period, fs_period)
+
+        counter     = Signal(max=max_period + 1, reset=0)
+        period      = Signal(max=max_period + 1)
+        sof_pending = Signal()
+
+        self.comb += [
+            If(self.speed == USBSpeed.HIGH,
+                period.eq(hs_period),
+            ).Else(
+                period.eq(fs_period),
+            )
+        ]
 
         self.sync.usb += [
-            If(counter == self._period - 1,
+            If(self.sof_hold,
+                If(counter == period - 1,
+                    sof_pending.eq(1),
+                )
+            ).Elif(sof_pending,
+                sof_pending.eq(0),
                 counter.eq(0),
                 self.issue_sof.eq(1),
-                self.microframe_number.eq(self.microframe_number + 1),
-                If(self.microframe_number == 7,
+                If(self.speed == USBSpeed.HIGH,
+                    self.microframe_number.eq(self.microframe_number + 1),
+                    If(self.microframe_number == 7,
+                        self.new_frame.eq(1),
+                        self.frame_number.eq(self.frame_number + 1),
+                    ),
+                ).Else(
+                    self.microframe_number.eq(0),
+                    self.new_frame.eq(1),
+                    self.frame_number.eq(self.frame_number + 1),
+                ),
+            ).Elif(counter == period - 1,
+                counter.eq(0),
+                self.issue_sof.eq(1),
+                If(self.speed == USBSpeed.HIGH,
+                    self.microframe_number.eq(self.microframe_number + 1),
+                    If(self.microframe_number == 7,
+                        self.new_frame.eq(1),
+                        self.frame_number.eq(self.frame_number + 1),
+                    ),
+                ).Else(
+                    self.microframe_number.eq(0),
                     self.new_frame.eq(1),
                     self.frame_number.eq(self.frame_number + 1),
                 ),

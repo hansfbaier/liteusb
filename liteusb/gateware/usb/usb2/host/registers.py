@@ -59,6 +59,9 @@ class EHCIRegisterFile(Module):
         # From CONFIGFLAG
         self.configure_flag     = Signal()
 
+        # From PORTSC
+        self.port_owner         = Signal()
+
         # ── Register inputs (status written by hardware) ────────────────
 
         # USBSTS
@@ -91,11 +94,11 @@ class EHCIRegisterFile(Module):
         # [31:20] Reserved
         # [19:16] Debug Port Number (0 = none)
         # [15:12] Port Indicators (0 = none)
-        # [11:8]  Number of Companion Controllers
-        # [7]     Port Routing Rules
+        # [11:8]  Number of Companion Controllers (1 = integrated TT)
+        # [7]     Port Routing Rules (1 = routing rules apply)
         # [6:4]   Reserved
         # [3:0]   Number of Ports
-        HCSPARAMS   = (self.num_ports & 0xF)
+        HCSPARAMS   = (self.num_ports & 0xF) | (1 << 7) | (1 << 8)
 
         # HCCPARAMS — Capability Parameters
         # [31:16] Reserved
@@ -200,6 +203,7 @@ class EHCIRegisterFile(Module):
             self.frame_list_base    .eq(periodiclistbase),
             self.async_list_addr    .eq(asynclistaddr),
             self.configure_flag     .eq(configflag[0]),
+            self.port_owner         .eq(portsc[13]),
         ]
 
         # ── Status update logic ─────────────────────────────────────────

@@ -46,6 +46,7 @@ from .usb2.host import (
     USBHostController, USBHostTokenGenerator, USBSOFCounter,
     USBHostTransferEngine, HostTransferRequest, HostTransferResponse,
     EHCIScheduleProcessor, EHCIRegisterFile,
+    HostResetSequencer, TransactionTranslator,
     QueueHeadLayout, QueueTD, IsochronousTD,
     SplitIsochronousTD, FrameList, EHCIRegisters,
 )
@@ -100,6 +101,8 @@ __all__ = [
     "HostTransferResponse",
     "EHCIScheduleProcessor",
     "EHCIRegisterFile",
+    "HostResetSequencer",
+    "TransactionTranslator",
     "QueueHeadLayout",
     "QueueTD",
     "IsochronousTD",

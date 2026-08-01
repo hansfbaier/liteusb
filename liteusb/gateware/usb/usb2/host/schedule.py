@@ -70,6 +70,9 @@ class EHCIScheduleProcessor(Module):
         self.transfer_request  = HostTransferRequest()
         self.transfer_response = HostTransferResponse()
 
+        # Port speed (for FS/LS endpoint identification)
+        self.port_speed         = Signal(2)
+
         # ── Frame List (1024 × 32-bit entries) ──────────────────────────
 
         # In a real implementation, we read from external memory.
