@@ -42,6 +42,13 @@ from .usb2.descriptor import (
     GetDescriptorHandlerMux,
 )
 from .request import SetupPacket
+from .usb2.host import (
+    USBHostController, USBHostTokenGenerator, USBSOFCounter,
+    USBHostTransferEngine, HostTransferRequest, HostTransferResponse,
+    EHCIScheduleProcessor, EHCIRegisterFile,
+    QueueHeadLayout, QueueTD, IsochronousTD,
+    SplitIsochronousTD, FrameList, EHCIRegisters,
+)
 
 __all__ = [
     # Device
@@ -84,4 +91,19 @@ __all__ = [
     "GetDescriptorHandlerMux",
     # Request Components
     "SetupPacket",
+    # EHCI Host Controller Components
+    "USBHostController",
+    "USBHostTokenGenerator",
+    "USBSOFCounter",
+    "USBHostTransferEngine",
+    "HostTransferRequest",
+    "HostTransferResponse",
+    "EHCIScheduleProcessor",
+    "EHCIRegisterFile",
+    "QueueHeadLayout",
+    "QueueTD",
+    "IsochronousTD",
+    "SplitIsochronousTD",
+    "FrameList",
+    "EHCIRegisters",
 ]
