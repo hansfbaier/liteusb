@@ -21,25 +21,26 @@ Tests cover:
   - Interrupt generation: status & enable = irq
 """
 
-from liteusb.tests.test_case import LiteUSBUSBTestCase, usb_domain_test_case
+from liteusb.tests.test_case import LiteUSBTestCase, sync_test_case
 
 from liteusb.gateware.usb.usb2.host.registers      import EHCIRegisterFile
 from liteusb.gateware.usb.usb2.host.data_structures import EHCIRegisters as REG
 
 
-class EHCIRegisterFileTest(LiteUSBUSBTestCase):
+class EHCIRegisterFileTest(LiteUSBTestCase):
     """ Test the EHCI register file via direct signal probing.
 
     We drive the Wishbone bus directly and observe the derived
-    control signals and the interrupt output.  This avoids needing
-    a full Wishbone interconnect.
+    control signals and the interrupt output.  Uses sync domain
+    because the register file's Wishbone interface is synchronous
+    in the sys domain.
     """
 
     FRAGMENT_UNDER_TEST = EHCIRegisterFile
     FRAGMENT_ARGUMENTS  = {"num_ports": 1}
 
-    SYNC_CLOCK_FREQUENCY = None
-    USB_CLOCK_FREQUENCY  = 60e6
+    SYNC_CLOCK_FREQUENCY = 60e6
+    USB_CLOCK_FREQUENCY  = None
 
     #
     # Wishbone helpers
@@ -51,6 +52,7 @@ class EHCIRegisterFileTest(LiteUSBUSBTestCase):
         yield self.dut.bus.we.eq(1)
         yield self.dut.bus.stb.eq(1)
         yield self.dut.bus.cyc.eq(1)
+        yield  # one full cycle with stb=cyc=1, we=1
         yield
         yield self.dut.bus.stb.eq(0)
         yield self.dut.bus.cyc.eq(0)
@@ -72,7 +74,7 @@ class EHCIRegisterFileTest(LiteUSBUSBTestCase):
     #
     # Tests
     #
-    @usb_domain_test_case
+    @sync_test_case
     def test_usbcmd_run(self):
         """ USBCMD[0] (Run/Stop) sets the run output.  EHCI §2.2.1. """
         dut = self.dut
@@ -89,7 +91,7 @@ class EHCIRegisterFileTest(LiteUSBUSBTestCase):
         yield from self.wb_write(REG.OFF_USBCMD, 0)
         self.assertEqual((yield dut.run), 0)
 
-    @usb_domain_test_case
+    @sync_test_case
     def test_usbcmd_hcreset(self):
         """ USBCMD[1] (HCRESET) sets hc_reset output.  EHCI §2.2.1. """
         dut = self.dut
@@ -98,7 +100,7 @@ class EHCIRegisterFileTest(LiteUSBUSBTestCase):
         yield from self.wb_write(REG.OFF_USBCMD, REG.USBCMD_HCRESET)
         self.assertEqual((yield dut.hc_reset), 1)
 
-    @usb_domain_test_case
+    @sync_test_case
     def test_usbcmd_schedule_enables(self):
         """ USBCMD[4] (PSE) and USBCMD[5] (ASE) propagate.  EHCI §2.2.1. """
         dut = self.dut
@@ -110,7 +112,7 @@ class EHCIRegisterFileTest(LiteUSBUSBTestCase):
         self.assertEqual((yield dut.periodic_enable), 1)
         self.assertEqual((yield dut.async_enable), 1)
 
-    @usb_domain_test_case
+    @sync_test_case
     def test_usbsts_write_1_to_clear(self):
         """ USBSTS bits are write-1-to-clear.  EHCI §2.2.2. """
         dut = self.dut
@@ -129,7 +131,7 @@ class EHCIRegisterFileTest(LiteUSBUSBTestCase):
         sts = yield from self.wb_read(REG.OFF_USBSTS)
         self.assertEqual(sts & REG.USBSTS_USBINT, 0)
 
-    @usb_domain_test_case
+    @sync_test_case
     def test_usbintr_masking(self):
         """ USBINTR only accepts the defined interrupt-enable bits.  EHCI §2.2.3. """
         dut = self.dut
@@ -148,7 +150,7 @@ class EHCIRegisterFileTest(LiteUSBUSBTestCase):
         val = yield from self.wb_read(REG.OFF_USBINTR)
         self.assertEqual(val, REG.USBINTR_USBINT)
 
-    @usb_domain_test_case
+    @sync_test_case
     def test_interrupt_generation(self):
         """ Interrupt asserts when status & enable are both set.  EHCI §2.2.2/§2.2.3. """
         dut = self.dut
@@ -170,7 +172,7 @@ class EHCIRegisterFileTest(LiteUSBUSBTestCase):
         yield
         self.assertEqual((yield dut.interrupt), 0)
 
-    @usb_domain_test_case
+    @sync_test_case
     def test_periodiclistbase_alignment(self):
         """ PERIODICLISTBASE masks to 4K-aligned address.  EHCI §2.2.5. """
         dut = self.dut
@@ -178,7 +180,7 @@ class EHCIRegisterFileTest(LiteUSBUSBTestCase):
         yield from self.wb_write(REG.OFF_PERIODICLISTBASE, 0xDEADBEEF)
         self.assertEqual((yield dut.frame_list_base), 0xDEADB000)
 
-    @usb_domain_test_case
+    @sync_test_case
     def test_asynclistaddr_alignment(self):
         """ ASYNCLISTADDR masks to 32-byte-aligned address.  EHCI §2.2.6. """
         dut = self.dut
@@ -186,7 +188,7 @@ class EHCIRegisterFileTest(LiteUSBUSBTestCase):
         yield from self.wb_write(REG.OFF_ASYNCLISTADDR, 0xCAFEBABE)
         self.assertEqual((yield dut.async_list_addr), 0xCAFEBAA0)
 
-    @usb_domain_test_case
+    @sync_test_case
     def test_configflag(self):
         """ CONFIGFLAG only bit 0 is writable.  EHCI §2.2.8. """
         dut = self.dut
@@ -199,7 +201,7 @@ class EHCIRegisterFileTest(LiteUSBUSBTestCase):
         val = yield from self.wb_read(REG.OFF_CONFIGFLAG)
         self.assertEqual(val, 1)
 
-    @usb_domain_test_case
+    @sync_test_case
     def test_portsc_port_owner(self):
         """ PORTSC[13] (Port Owner) read/write.  EHCI §2.2.9. """
         dut = self.dut
@@ -212,7 +214,7 @@ class EHCIRegisterFileTest(LiteUSBUSBTestCase):
         val = yield from self.wb_read(REG.OFF_PORTSC_BASE)
         self.assertEqual(val & REG.PORTSC_PO, REG.PORTSC_PO)
 
-    @usb_domain_test_case
+    @sync_test_case
     def test_frindex_read_write(self):
         """ FRINDEX is readable and writable.  EHCI §2.2.4. """
         dut = self.dut

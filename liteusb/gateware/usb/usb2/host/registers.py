@@ -142,23 +142,18 @@ class EHCIRegisterFile(Module):
         self.comb += [
             # Default read data path
             If(self.bus.stb & self.bus.cyc & ~self.bus.we,
-                Case(self.bus.adr[0:8],
-                    # Operational registers start at offset 0x00
-                    {0x00 // 4: read_data.eq(usbcmd)},
-                    {0x04 // 4: read_data.eq(usbsts)},
-                    {0x08 // 4: read_data.eq(usbintr)},
-                    {0x0C // 4: read_data.eq(frindex)},
-                    {0x10 // 4: read_data.eq(ctrldssegment)},
-                    {0x14 // 4: read_data.eq(periodiclistbase)},
-                    {0x18 // 4: read_data.eq(asynclistaddr)},
-                    {0x40 // 4: read_data.eq(configflag)},
-                    {0x44 // 4: read_data.eq(portsc)},
-                    # Capability registers (read-only, from CAPLENGTH down)
-                    # These live before the operational register base
-                    # In the real EHCI, capability registers start at base+0
-                    # We omit them from the operational regs here
-                    {"default": read_data.eq(0)},
-                ),
+                Case(self.bus.adr[0:8], {
+                    0x00 // 4: read_data.eq(usbcmd),
+                    0x04 // 4: read_data.eq(usbsts),
+                    0x08 // 4: read_data.eq(usbintr),
+                    0x0C // 4: read_data.eq(frindex),
+                    0x10 // 4: read_data.eq(ctrldssegment),
+                    0x14 // 4: read_data.eq(periodiclistbase),
+                    0x18 // 4: read_data.eq(asynclistaddr),
+                    0x40 // 4: read_data.eq(configflag),
+                    0x44 // 4: read_data.eq(portsc),
+                    "default": read_data.eq(0),
+                }),
                 self.bus.dat_r.eq(read_data),
                 self.bus.ack.eq(1),
             )
@@ -167,29 +162,21 @@ class EHCIRegisterFile(Module):
         # Write handling
         self.sync.sys += [
             If(self.bus.stb & self.bus.cyc & self.bus.we,
-                Case(self.bus.adr[0:8],
-                    # USBCMD
-                    {0x00 // 4: usbcmd.eq(self.bus.dat_w)},
-                    # USBSTS: write-1-to-clear semantics
-                    {0x04 // 4: usbsts.eq(usbsts & ~self.bus.dat_w)},
-                    # USBINTR
-                    {0x08 // 4: usbintr.eq(self.bus.dat_w & REG.USBINTR_IAA |
+                Case(self.bus.adr[0:8], {
+                    0x00 // 4: usbcmd.eq(self.bus.dat_w),
+                    0x04 // 4: usbsts.eq(usbsts & ~self.bus.dat_w),
+                    0x08 // 4: usbintr.eq(self.bus.dat_w & REG.USBINTR_IAA |
                                                            REG.USBINTR_HSE |
                                                            REG.USBINTR_FLR |
                                                            REG.USBINTR_PCD |
                                                            REG.USBINTR_ERRINT |
-                                                           REG.USBINTR_USBINT)},
-                    # FRINDEX: read-only in many implementations; we allow write
-                    {0x0C // 4: frindex.eq(self.bus.dat_w)},
-                    # PERIODICLISTBASE
-                    {0x14 // 4: periodiclistbase.eq(self.bus.dat_w & 0xFFFFF000)},
-                    # ASYNCLISTADDR
-                    {0x18 // 4: asynclistaddr.eq(self.bus.dat_w & 0xFFFFFFE0)},
-                    # CONFIGFLAG
-                    {0x40 // 4: configflag.eq(self.bus.dat_w & 0x00000001)},
-                    # PORTSC
-                    {0x44 // 4: portsc.eq(self.bus.dat_w)},
-                ),
+                                                           REG.USBINTR_USBINT),
+                    0x0C // 4: frindex.eq(self.bus.dat_w),
+                    0x14 // 4: periodiclistbase.eq(self.bus.dat_w & 0xFFFFF000),
+                    0x18 // 4: asynclistaddr.eq(self.bus.dat_w & 0xFFFFFFE0),
+                    0x40 // 4: configflag.eq(self.bus.dat_w & 0x00000001),
+                    0x44 // 4: portsc.eq(self.bus.dat_w),
+                }),
                 self.bus.ack.eq(1),
             )
         ]
