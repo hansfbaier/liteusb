@@ -279,6 +279,7 @@ static int control_transfer(uint8_t bmRequestType, uint8_t bRequest,
 
 static int get_device_descriptor(uint8_t addr, uint8_t *buf, uint16_t len) {
     uint8_t tog = 0;
+    (void)addr;  /* address tracked in kbd_addr by set_address() */
     return control_transfer(0x80, 6, 1, 0, len, buf, &tog);
 }
 

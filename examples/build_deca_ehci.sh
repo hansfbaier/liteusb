@@ -71,7 +71,17 @@ fi
 
 if [ "$BUILD_FIRMWARE" = "1" ]; then
     echo "=== Building bare-metal firmware ==="
-    make -C "$FIRMWARE_DIR"
+    # Auto-detect the RISC-V toolchain: LiteX installs
+    # riscv64-unknown-elf-, distro packages use riscv64-linux-gnu-
+    if command -v riscv64-unknown-elf-gcc >/dev/null 2>&1; then
+        CROSS_COMPILE="riscv64-unknown-elf-"
+    elif command -v riscv64-linux-gnu-gcc >/dev/null 2>&1; then
+        CROSS_COMPILE="riscv64-linux-gnu-"
+    else
+        echo "ERROR: no RISC-V toolchain found" >&2
+        exit 1
+    fi
+    make -C "$FIRMWARE_DIR" CROSS_COMPILE="$CROSS_COMPILE"
 fi
 
 # ── 3. Load ───────────────────────────────────────────────────────────────

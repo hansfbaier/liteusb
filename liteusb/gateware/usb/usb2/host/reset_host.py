@@ -122,10 +122,9 @@ class HostResetSequencer(Module):
         timer       = Signal(max=self._CYCLES_100_MS + 1)
         chirp_timer = Signal(max=self._CHIRP_K + 1)
 
-        self.sync.usb += [
-            timer.eq(timer + 1),
-            chirp_timer.eq(chirp_timer + 1),
-        ]
+        # NOTE: timer/chirp_timer are incremented inside the FSM states
+        # (single driver).  A standalone increment block would create a
+        # second driver and fail synthesis (Quartus Error 10028).
 
         # ── Chirp counter ───────────────────────────────────────────────
 
@@ -163,6 +162,7 @@ class HostResetSequencer(Module):
             NextValue(self.xcvr_select, USBSpeed.FULL),
             NextValue(self.tx_valid, 1),
             NextValue(self.tx_data, 0x00),  # Both lines low = SE0
+            NextValue(timer, timer + 1),
             If(timer >= self._CYCLES_10_MS,
                 NextValue(self.bus_reset, 1),
                 NextValue(self.tx_valid, 0),
@@ -178,6 +178,7 @@ class HostResetSequencer(Module):
             NextValue(self.op_mode, UTMIOperatingMode.NORMAL),
             NextValue(self.term_select, UTMITerminationSelect.LS_FS_NORMAL),
             NextValue(self.xcvr_select, USBSpeed.FULL),
+            NextValue(timer, timer + 1),
             If(self.line_state == self._K,
                 # Device is chirping — HS-capable
                 NextValue(timer, 0),
@@ -218,6 +219,7 @@ class HostResetSequencer(Module):
                 # We're driving J — after ~50µs, switch to listening
                 NextValue(self.tx_valid, 1),
                 NextValue(self.tx_data, 0b01),  # J state
+                NextValue(chirp_timer, chirp_timer + 1),
                 If(chirp_timer >= self._CHIRP_K,
                     NextValue(driving_chirp, 0),
                     NextValue(chirp_timer, 0),

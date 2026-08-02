@@ -274,6 +274,7 @@ class TransactionTranslator(Module):
         # WAIT_RX_DATA: receive IN data from FS/LS device
         fsm.act("WAIT_RX_DATA",
             NextValue(self.utmi_tx_valid, 0),
+            NextValue(timeout, timeout + 1),
             If(rx_valid_reg,
                 NextValue(self.response_rx_data, rx_data_reg),
                 NextValue(self.response_rx_valid, 1),
@@ -286,13 +287,11 @@ class TransactionTranslator(Module):
                 NextState("COMPLETE_ERROR"),
             )
         )
-        self.sync.usb += If(fsm.ongoing("WAIT_RX_DATA"),
-            timeout.eq(timeout + 1),
-        )
 
         # WAIT_HANDSHAKE: wait for ACK/NAK/STALL from FS/LS device
         fsm.act("WAIT_HANDSHAKE",
             NextValue(self.utmi_tx_valid, 0),
+            NextValue(timeout, timeout + 1),
             If(rx_valid_reg,
                 # Decode handshake PID from received byte
                 # ACK   = 0xD2 (0010_1101 → PID=0010, check=1101)
@@ -309,9 +308,6 @@ class TransactionTranslator(Module):
             ).Elif(timeout >= timeout_limit,
                 NextState("COMPLETE_ERROR"),
             )
-        )
-        self.sync.usb += If(fsm.ongoing("WAIT_HANDSHAKE"),
-            timeout.eq(timeout + 1),
         )
 
         # COMPLETE states — restore PHY to HS and signal result

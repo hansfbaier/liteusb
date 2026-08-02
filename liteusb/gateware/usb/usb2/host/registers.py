@@ -131,7 +131,7 @@ class EHCIRegisterFile(Module):
 
         # ── Register write logic ────────────────────────────────────────
 
-        # Wishbone write FSM (single-cycle writes for register access)
+        # Wishbone accesses are synchronous (single driver for bus.ack).
         self.sync.sys += [
             self.bus.ack.eq(0),
         ]
@@ -140,7 +140,6 @@ class EHCIRegisterFile(Module):
         read_data = Signal(32)
 
         self.comb += [
-            # Default read data path
             If(self.bus.stb & self.bus.cyc & ~self.bus.we,
                 Case(self.bus.adr[0:8], {
                     0x00 // 4: read_data.eq(usbcmd),
@@ -155,16 +154,16 @@ class EHCIRegisterFile(Module):
                     "default": read_data.eq(0),
                 }),
                 self.bus.dat_r.eq(read_data),
-                self.bus.ack.eq(1),
             )
         ]
 
-        # Write handling
+        # Write handling + read ack (same synchronous block)
         self.sync.sys += [
-            If(self.bus.stb & self.bus.cyc & self.bus.we,
+            If(self.bus.stb & self.bus.cyc & ~self.bus.we,
+                self.bus.ack.eq(1),
+            ).Elif(self.bus.stb & self.bus.cyc & self.bus.we,
                 Case(self.bus.adr[0:8], {
                     0x00 // 4: usbcmd.eq(self.bus.dat_w),
-                    0x04 // 4: usbsts.eq(usbsts & ~self.bus.dat_w),
                     0x08 // 4: usbintr.eq(self.bus.dat_w & REG.USBINTR_IAA |
                                                            REG.USBINTR_HSE |
                                                            REG.USBINTR_FLR |
@@ -197,25 +196,32 @@ class EHCIRegisterFile(Module):
 
         # ── Status update logic ─────────────────────────────────────────
 
-        # USBSTS is built from hardware inputs plus write-1-to-clear
-        self.comb += [
-            # Hardware-driven status bits
-            # USBSTS_USBINT and friends are set by hardware events
-            # but cleared by software writing 1
-            usbsts.eq(Cat(
-                self.usb_interrupt,            # bit 0
-                self.usb_error,                # bit 1
-                self.port_change_detect,       # bit 2
-                self.frame_list_rollover,      # bit 3
-                self.host_system_error,        # bit 4
-                self.interrupt_on_aa_ack,      # bit 5
-                Replicate(0, 6),               # bits 6-11 reserved
-                self.hc_halted,                # bit 12
-                Signal(),                      # bit 13 — reclamation
-                Signal(),                      # bit 14 — periodic status
-                Signal(),                      # bit 15 — async status
-                Replicate(0, 16),              # bits 16-31 reserved
-            )),
+        # USBSTS is a synchronous register combining hardware status
+        # inputs with write-1-to-clear semantics (single driver).
+        hw_status = Cat(
+            self.usb_interrupt,            # bit 0
+            self.usb_error,                # bit 1
+            self.port_change_detect,       # bit 2
+            self.frame_list_rollover,      # bit 3
+            self.host_system_error,        # bit 4
+            self.interrupt_on_aa_ack,      # bit 5
+            Replicate(0, 6),               # bits 6-11 reserved
+            self.hc_halted,                # bit 12
+            Signal(),                      # bit 13 — reclamation
+            Signal(),                      # bit 14 — periodic status
+            Signal(),                      # bit 15 — async status
+            Replicate(0, 16),              # bits 16-31 reserved
+        )
+
+        self.sync.sys += [
+            If((self.bus.stb & self.bus.cyc & self.bus.we) &
+               (self.bus.adr[0:8] == (REG.OFF_USBSTS // 4)),
+                # Software write-1-to-clear
+                usbsts.eq(usbsts & ~self.bus.dat_w),
+            ).Else(
+                # Hardware status follows inputs
+                usbsts.eq(hw_status),
+            )
         ]
 
         # ── Interrupt generation ────────────────────────────────────────

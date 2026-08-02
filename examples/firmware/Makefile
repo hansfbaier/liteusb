@@ -5,7 +5,9 @@
 #
 # Generated using DeepSeek V4.0 Pro
 
-# Toolchain: adjust to your installed RISC-V GCC
+# Toolchain: adjust to your installed RISC-V GCC.
+# LiteX installs riscv64-unknown-elf-; Debian/Ubuntu distro packages
+# use riscv64-linux-gnu-.  Override with: make CROSS_COMPILE=...
 CROSS_COMPILE ?= riscv64-unknown-elf-
 CC             = $(CROSS_COMPILE)gcc
 OBJCOPY        = $(CROSS_COMPILE)objcopy

@@ -1,3 +1,6 @@
 **/__pycache__
 /build/
 *.vcd
+examples/firmware/*.o
+examples/firmware/*.elf
+examples/firmware/*.bin
