@@ -304,8 +304,8 @@ class USBHostController(Module):
         tx_mux.add_input(tt_tx_if)
 
         self.comb += [
-            token_tx.valid.eq(utmi.tx_valid),
-            token_tx.data.eq(utmi.tx_data),
+            token_tx.valid.eq(token_gen.tx_valid),
+            token_tx.data.eq(token_gen.tx_data),
             data_tx_if.valid.eq(data_tx.tx.valid),
             data_tx_if.data.eq(data_tx.tx.data),
             hs_tx_if.valid.eq(hs_gen.tx.valid),
@@ -315,6 +315,7 @@ class USBHostController(Module):
             utmi.tx_valid.eq(tx_mux.output.valid),
             utmi.tx_data.eq(tx_mux.output.data),
             token_tx.ready.eq(utmi.tx_ready),
+            token_gen.tx_ready.eq(utmi.tx_ready),
             data_tx_if.ready.eq(utmi.tx_ready),
             hs_tx_if.ready.eq(utmi.tx_ready),
             tt_tx_if.ready.eq(utmi.tx_ready),

@@ -146,7 +146,7 @@ class USBCRC5(Module):
 
         for i in range(11):
             bit = self.data[10 - i]  # MSB first
-            shifted = Cat(bit, crc_stages[i][4:1])
+            shifted = Cat(bit, crc_stages[i][1:5])
             self.comb += [
                 If(crc_stages[i][4],
                     crc_stages[i + 1].eq(shifted ^ poly)
@@ -221,6 +221,12 @@ class USBHostTokenGenerator(Module):
         self.issue_token     = Signal()
         self.token_busy      = Signal()
 
+        # TX interface (driven by this module; routed through a mux by
+        # the parent, which drives the actual UTMI bus)
+        self.tx_valid        = Signal()
+        self.tx_data         = Signal(8)
+        self.tx_ready        = Signal()
+
         # SOF counter
         self.submodules.sof_counter = sof_counter = USBSOFCounter(
             domain_clock=domain_clock)
@@ -275,10 +281,10 @@ class USBHostTokenGenerator(Module):
             is_sof.eq(pid == USBPacketID.SOF),
             is_split.eq(pid == USBPacketID.SPLIT),
             is_ping.eq(pid == USBPacketID.PING),
-            is_token.eq(pid == USBPacketID.IN) |
+            is_token.eq((pid == USBPacketID.IN) |
                         (pid == USBPacketID.OUT) |
                         (pid == USBPacketID.SETUP) |
-                        is_ping,
+                        is_ping),
         ]
 
         # Build payload combinatorially
@@ -338,37 +344,37 @@ class USBHostTokenGenerator(Module):
         )
 
         fsm.act("SEND_BYTE0",
-            If(utmi.tx_ready,
+            If(self.tx_ready,
                 NextState("SEND_BYTE1")
             )
         )
         self.comb += If(fsm.ongoing("SEND_BYTE0"),
-            utmi.tx_data.eq(tx_byte0),
-            utmi.tx_valid.eq(1),
+            self.tx_data.eq(tx_byte0),
+            self.tx_valid.eq(1),
         )
 
         fsm.act("SEND_BYTE1",
-            If(utmi.tx_ready,
+            If(self.tx_ready,
                 NextState("SEND_BYTE2")
             )
         )
         self.comb += If(fsm.ongoing("SEND_BYTE1"),
-            utmi.tx_data.eq(tx_byte1),
-            utmi.tx_valid.eq(1),
+            self.tx_data.eq(tx_byte1),
+            self.tx_valid.eq(1),
         )
 
         fsm.act("SEND_BYTE2",
-            If(utmi.tx_ready,
+            If(self.tx_ready,
                 NextState("IDLE")
             )
         )
         self.comb += If(fsm.ongoing("SEND_BYTE2"),
-            utmi.tx_data.eq(tx_byte2),
-            utmi.tx_valid.eq(1),
+            self.tx_data.eq(tx_byte2),
+            self.tx_valid.eq(1),
         )
 
-        # In IDLE, don't drive UTMI
+        # In IDLE, don't drive the bus
         self.comb += If(fsm.ongoing("IDLE"),
-            utmi.tx_data.eq(0),
-            utmi.tx_valid.eq(0),
+            self.tx_data.eq(0),
+            self.tx_valid.eq(0),
         )

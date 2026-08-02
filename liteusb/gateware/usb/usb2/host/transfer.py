@@ -105,18 +105,20 @@ class USBHostTransferEngine(Module):
         # Signal that we've claimed the bus (token generator not busy elsewhere)
         self.bus_granted = Signal()
 
-    def do_finalize(self):
-        utmi = self.utmi
-
-        # ── Sub-components ──────────────────────────────────────────────
-
-        # Token generator (shared — external module provides it)
-        # We create internal signals to interface with it externally
+        # ── Token generator interface (external — wired by the parent) ──
+        # These must be module attributes created in __init__ so the
+        # parent module's do_finalize() can reference them before this
+        # module's own do_finalize() runs.
         self.token_pid      = Signal(4)
         self.token_address  = Signal(7)
         self.token_endpoint = Signal(4)
         self.token_issue    = Signal()
         self.token_busy     = Signal()
+
+    def do_finalize(self):
+        utmi = self.utmi
+
+        # ── Sub-components ──────────────────────────────────────────────
 
         # Data packet generator (for OUT/SETUP data phase)
         self.submodules.data_tx = data_tx = USBDataPacketGenerator()
