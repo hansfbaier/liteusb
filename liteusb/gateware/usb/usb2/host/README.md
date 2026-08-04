@@ -90,8 +90,12 @@ bytes (0x20 in this implementation).
 | 0x30        | CTRLDSSEGMENT     | 64-bit addressing segment      |
 | 0x34        | PERIODICLISTBASE  | Periodic frame list base addr  |
 | 0x38        | ASYNCLISTADDR     | Async list address             |
-| 0x40        | CONFIGFLAG        | Configure flag                 |
-| 0x44        | PORTSC1           | Port status & control (port 1) |
+| 0x60        | CONFIGFLAG        | Configure flag                 |
+| 0x64        | PORTSC1           | Port status & control (port 1) |
+
+Operational register offsets follow the EHCI spec (§2.2) relative to the
+operational base: USBCMD+0x00 … ASYNCLISTADDR+0x18, CONFIGFLAG+0x40,
+PORTSC+0x44. With CAPLENGTH=0x20 this yields the absolute offsets above.
 
 The driver accesses the operational registers at `base + 0x20` and uses
 the frame list and async schedule structures in system RAM.
@@ -413,17 +417,10 @@ dmesg | grep "full-speed"
 
 ### Throughput
 
-With the current implementation at 60 MHz ULPI:
-
-| Direction     | Theoretical | Typical (bulk) |
-|---------------|-------------|----------------|
-| High-Speed IN | 53 MB/s     | 30-40 MB/s     |
-| High-Speed OUT| 53 MB/s     | 30-40 MB/s     |
-| Full-Speed IN | 1.2 MB/s    | 0.8-1.0 MB/s   |
-| Full-Speed OUT| 1.2 MB/s    | 0.8-1.0 MB/s   |
-
-Actual throughput depends on CPU speed, Wishbone bus contention, and DMA
-configuration.
+No throughput numbers are quoted: the DMA-backed schedule engine
+(QH/qTD traversal) is not yet implemented, so sustained bulk throughput
+does not exist yet. See the "Known limitations" section in the review
+notes before integrating.
 
 ### Frame Timing
 

@@ -123,6 +123,10 @@ class USBHostController(Module):
         self.suspended         = Signal()
         self.reset_detected    = Signal()
 
+        # Internal: software port-reset request (PORTSC.PR), wired in
+        # do_finalize() once the register file exists.
+        self._port_reset_sw = Signal()
+
     def do_finalize(self):
         utmi = self.utmi
 
@@ -141,31 +145,38 @@ class USBHostController(Module):
             domain_clock=self.data_clock)
 
         # Trigger reset on port connect detect or PORTSC.PR write
-        do_port_reset = Signal()
-        port_connected = Signal()
+        do_port_reset   = Signal()
+        port_connected  = Signal()
+        port_connected_d = Signal()   # delayed, for edge detection
 
-        # Simple connect detection: J state means device attached
+        # Simple connect detection: J or K state means a device is attached
+        # (J = FS pull-up, K = LS pull-up or HS chirp)
+        self.comb += port_connected.eq(utmi.line_state != 0b00)
         self.sync.usb += [
-            If(utmi.line_state == 0b01,
-                port_connected.eq(1),
+            port_connected_d.eq(port_connected),
+            If(port_connected & ~port_connected_d,
+                # New attach: reset the port to detect speed
                 do_port_reset.eq(1),
-            ).Elif(utmi.line_state == 0b00,
-                port_connected.eq(0),
+            ).Elif(~port_connected,
                 port_speed_valid.eq(0),
+            ).Elif(reset_seq.done,
+                do_port_reset.eq(0),
             )
         ]
+
+        port_connect_change = Signal()
+        self.comb += port_connect_change.eq(port_connected ^ port_connected_d)
 
         self.comb += [
             reset_seq.line_state.eq(utmi.line_state),
             reset_seq.bus_busy.eq(0),
-            reset_seq.start.eq(do_port_reset),
+            reset_seq.start.eq(do_port_reset | self._port_reset_sw),
         ]
 
         self.sync.usb += [
             If(reset_seq.done,
                 port_speed.eq(reset_seq.current_speed),
                 port_speed_valid.eq(1),
-                do_port_reset.eq(0),
             )
         ]
 
@@ -179,6 +190,11 @@ class USBHostController(Module):
             tt.utmi_rx_data.eq(utmi.rx_data),
             tt.utmi_rx_valid.eq(utmi.rx_valid),
             tt.utmi_rx_active.eq(utmi.rx_active),
+            tt.utmi_tx_ready.eq(utmi.tx_ready),
+            # The TT is idle by default: root-port FS/LS devices are served
+            # natively by switching the PHY speed (see the UTMI
+            # configuration below), so no SPLIT translation is required.
+            tt.request_valid.eq(0),
         ]
 
         #
@@ -239,7 +255,6 @@ class USBHostController(Module):
         self.submodules.token_gen = token_gen = USBHostTokenGenerator(
             utmi=utmi, domain_clock=self.data_clock)
         self.comb += [
-            token_gen.sof_enable.eq(1),
             token_gen.sof_counter.speed.eq(port_speed),
             token_gen.sof_counter.sof_hold.eq(tt.sof_hold),
         ]
@@ -248,7 +263,9 @@ class USBHostController(Module):
         # ── Transfer engine ─────────────────────────────────────────────
         #
 
-        self.submodules.xfer_engine = xfer = USBHostTransferEngine(utmi=utmi)
+        self.submodules.xfer_engine = xfer = USBHostTransferEngine(
+            utmi=utmi, data_tx=data_tx, data_rx=data_rx,
+            hs_detect=hs_det, hs_gen=hs_gen)
         self.comb += [
             xfer.token_pid.eq(token_gen.token_pid),
             xfer.token_address.eq(token_gen.token_address),
@@ -286,6 +303,29 @@ class USBHostController(Module):
             token_gen.sof_enable      .eq(regs.run),
             regs.hc_halted            .eq(schedule.hc_halted),
             regs.frame_index_in       .eq(schedule.frame_index),
+            regs.periodic_status      .eq(schedule.periodic_status),
+            regs.async_status         .eq(schedule.async_status),
+        ]
+
+        # Transfer request/response: schedule engine ↔ transfer engine
+        self.comb += [
+            xfer.request.connect(schedule.transfer_request),
+            schedule.transfer_response.connect(xfer.response),
+        ]
+
+        # ── Interrupt / status strobes ──────────────────────────────────
+
+        self.comb += [
+            # USBINT: a transfer completed (IOC gating happens in the
+            # schedule engine once qTD memory access exists)
+            regs.usb_interrupt.eq(xfer.response.done & xfer.response.ack),
+            # USBERRINT: transfer failed
+            regs.usb_error.eq(xfer.response.done & xfer.response.error),
+            # Port Change Detect: any connect change sets PCD
+            regs.port_change_detect.eq(port_connect_change),
+            regs.frame_list_rollover.eq(0),
+            regs.host_system_error.eq(0),
+            regs.interrupt_on_aa_ack.eq(0),
         ]
 
         #
@@ -336,17 +376,23 @@ class USBHostController(Module):
         # ── PORTSC register status ──────────────────────────────────────
         #
 
+        # UTMI line_state (01=J, 10=K) → EHCI PORTSC line status (01=K, 10=J)
+        ehci_line_status = Signal(2)
         self.comb += [
-            regs.port_status.eq(Cat(
-                port_connected & port_speed_valid,  # bit 0: CCS
-                Signal(),                            # bit 1: CSC
-                port_speed_valid,                    # bit 2: PE
-                Signal(),                            # bit 3: PEC
-                Signal(),                            # bit 4: OCA
-                Signal(),                            # bit 5: OCC
-                Signal(),                            # bit 6: FPR
-                Signal(),                            # bit 7: SUSP
-                do_port_reset,                       # bit 8: PR
-                Replicate(0, 23),                    # bits 9-31
-            )),
+            If(utmi.line_state == 0b01,       # UTMI J
+                ehci_line_status.eq(0b10),
+            ).Elif(utmi.line_state == 0b10,   # UTMI K
+                ehci_line_status.eq(0b01),
+            ).Else(
+                ehci_line_status.eq(0b00),    # SE0
+            )
+        ]
+
+        self.comb += [
+            regs.port_connect[0].eq(port_connected),
+            regs.port_connect_change[0].eq(port_connect_change),
+            # PE sets when the reset/speed-detection sequence completes
+            regs.port_enable[0].eq(reset_seq.done),
+            regs.port_line_status[0:2].eq(ehci_line_status),
+            self._port_reset_sw.eq(regs.port_reset[0]),
         ]

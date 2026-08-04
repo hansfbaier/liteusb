@@ -19,20 +19,6 @@ from .. import USBPacketID, USBSpeed
 from ....interface.utmi import UTMITransmitInterface
 
 
-# ── CRC5 for token packets ─────────────────────────────────────────────────
-
-def _crc5_token(data_11bit):
-    """ Compute 5-bit CRC for USB token packets (11 data bits → 5-bit CRC).
-
-    Polynomial: x^5 + x^2 + 1 (0x05)
-    Used for ADDR(7) + ENDP(4) in IN/OUT/SETUP/PING tokens,
-    and FrameNumber(11) in SOF tokens.
-    """
-    # CRC5 lookup table for 11-bit inputs (2048 entries)
-    # Computed with polynomial 0x05, initial value 0x1F
-    return Signal(5)  # In real gateware this is a combinatorial function
-
-
 # ── SOF Counter ─────────────────────────────────────────────────────────────
 
 class USBSOFCounter(Module):
@@ -71,18 +57,24 @@ class USBSOFCounter(Module):
             )
         ]
 
+        fire_sof = Signal()
+        self.comb += fire_sof.eq(
+            ((counter == period - 1) & ~self.sof_hold) |
+            (sof_pending & ~self.sof_hold)
+        )
+
         self.sync.usb += [
-            If(self.sof_hold,
-                If(counter == period - 1,
-                    sof_pending.eq(1),
-                )
-            ).Elif(sof_pending,
-                sof_pending.eq(0),
+            self.issue_sof.eq(0),
+            self.new_frame.eq(0),
+
+            If(fire_sof,
                 counter.eq(0),
+                sof_pending.eq(0),
                 self.issue_sof.eq(1),
                 If(self.speed == USBSpeed.HIGH,
                     self.microframe_number.eq(self.microframe_number + 1),
                     If(self.microframe_number == 7,
+                        self.microframe_number.eq(0),
                         self.new_frame.eq(1),
                         self.frame_number.eq(self.frame_number + 1),
                     ),
@@ -92,24 +84,11 @@ class USBSOFCounter(Module):
                     self.frame_number.eq(self.frame_number + 1),
                 ),
             ).Elif(counter == period - 1,
-                counter.eq(0),
-                self.issue_sof.eq(1),
-                If(self.speed == USBSpeed.HIGH,
-                    self.microframe_number.eq(self.microframe_number + 1),
-                    If(self.microframe_number == 7,
-                        self.new_frame.eq(1),
-                        self.frame_number.eq(self.frame_number + 1),
-                    ),
-                ).Else(
-                    self.microframe_number.eq(0),
-                    self.new_frame.eq(1),
-                    self.frame_number.eq(self.frame_number + 1),
-                ),
+                # sof_hold active at terminal count: queue the SOF
+                sof_pending.eq(1),
             ).Else(
                 counter.eq(counter + 1),
-                self.issue_sof.eq(0),
-                self.new_frame.eq(0),
-            )
+            ),
         ]
 
 
@@ -118,8 +97,12 @@ class USBSOFCounter(Module):
 class USBCRC5(Module):
     """ Combinatorial CRC-5 generator for USB token packets.
 
-    CRC-5 polynomial: x^5 + x^2 + 1 (0x05)
-    Initial value: 0x1F (all ones, complement matches USB spec)
+    USB 2.0 spec §8.3.5: polynomial G(x) = x^5 + x^2 + 1, shift register
+    initialized to all ones, data shifted in LSB-first, and the complement
+    of the final remainder is transmitted (LSB-first).
+
+    Verified against on-the-wire vectors, e.g. a SETUP token to
+    address 0 / endpoint 0 transmits CRC5 = 0x02 (bytes 2D 00 10).
     """
 
     def __init__(self, width=11):
@@ -127,36 +110,29 @@ class USBCRC5(Module):
         self.crc   = Signal(5)
 
     def do_finalize(self):
-        # Implementation note: USB CRC-5 is computed over 11 bits with
-        # polynomial G(x) = x^5 + x^2 + 1, initial remainder 11111b.
-        # The complement of the resulting remainder is transmitted.
-        #
-        # For an 11-bit input, we use the bit-serial algorithm:
-        #   remainder = 0x1F
-        #   for each input bit (MSB first):
-        #       remainder = ((remainder << 1) | input_bit) ^ polynomial if overflow
-        #
-        # In hardware this is a 5-stage LFSR.
-        poly = 0b00101  # x^5 + x^2 + 1 (bits 4:0)
-
-        # Wire up a simple 11-bit shift through a 5-bit LFSR
-        # We generate 11 slices and connect them combinatorially
+        # Bit-serial LFSR, LSB-first. Reflected polynomial: 0b10100 (0x14).
+        #   fb = data_bit ^ crc[0]
+        #   crc = (crc >> 1) ^ (fb ? 0x14 : 0)
+        # Unrolled combinatorially over all input bits.
         crc_stages = [Signal(5) for _ in range(12)]
-        self.comb += crc_stages[0].eq(0x1F)  # initial remainder
+        self.comb += crc_stages[0].eq(0x1F)  # initial remainder: all ones
 
         for i in range(11):
-            bit = self.data[10 - i]  # MSB first
-            shifted = Cat(bit, crc_stages[i][1:5])
+            fb = Signal()
+            shifted = Signal(5)
             self.comb += [
-                If(crc_stages[i][4],
-                    crc_stages[i + 1].eq(shifted ^ poly)
+                fb.eq(self.data[i] ^ crc_stages[i][0]),
+                shifted.eq(Cat(crc_stages[i][1], crc_stages[i][2],
+                               crc_stages[i][3], crc_stages[i][4], 0)),
+                If(fb,
+                    crc_stages[i + 1].eq(shifted ^ 0b10100)
                 ).Else(
                     crc_stages[i + 1].eq(shifted)
                 )
             ]
 
-        # Final CRC is the complement
-        self.comb += self.crc.eq(~crc_stages[11][0:5])
+        # Transmitted CRC is the complement of the final remainder
+        self.comb += self.crc.eq(~crc_stages[11])
 
 
 # ── Host Token Generator ────────────────────────────────────────────────────
@@ -194,12 +170,11 @@ class USBHostTokenGenerator(Module):
 
     sof_pid : Signal(4)
         PID for SOF tokens (normally USBPacketID.SOF).
-    hub_address : Signal(7) input
-        Hub address for SPLIT tokens.
-    port_number : Signal(7) input
-        Port number for SPLIT tokens.
-    split_complete : Signal() input
-        0 = start-split, 1 = complete-split.
+
+    Notes
+    -----
+    SPLIT tokens are not generated: the integrated Transaction Translator
+    talks to FS/LS devices directly, so SPLIT tokens never appear on the bus.
     """
 
     def __init__(self, utmi, domain_clock=60e6):
@@ -213,9 +188,6 @@ class USBHostTokenGenerator(Module):
         self.token_pid       = Signal(4)
         self.token_address   = Signal(7)
         self.token_endpoint  = Signal(4)
-        self.hub_address     = Signal(7)
-        self.port_number     = Signal(7)
-        self.split_complete  = Signal()
 
         # Handshake
         self.issue_token     = Signal()
@@ -254,7 +226,10 @@ class USBHostTokenGenerator(Module):
 
         # CRC5 generator
         self.submodules.crc5 = crc5 = USBCRC5(width=11)
-        self.comb += crc5.data.eq(payload)
+        self.comb += [
+            crc5.data.eq(payload),
+            crc5_value.eq(crc5.crc),
+        ]
 
         # Three bytes to transmit
         tx_byte0 = Signal(8)  # PID | ~PID
@@ -264,63 +239,32 @@ class USBHostTokenGenerator(Module):
         self.comb += [
             tx_byte0.eq(Cat(pid, ~pid)),
             tx_byte1.eq(payload[0:8]),
-            tx_byte2.eq(Cat(crc5_value, payload[8:11])),
+            # on the wire: payload[10:8] in bits 2:0, CRC5 in bits 7:3
+            tx_byte2.eq(Cat(payload[8:11], crc5_value)),
         ]
 
-        # SOF payload is the frame number; IN/OUT/SETUP/PING payload is
-        # ADDR(7) | ENDP(4); SPLIT payload is HubAddr(7) | SC(1) | Port(7) | S(1) | E(1) | ET(2)
+        # SOF payload is the 11-bit frame number; IN/OUT/SETUP/PING payload
+        # is ADDR(7) | ENDP(4).
         #
-        # We select based on token type.
+        # SPLIT tokens are intentionally not supported: this controller uses
+        # an integrated Transaction Translator, so SPLIT tokens never appear
+        # on the wire (they only exist between an EHCI HC and a hub's TT).
 
         is_sof   = Signal()
-        is_split = Signal()
         is_ping  = Signal()
-        is_token = Signal()
 
         self.comb += [
             is_sof.eq(pid == USBPacketID.SOF),
-            is_split.eq(pid == USBPacketID.SPLIT),
             is_ping.eq(pid == USBPacketID.PING),
-            is_token.eq((pid == USBPacketID.IN) |
-                        (pid == USBPacketID.OUT) |
-                        (pid == USBPacketID.SETUP) |
-                        is_ping),
         ]
 
-        # Build payload combinatorially
-        _sof_payload   = sof_counter.frame_number
-        _token_payload = Cat(self.token_endpoint, self.token_address)
-        _split_payload = Cat(
-            Signal(2, reset=0),  # ET[1:0] = 00 (control)
-            Signal(reset=0),     # E = 0 (full speed)
-            Signal(reset=0),     # S = 0 (start-split default)
-            self.port_number,
-            self.split_complete, # SC
-            self.hub_address
-        )  # total 20 bits — but SPLIT payload is only 11? Actually it's HubAddr(7)+SC(1)+Port(7)+S(1)+E(1)+ET(2) = 19 bits
-
-        # For migen simplicity, build the payload for each case
-        # Note: SPLIT token is actually 19 bits of payload, but USB spec
-        # only uses 11 bits of payload in the token PID definition.
-        # The actual host token behavior with SPLIT is more complex (host
-        # issues the split start, then later the split complete).
-        # We'll handle the standard 11-bit token payload for now.
+        # Build payload combinatorially.
+        # Wire format (USB 2.0 §8.3.2): ADDR in bits [6:0], ENDP in [10:7].
+        _token_payload = Cat(self.token_address, self.token_endpoint)
 
         self.comb += [
             If(is_sof,
                 payload.eq(sof_counter.frame_number),
-            ).Elif(is_split,
-                # SPLIT: compact 11-bit form
-                # HubAddr[6:0] | SC(1) | Port[6:4]
-                # Port[3:0] | S(1) | E(1) | ET[1:0]
-                payload.eq(Cat(
-                    Signal(2, reset=0),     # ET placeholder
-                    Signal(reset=0),         # E
-                    Signal(reset=0),         # S
-                    self.port_number,
-                    self.split_complete,
-                    self.hub_address
-                )),
             ).Else(
                 # Standard token: IN/OUT/SETUP/PING
                 payload.eq(_token_payload),
@@ -329,6 +273,7 @@ class USBHostTokenGenerator(Module):
 
         # FSM: generate token bytes on UTMI
         fsm = FSM(reset_state="IDLE")
+        fsm = ClockDomainsRenamer("usb")(fsm)
         self.submodules.token_fsm = fsm
 
         self.comb += self.token_busy.eq(~fsm.ongoing("IDLE"))

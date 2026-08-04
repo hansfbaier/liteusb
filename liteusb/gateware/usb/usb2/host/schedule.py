@@ -111,7 +111,28 @@ class EHCIScheduleProcessor(Module):
         # ── Schedule processing FSM ─────────────────────────────────────
 
         fsm = FSM(reset_state="HALTED")
+        fsm = ClockDomainsRenamer("usb")(fsm)
         self.submodules.sched_fsm = fsm
+
+        # Drive defaults: the schedule engine is currently a stub — it
+        # does not yet read QH/qTD structures from memory (no DMA master
+        # is implemented), so transfer requests carry no endpoint data.
+        # The FSM below only sequences enable/gating and the transfer
+        # handshake.  TODO: implement the memory-mapped schedule walk.
+        self.comb += [
+            self.transfer_request.valid.eq(0),
+            self.transfer_request.pid.eq(0),
+            self.transfer_request.address.eq(0),
+            self.transfer_request.endpoint.eq(0),
+            self.transfer_request.data_toggle.eq(0),
+            self.transfer_request.length.eq(0),
+            self.transfer_request.max_packet.eq(0),
+            self.transfer_request.speed.eq(0),
+            self.transfer_request.cerr.eq(0),
+            self.transfer_request.ioc.eq(0),
+            self.periodic_status.eq(0),
+            self.async_status.eq(0),
+        ]
 
         # HALTED: wait for RUN bit
         fsm.act("HALTED",
@@ -148,29 +169,13 @@ class EHCIScheduleProcessor(Module):
         # ── ASYNC Schedule ──────────────────────────────────────────────
 
         fsm.act("ASYNC",
-            If(~self.async_enable,
-                NextState("IDLE"),
-            ).Else(
-                # Process one async transfer (reclamation model)
-                # In real hardware:
-                #   1. Read ASYNCLISTADDR to get the circular list head
-                #   2. Walk linked QHs, execute one qTD
-                #   3. Advance head pointer (doorbell)
-                #
-                # Set up a transfer request
-                self.transfer_request.valid.eq(1),
-                # Request fields populated by QH/qTD from memory
-                NextState("WAIT_XFER"),
-            )
+            self.async_status.eq(1),
+            # NOTE: no DMA master exists yet, so no QH can be fetched and
+            # no transfer request is issued.  The async_status bit still
+            # reports the schedule as active per EHCI §2.2.2.
+            NextState("IDLE"),
         )
 
         # ── WAIT_XFER: wait for transfer completion ─────────────────────
+        # (reserved for the future DMA-backed schedule walk)
 
-        fsm.act("WAIT_XFER",
-            If(self.transfer_response.done,
-                # Write back status to QH/qTD overlay
-                # Advance to next qTD or next QH
-                self.transfer_request.valid.eq(0),
-                NextState("IDLE"),
-            )
-        )

@@ -36,14 +36,16 @@ class QueueHeadLayout:
         [1]     T         — Terminate (1 = end of list)
         [0]     Reserved
 
-    DWORD 1: Endpoint Characteristics
-        [31:28] RL        — NAK Count Reload (interrupt only)
-        [27:16] C         — Control (interrupt schedule mask)
-        [15]    H         — High-bandwidth pipe selector
-        [14:12] EPS       — Endpoint Speed (0=FS, 1=LS, 2=HS)
-        [11:8]  EP        — Endpoint number
+    DWORD 1: Endpoint Characteristics (EHCI §3.6.2)
+        [31:28] RL        — NAK Count Reload
+        [27]    C         — Control Endpoint Flag (FS/LS control EP)
+        [26:16] MaxPacket — Maximum Packet Length (11 bits)
+        [15]    H         — Head of Reclamation List Flag
+        [14]    DTC       — Data Toggle Control
+        [13:12] EPS       — Endpoint Speed (0=FS, 1=LS, 2=HS)
+        [11:8]  EndPt     — Endpoint number
         [7]     I         — Inactivate on Next Transaction
-        [6:0]   DEV       — Device Address
+        [6:0]   DevAddr   — Device Address
 
     DWORD 2: Endpoint Capabilities
         [31:30] Mult      — High-bandwidth multiplier (1/2/3 transactions per μframe)
@@ -340,26 +342,35 @@ class EHCIRegisters:
     USBINTR_HSE             = 0x00000010
     USBINTR_IAA             = 0x00000020
 
-    # PORTSC bits
-    PORTSC_CCS              = 0x00000001  # Current Connect Status
-    PORTSC_CSC              = 0x00000002  # Connect Status Change
-    PORTSC_PE               = 0x00000004  # Port Enable
-    PORTSC_PEC              = 0x00000008  # Port Enable Change
-    PORTSC_OCA              = 0x00000010  # Over-Current Active
-    PORTSC_OCC              = 0x00000020  # Over-Current Change
-    PORTSC_FPR              = 0x00000040  # Force Port Resume
-    PORTSC_SUSP             = 0x00000080  # Suspend
-    PORTSC_PR               = 0x00000100  # Port Reset
-    PORTSC_HSP              = 0x00000200  # High-Speed Port
-    PORTSC_LINE_STATUS_MASK = 0x00000C00
+    # PORTSC bits (EHCI §2.2.9 / Linux ehci_def.h PORT_*)
+    PORTSC_CCS              = 0x00000001  # Current Connect Status (RO)
+    PORTSC_CSC              = 0x00000002  # Connect Status Change (RW1C)
+    PORTSC_PE               = 0x00000004  # Port Enabled (HW-set, SW/HW-clear)
+    PORTSC_PEC              = 0x00000008  # Port Enable Change (RW1C)
+    PORTSC_OCA              = 0x00000010  # Over-Current Active (RO)
+    PORTSC_OCC              = 0x00000020  # Over-Current Change (RW1C)
+    PORTSC_FPR              = 0x00000040  # Force Port Resume (RW)
+    PORTSC_SUSP             = 0x00000080  # Suspend (RW)
+    PORTSC_PR               = 0x00000100  # Port Reset (RW)
+    # bit 9 is reserved in EHCI (there is no "high-speed port" bit)
+    PORTSC_LINE_STATUS_MASK = 0x00000C00  # [11:10] Line Status (RO)
     PORTSC_LINE_STATUS_D0   = 0x00000000
     PORTSC_LINE_STATUS_K    = 0x00000400
     PORTSC_LINE_STATUS_J    = 0x00000800
     PORTSC_LINE_STATUS_SE0  = 0x00000C00
-    PORTSC_PP               = 0x00001000  # Port Power
-    PORTSC_PO               = 0x00002000  # Port Owner (1=EHCI owns, 0=companion)
-    PORTSC_PTC_MASK         = 0x000F0000  # Port Test Control
-    PORTSC_PIC_MASK         = 0x00C00000  # Port Indicator Control
-    PORTSC_WKOC_E           = 0x00400000  # Wake on Over-current Enable
-    PORTSC_WKDSCNNT_E       = 0x00800000  # Wake on Disconnect Enable
-    PORTSC_WKCNNT_E         = 0x01000000  # Wake on Connect Enable
+    PORTSC_PP               = 0x00001000  # Port Power (RW)
+    PORTSC_PO               = 0x00002000  # Port Owner (RW; 1=companion owns)
+    PORTSC_PIC_MASK         = 0x0000C000  # [15:14] Port Indicator Control (RW)
+    PORTSC_PTC_MASK         = 0x000F0000  # [19:16] Port Test Control (RW)
+    PORTSC_WKOC_E           = 0x00400000  # [22] Wake on Over-current Enable
+    PORTSC_WKDSCNNT_E       = 0x00200000  # [21] Wake on Disconnect Enable
+    PORTSC_WKCNNT_E         = 0x00100000  # [20] Wake on Connect Enable
+
+    # Capability registers (EHCI §2.1); operational registers start at
+    # OP_BASE = CAPLENGTH.
+    CAPLENGTH               = 0x20
+    HCIVERSION              = 0x0100
+    OFF_HCIVERSION          = 0x02
+    OFF_HCSPARAMS           = 0x04
+    OFF_HCCPARAMS           = 0x08
+    OP_BASE                 = CAPLENGTH

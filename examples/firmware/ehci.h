@@ -22,21 +22,30 @@
 /* CSR register base for the LED output (LiteX default CSR base) */
 #define LED_OUT_BASE    0xf0000000
 
-/* ── EHCI operational register offsets (bytes from EHCI_BASE) ────────────── */
+/* ── EHCI capability register offsets (bytes from EHCI_BASE) ─────────────── */
 
-#define EHCI_USBCMD             0x00   /* USB Command */
-#define EHCI_USBSTS             0x04   /* USB Status */
-#define EHCI_USBINTR            0x08   /* USB Interrupt Enable */
-#define EHCI_FRINDEX            0x0C   /* Frame Index */
-#define EHCI_CTRLDSSEGMENT      0x10   /* Control Data Structure Segment */
-#define EHCI_PERIODICLISTBASE   0x14   /* Periodic Frame List Base Address */
-#define EHCI_ASYNCLISTADDR      0x18   /* Asynchronous List Address */
-/* Reserved 0x1C - 0x3C */
-#define EHCI_CONFIGFLAG         0x40   /* Configure Flag */
-/* Port Status & Control — one per port; PORTSC1 at 0x44 */
-#define EHCI_PORTSC_BASE        0x44
+#define EHCI_CAPLENGTH          0x00   /* Capability registers length (0x20) */
+#define EHCI_HCIVERSION         0x02   /* EHCI revision (0x0100) */
+#define EHCI_HCSPARAMS          0x04   /* Structural parameters */
+#define EHCI_HCCPARAMS          0x08   /* Capability parameters */
+
+/* ── EHCI operational register offsets (bytes from EHCI_BASE) ────────────── */
+/* The operational register block starts at CAPLENGTH (0x20). */
+
+#define EHCI_OP_BASE            0x20
+#define EHCI_USBCMD             (EHCI_OP_BASE + 0x00)  /* USB Command */
+#define EHCI_USBSTS             (EHCI_OP_BASE + 0x04)  /* USB Status */
+#define EHCI_USBINTR            (EHCI_OP_BASE + 0x08)  /* USB Interrupt Enable */
+#define EHCI_FRINDEX            (EHCI_OP_BASE + 0x0C)  /* Frame Index */
+#define EHCI_CTRLDSSEGMENT      (EHCI_OP_BASE + 0x10)  /* Control Data Structure Segment */
+#define EHCI_PERIODICLISTBASE   (EHCI_OP_BASE + 0x14)  /* Periodic Frame List Base */
+#define EHCI_ASYNCLISTADDR      (EHCI_OP_BASE + 0x18)  /* Asynchronous List Address */
+/* Reserved 0x3C - 0x5C */
+#define EHCI_CONFIGFLAG         (EHCI_OP_BASE + 0x40)  /* Configure Flag */
+/* Port Status & Control — one per port; PORTSC1 at OP_BASE + 0x44 */
+#define EHCI_PORTSC_BASE        (EHCI_OP_BASE + 0x44)
 #define EHCI_PORTSC_STRIDE      0x04
-#define EHCI_PORTSC1            0x44   /* Port Status & Control (port 1) */
+#define EHCI_PORTSC1            (EHCI_OP_BASE + 0x44)  /* Port Status & Control (port 1) */
 
 /* ── USBCMD bits ──────────────────────────────────────────────────────────── */
 
@@ -85,19 +94,19 @@
 #define PORTSC_FPR              0x00000040  /* Force Port Resume */
 #define PORTSC_SUSP             0x00000080  /* Suspend */
 #define PORTSC_PR               0x00000100  /* Port Reset */
-#define PORTSC_HSP              0x00000200  /* High-Speed Port */
+/* bit 9 is reserved in EHCI (there is no "high-speed port" bit) */
 #define PORTSC_LINE_STATUS_MASK 0x00000C00
 #define PORTSC_LINE_STATUS_D0   0x00000000
 #define PORTSC_LINE_STATUS_K    0x00000400
 #define PORTSC_LINE_STATUS_J    0x00000800
 #define PORTSC_LINE_STATUS_SE0  0x00000C00
 #define PORTSC_PP               0x00001000  /* Port Power */
-#define PORTSC_PO               0x00002000  /* Port Owner (1=EHCI owns, 0=companion) */
+#define PORTSC_PO               0x00002000  /* Port Owner (1=companion owns, 0=EHCI) */
+#define PORTSC_PIC_MASK         0x0000C000  /* Port Indicator Control */
 #define PORTSC_PTC_MASK         0x000F0000  /* Port Test Control */
-#define PORTSC_PIC_MASK         0x00C00000  /* Port Indicator Control */
+#define PORTSC_WKCNNT_E         0x00100000  /* Wake on Connect Enable */
+#define PORTSC_WKDSCNNT_E       0x00200000  /* Wake on Disconnect Enable */
 #define PORTSC_WKOC_E           0x00400000  /* Wake on Over-current Enable */
-#define PORTSC_WKDSCNNT_E       0x00800000  /* Wake on Disconnect Enable */
-#define PORTSC_WKCNNT_E         0x01000000  /* Wake on Connect Enable */
 
 /* ── Queue Head (QH) — 48 bytes / 12 DWORDs ───────────────────────────────── */
 

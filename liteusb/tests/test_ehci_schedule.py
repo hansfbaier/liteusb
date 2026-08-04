@@ -4,16 +4,16 @@
 # Copyright (c) 2026 Hans Baier <foss@hans-baier.de>
 # SPDX-License-Identifier: BSD-3-Clause
 #
-# Generated using DeepSeek V4.0 Pro
 
-""" EHCI schedule processor tests — validates FSM transitions and counter behavior.
+""" EHCI schedule processor tests — FSM gating and counter behavior.
 
-Tests cover:
-  - EHCI Spec Rev 1.0, Section 4 (Operational Model)
-  - HCHalted initial state and transition on Run
-  - SOF strobe triggers PERIODIC→ASYNC→WAIT_XFER pipeline
-  - Schedule enable gating (PSE/ASE)
-  - Microframe counter 0-7 and frame_index
+The schedule engine is currently a stub: it does not yet walk QH/qTD
+structures in memory (no DMA master).  These tests pin down the behavior
+that does exist:
+  - HCHalted tracking of USBCMD.RUN (EHCI §2.2.2)
+  - frame_index increments once per microframe/SOF strobe (EHCI §2.2.4)
+  - periodic/async schedule status bits follow the enables (EHCI §2.2.2)
+  - no transfer request is ever issued (nothing may reach the bus)
 """
 
 from liteusb.tests.test_case import LiteUSBUSBTestCase, usb_domain_test_case
@@ -30,99 +30,117 @@ class EHCIScheduleProcessorTest(LiteUSBUSBTestCase):
     @usb_domain_test_case
     def test_initial_halted(self):
         """ EHCI §2.2.2: HCHalted=1 when USBCMD.Run=0. """
-        dut = self.dut
-        self.assertEqual((yield dut.hc_halted), 1)
+        self.assertEqual((yield self.dut.hc_halted), 1)
 
     @usb_domain_test_case
     def test_run_unhalts(self):
-        """ EHCI §4.1: Setting Run=1 clears HCHalted and FSM leaves HALTED. """
+        """ Setting Run=1 clears HCHalted. """
         dut = self.dut
+        yield dut.run.eq(1)
+        yield
+        yield
+        self.assertEqual((yield dut.hc_halted), 0)
+        yield dut.run.eq(0)
+        yield
+        yield
         self.assertEqual((yield dut.hc_halted), 1)
 
-        yield dut.run.eq(1)
-        yield
-        # HCHalted is combinatorial: ~run
-        self.assertEqual((yield dut.hc_halted), 0)
-
     @usb_domain_test_case
-    def test_sof_triggers_schedule(self):
-        """ SOF strobe with PSE+ASE enabled → PERIODIC→ASYNC→WAIT_XFER. """
+    def test_frame_index_increments_per_sof(self):
+        """ FRINDEX advances by one per microframe (SOF strobe). EHCI §2.2.4. """
         dut = self.dut
-
         yield dut.run.eq(1)
-        yield dut.periodic_enable.eq(1)
-        yield dut.async_enable.eq(1)
-        yield
-
-        # Pulse SOF
-        yield dut.sof_strobe.eq(1)
-        yield
-        yield dut.sof_strobe.eq(0)
-
-        # After SOF, FSM moves through PERIODIC→ASYNC→WAIT_XFER
-        # Give it cycles to settle
-        for _ in range(5):
-            yield
-
-        # Should be in or past WAIT_XFER
-        # The schedule processor will assert transfer_request.valid in ASYNC
-        valid = (yield dut.transfer_request.valid)
-        self.assertEqual(valid, 1)
-
-        # Complete the transfer
-        yield dut.transfer_response.done.eq(1)
-        yield
-        yield dut.transfer_response.done.eq(0)
-        yield
-        # Now transfer_request.valid should be de-asserted
-        valid = (yield dut.transfer_request.valid)
-        self.assertEqual(valid, 0)
-
-    @usb_domain_test_case
-    def test_no_schedule_enables_skips_wait_xfer(self):
-        """ With PSE=ASE=0, SOF goes through PERIODIC→ASYNC→IDLE (no WAIT_XFER). """
-        dut = self.dut
-
-        yield dut.run.eq(1)
-        yield dut.periodic_enable.eq(0)
-        yield dut.async_enable.eq(0)
-        yield
-
-        yield dut.sof_strobe.eq(1)
-        yield
-        yield dut.sof_strobe.eq(0)
-        for _ in range(5):
-            yield
-
-        # transfer_request.valid should NOT be asserted
-        valid = (yield dut.transfer_request.valid)
-        self.assertEqual(valid, 0)
-
-    @usb_domain_test_case
-    def test_microframe_counter(self):
-        """ Frame index increments on each SOF strobe.  EHCI §2.2.4. """
-        dut = self.dut
-
-        yield dut.run.eq(1)
-        yield dut.periodic_enable.eq(0)
-        yield dut.async_enable.eq(0)
         yield
 
         initial = (yield dut.frame_index)
-
-        for i in range(10):
+        for _ in range(10):
             yield dut.sof_strobe.eq(1)
             yield
             yield dut.sof_strobe.eq(0)
             yield
 
-        final = (yield dut.frame_index)
-        self.assertEqual(final, initial + 10)
+        self.assertEqual((yield dut.frame_index), initial + 10)
 
     @usb_domain_test_case
-    def test_port_speed_input(self):
-        """ port_speed input exists and is readable. """
+    def test_frame_index_stops_when_halted(self):
+        """ No FRINDEX advance while Run=0. """
         dut = self.dut
-        yield dut.port_speed.eq(2)  # LS
+        initial = (yield dut.frame_index)
+        for _ in range(5):
+            yield dut.sof_strobe.eq(1)
+            yield
+            yield dut.sof_strobe.eq(0)
+            yield
+        self.assertEqual((yield dut.frame_index), initial)
+
+    @usb_domain_test_case
+    def test_periodic_status_pulses(self):
+        """ Periodic Schedule Status asserts while the periodic schedule
+            is being processed after a SOF.  EHCI §2.2.2 (PSS bit). """
+        dut = self.dut
+        yield dut.run.eq(1)
+        yield dut.periodic_enable.eq(1)
         yield
-        self.assertEqual((yield dut.port_speed), 2)
+
+        yield dut.sof_strobe.eq(1)
+        yield
+        yield dut.sof_strobe.eq(0)
+
+        seen = 0
+        for _ in range(10):
+            yield
+            if (yield dut.periodic_status):
+                seen += 1
+        self.assertGreaterEqual(seen, 1)
+
+    @usb_domain_test_case
+    def test_async_status_pulses(self):
+        """ Async Schedule Status asserts while the async schedule is
+            processed after a SOF.  EHCI §2.2.2 (ASS bit). """
+        dut = self.dut
+        yield dut.run.eq(1)
+        yield dut.async_enable.eq(1)
+        yield
+
+        yield dut.sof_strobe.eq(1)
+        yield
+        yield dut.sof_strobe.eq(0)
+
+        seen = 0
+        for _ in range(10):
+            yield
+            if (yield dut.async_status):
+                seen += 1
+        self.assertGreaterEqual(seen, 1)
+
+    @usb_domain_test_case
+    def test_no_periodic_status_when_disabled(self):
+        """ PSS stays clear while USBCMD.PSE=0. """
+        dut = self.dut
+        yield dut.run.eq(1)
+        yield dut.periodic_enable.eq(0)
+        yield
+
+        yield dut.sof_strobe.eq(1)
+        yield
+        yield dut.sof_strobe.eq(0)
+        for _ in range(10):
+            yield
+            self.assertEqual((yield dut.periodic_status), 0)
+
+    @usb_domain_test_case
+    def test_no_transfer_request_issued(self):
+        """ The stub never issues a transfer request (nothing reaches
+            the bus until DMA schedule walking exists). """
+        dut = self.dut
+        yield dut.run.eq(1)
+        yield dut.periodic_enable.eq(1)
+        yield dut.async_enable.eq(1)
+        yield
+
+        for _ in range(20):
+            yield dut.sof_strobe.eq(1)
+            yield
+            yield dut.sof_strobe.eq(0)
+            yield
+            self.assertEqual((yield dut.transfer_request.valid), 0)

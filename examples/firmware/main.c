@@ -167,10 +167,11 @@ static int port_reset(void) {
         return -1;
     }
 
-    uart_puts("Port enabled, speed: ");
-    if (portsc & PORTSC_HSP) uart_puts("HS\r\n");
-    else if (portsc & PORTSC_LINE_STATUS_K) uart_puts("LS\r\n");
-    else uart_puts("FS\r\n");
+    uart_puts("Port enabled, line state: ");
+    if ((portsc & PORTSC_LINE_STATUS_MASK) == PORTSC_LINE_STATUS_K)
+        uart_puts("K (LS)\r\n");
+    else
+        uart_puts("J (FS/HS)\r\n");
     return 0;
 }
 
@@ -191,8 +192,8 @@ static void qtd_setup(ehci_qtd_t *qtd, uint32_t pid, uint8_t *buf,
 
 static void qh_init_ctrl(ehci_qh_t *qh) {
     qh->hlp     = QH_LINK_TERMINATE;
-    qh->ep_char = (2 << 12)   /* EPS = HS */
-                | (64 << 16)  /* C (max packet) */
+    qh->ep_char = (2 << 12)   /* EPS = HS (bits 13:12) */
+                | (64 << 16)  /* MaxPacketLength = 64 (bits 26:16) */
                 | 0;          /* device address 0, EP 0 */
     qh->ep_cap  = 0;
     qh->cur_qtd = 0;
@@ -217,9 +218,13 @@ static int control_transfer(uint8_t bmRequestType, uint8_t bRequest,
     ehci_qtd_t *qtd_d = (ehci_qtd_t *)(ehci_pool + 0x200);
     ehci_qtd_t *qtd_t = (ehci_qtd_t *)(ehci_pool + 0x300);
 
-    /* SETUP stage: 8 bytes, DATA0 */
+    /* SETUP stage: 8 bytes, DATA0 (a SETUP always resets the toggle) */
     qtd_setup(qtd_s, QTD_TOKEN_PID_SETUP, setup, 8, 0);
     qtd_s->next_qtd = (uint32_t)qtd_d;
+
+    /* After a SETUP, the DATA stage always starts at DATA1 (USB 2.0
+     * §8.5.3); track the toggle locally from there. */
+    *toggle = 1;
 
     if (wLength) {
         /* DATA stage */
