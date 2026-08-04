@@ -116,6 +116,8 @@ class USBHostController(Module):
 
         # I/O
         self.bus       = wishbone.Interface(data_width=32, address_width=8)
+        # Bus master: EHCI schedule data structures + payload DMA
+        self.dma       = wishbone.Interface(data_width=32)
         self.interrupt = Signal()
         self.frame_number      = Signal(11)
         self.microframe_number = Signal(3)
@@ -267,11 +269,12 @@ class USBHostController(Module):
             utmi=utmi, data_tx=data_tx, data_rx=data_rx,
             hs_detect=hs_det, hs_gen=hs_gen)
         self.comb += [
-            xfer.token_pid.eq(token_gen.token_pid),
-            xfer.token_address.eq(token_gen.token_address),
-            xfer.token_endpoint.eq(token_gen.token_endpoint),
-            xfer.token_busy.eq(token_gen.token_busy),
+            # Transfer engine outputs drive the token generator
+            token_gen.token_pid.eq(xfer.token_pid),
+            token_gen.token_address.eq(xfer.token_address),
+            token_gen.token_endpoint.eq(xfer.token_endpoint),
             token_gen.issue_token.eq(xfer.token_issue),
+            xfer.token_busy.eq(token_gen.token_busy),
             xfer.bus_granted.eq(1),
         ]
 
@@ -283,7 +286,6 @@ class USBHostController(Module):
             num_ports=self._num_ports)
         self.comb += [
             schedule.sof_strobe.eq(token_gen.sof_counter.issue_sof),
-            schedule.port_speed.eq(port_speed),
         ]
 
         #
@@ -300,6 +302,7 @@ class USBHostController(Module):
             schedule.async_enable     .eq(regs.async_enable),
             schedule.frame_list_base  .eq(regs.frame_list_base),
             schedule.async_list_addr  .eq(regs.async_list_addr),
+            schedule.interrupt_on_aa  .eq(regs.interrupt_on_aa),
             token_gen.sof_enable      .eq(regs.run),
             regs.hc_halted            .eq(schedule.hc_halted),
             regs.frame_index_in       .eq(schedule.frame_index),
@@ -307,25 +310,44 @@ class USBHostController(Module):
             regs.async_status         .eq(schedule.async_status),
         ]
 
-        # Transfer request/response: schedule engine ↔ transfer engine
+        # DMA master: schedule engine reads/writes system memory
+        self.comb += schedule.mem.connect(self.dma)
+
+        # Transfer request/response: schedule engine ↔ transfer engine.
+        # (Plain Records carry no direction metadata, so Record.connect
+        # cannot infer the direction — wire the fields explicitly.)
+        for field in ("valid", "pid", "address", "endpoint", "data_toggle",
+                      "length", "max_packet", "speed", "cerr", "ioc"):
+            self.comb += getattr(xfer.request, field).eq(
+                getattr(schedule.transfer_request, field))
+        for field in ("done", "ack", "nak", "stall", "nyet", "error",
+                      "babble", "bytes_xfer", "data_toggle"):
+            self.comb += getattr(schedule.transfer_response, field).eq(
+                getattr(xfer.response, field))
+
+        # Payload streams: schedule engine ↔ transfer engine
         self.comb += [
-            xfer.request.connect(schedule.transfer_request),
-            schedule.transfer_response.connect(xfer.response),
+            xfer.tx_stream.payload.eq(schedule.tx_stream.payload),
+            xfer.tx_stream.valid.eq(schedule.tx_stream.valid),
+            schedule.tx_stream.ready.eq(xfer.tx_stream.ready),
+            schedule.rx_stream.payload.eq(xfer.rx_stream.payload),
+            schedule.rx_stream.valid.eq(xfer.rx_stream.valid),
+            schedule.rx_stream.next.eq(xfer.rx_stream.next),
         ]
 
         # ── Interrupt / status strobes ──────────────────────────────────
 
         self.comb += [
-            # USBINT: a transfer completed (IOC gating happens in the
-            # schedule engine once qTD memory access exists)
-            regs.usb_interrupt.eq(xfer.response.done & xfer.response.ack),
+            # USBINT: qTD completed with IOC (EHCI §4.15)
+            regs.usb_interrupt.eq(schedule.usbint),
             # USBERRINT: transfer failed
-            regs.usb_error.eq(xfer.response.done & xfer.response.error),
+            regs.usb_error.eq(schedule.usberr),
+            # IAA: async schedule advanced with the doorbell set
+            regs.interrupt_on_aa_ack.eq(schedule.iaa),
             # Port Change Detect: any connect change sets PCD
             regs.port_change_detect.eq(port_connect_change),
             regs.frame_list_rollover.eq(0),
             regs.host_system_error.eq(0),
-            regs.interrupt_on_aa_ack.eq(0),
         ]
 
         #

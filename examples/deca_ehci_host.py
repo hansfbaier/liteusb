@@ -97,6 +97,9 @@ class DecaEHCIKeyboardSoC(SoCCore):
         self.bus.add_slave("usb_ehci", host.bus,
             region=SoCRegion(origin=0xe0000000, size=0x1000, cached=False))
 
+        # Wishbone master: EHCI schedule structures + payload DMA in RAM
+        self.bus.add_master(host.dma)
+
         # Interrupt routing
         self.comb += self.cpu.interrupt[17].eq(host.interrupt)
 

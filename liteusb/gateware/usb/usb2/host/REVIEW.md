@@ -23,7 +23,7 @@ and could not have worked with the Linux driver or real hardware:
 - no EHCI capability registers were readable (Linux reads `CAPLENGTH` first;
   it would have read USBCMD bits instead),
 - the schedule processor was a stub that never touched memory — no QH/qTD
-  traversal exists, so no DMA-based transfer could ever execute,
+  traversal existed, so no DMA-based transfer could ever execute,
 - the token CRC-5 was wrong on 1984 of 2048 inputs,
 - the bus reset did not drive SE0 correctly, and the host chirp sequence
   was inverted and raced the device chirp,
@@ -32,10 +32,18 @@ and could not have worked with the Linux driver or real hardware:
 - 22 of the 44 original tests failed; several tests asserted the wrong
   expected values (e.g. CRC5 of all-zeros as `0x0C`; correct is `0x02`).
 
-After the fixes in this tree, every module is unit-correct against its
-spec-level contract (see §7 for what the tests prove). The controller is
-still **not** a complete EHCI HC: the DMA schedule engine (§6.1) is the
-remaining gating feature.
+All of the above are **fixed**, and the DMA schedule engine is now
+**implemented** (§6): the controller walks QH/qTD structures in system
+memory and executes control/bulk/interrupt transfers end-to-end, proven
+by an integration test that runs a full SETUP→DATA→STATUS control read
+through the entire stack (schedule DMA → transfer engine → token
+generator → packet layer → UTMI) against an emulated USB device.
+
+Remaining gaps for full EHCI: isochronous transfers (iTD/siTD), split
+transactions (FS/LS devices behind an external HS hub), FSTN, PING,
+qTD alternate-pointer short-read recovery, and 64-bit addressing.
+Linux `ehci-hcd` needs the QH/qTD path that now exists for
+control/bulk/interrupt enumeration and HID/mass-storage class traffic.
 
 ---
 
@@ -176,29 +184,45 @@ retry-then-error with exact retry count, ZLP, SETUP always DATA0.
 
 ## 6. Schedule processor (`schedule.py`) — EHCI §3, §4
 
-### 6.1 OPEN (gating): no DMA schedule walk
+### 6.1 IMPLEMENTED: DMA schedule walk
 
-There is no bus master and no QH/qTD/iTD/siTD memory access anywhere in
-the gateware. Consequences:
+The schedule engine now owns a 32-bit Wishbone bus master (`USBHostController.dma`,
+mapped into the SoC in `deca_ehci_host.py`) and implements:
 
-- The firmware/Linux driver programming model (frame list, async list,
-  qTD overlays, write-backs) **cannot execute transfers**; the
-  controller is not yet a functional EHCI HC for real workloads.
-- `PERIODICLISTBASE`/`ASYNCLISTADDR` are stored and decoded but unused.
-- `data_structures.py` documents the EHCI §3 layouts correctly (after
-  the DWORD-1 comment fix) and is consistent with `struct ehci_qh` /
-  `struct ehci_qtd` in Linux — the foundation for a DMA engine is there.
+- **Async schedule**: QH chains from ASYNCLISTADDR — fetches HLP,
+  endpoint characteristics, current qTD pointer; walks qTD chains via
+  Next-qTD pointers; skips inactive qTDs.
+- **Periodic schedule**: on each SOF microframe, reads the frame-list
+  entry at `PERIODICLISTBASE + FRINDEX[12:3]` and walks the interrupt-QH
+  chain.
+- **Transaction chunking**: each qTD executes in MaxPacketSize chunks
+  (USB 2.0 §8.5) with data-toggle sequencing and payload DMA through a
+  1 KiB staging buffer (full words; an IN tail word may overwrite up to
+  3 bytes past the transfer, so size buffers accordingly).
+- **Writebacks per EHCI §3.5.3/§4.10**: on success, Total-Bytes
+  decremented to 0, Active cleared, toggle updated; short IN packets
+  complete the qTD early; STALL → Halted; retries exhausted →
+  Halted + XactErr; babble → + Babble. NAK retires the transaction
+  with **no** writeback (qTD stays Active, retried on the next pass).
+- **Interrupts**: IOC → USBINT, errors → USBERRINT, async advance with
+  the doorbell set → IAA.
+- Buffer-page crossings re-fetch the next buffer pointer from the qTD
+  page list.
 
-Until a DMA-backed schedule walker exists, throughput claims and the
-Linux-driver README must be treated as aspirational. The fabricated
-performance table in the README was removed.
+Test-proven (`test_ehci_dma.py`, `test_ehci_integration.py`): QH/qTD
+fetch sequence, payload DMA both directions, chunking 8/8/2 with toggle
+sequence 1/0/1, NAK/STALL/error writebacks, IAA, periodic walk, page
+crossing, qTD chaining, and a full end-to-end control read with exact
+on-the-wire bytes.
 
-### FIXED
+### 6.2 OPEN
 
-- The stub asserted `transfer_request.valid` with uninitialized fields —
-  this would have issued garbage tokens onto the bus. It now never
-  issues requests; PSS/ASS status bits still pulse per §2.2.2.
-- FRINDEX advance and HCHalted behavior pinned by tests.
+- Isochronous iTD/siTD, split transactions, FSTN: the frame-list walker
+  stops at non-QH entries.
+- qTD alternate pointer (short-read recovery), PING, 64-bit addressing
+  (CTRLDSSEGMENT is stored but unused).
+- Interrupt-schedule rate limiting (NAK'd interrupt QHs are retried
+  every microframe rather than per bInterval).
 
 ---
 
@@ -261,27 +285,27 @@ performance table in the README was removed.
 
 ### OPEN
 
-- The firmware programs the DMA schedule (frame list, QH, qTDs) that the
-  gateware cannot consume yet (see §6.1). It is structurally sound and
-  will become useful once the DMA schedule engine lands.
 - `LED_OUT_BASE`/`UART_BASE` are guessed addresses; read them from
   `csr.csv`/`csr.json` at build time instead.
+- Firmware needs hardware verification on the DECA (the gateware path it
+  exercises is now covered by the integration test in simulation).
 
 ---
 
 ## 10. Test suite (`liteusb/tests/test_ehci_*.py`)
 
-Rewritten and extended: **70 tests, all passing** (full liteusb suite:
-126 passed, no regressions).
+Rewritten and extended: **81 EHCI tests, all passing** (full liteusb
+suite: 137 passed, no regressions).
 
 | File | Tests | Covers |
 |------|-------|--------|
 | `test_ehci_token.py` | 15 | CRC5 vs bit-serial reference (sampled exhaustive + boundaries + wire captures), exact token bytes for SETUP/IN/OUT/PING/SOF, SOF timing/µframe/hold |
 | `test_ehci_registers.py` | 33 | Capability block, all op registers, RW1C semantics, HCRESET/IAA self-clear, FRINDEX halted-write + running-follow, PORTSC per-port semantics, interrupt masking/generation, 2-port decode |
-| `test_ehci_schedule.py` | 8 | HCHalted, FRINDEX per-SOF advance, PSS/ASS pulsing, stub issues no transfers |
+| `test_ehci_schedule.py` | 8 | HCHalted, FRINDEX per-SOF advance, PSS/ASS pulsing |
 | `test_ehci_transfer.py` | 8 | Full OUT/IN transaction flows through the real packet layer incl. CRC16 on the wire, NAK/STALL/timeout-retry, ZLP, SETUP DATA0 |
 | `test_ehci_host.py` | 13 | SE0 reset drive, FS/LS/HS detection, host chirp order + terminations, LS/chirp disambiguation, TT tokens/handshakes/timeout/PHY restore |
+| `test_ehci_dma.py` | 10 | QH/qTD fetch, payload DMA, chunking + toggles, writebacks (complete/NAK/STALL/error), IAA, periodic walk, page crossing, qTD chaining |
+| `test_ehci_integration.py` | 1 | End-to-end SETUP→DATA→STATUS control read through the whole stack with exact wire bytes and memory writebacks |
 
-Not covered (needs the DMA engine): QH/qTD traversal, iTD/siTD,
-split transactions, isochronous scheduling, IAA doorbell flow,
-interrupt-threshold moderation.
+Not covered: iTD/siTD isochronous scheduling, split transactions,
+interrupt-threshold moderation, suspend/resume.

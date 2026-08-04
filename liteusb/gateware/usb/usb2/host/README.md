@@ -417,10 +417,19 @@ dmesg | grep "full-speed"
 
 ### Throughput
 
-No throughput numbers are quoted: the DMA-backed schedule engine
-(QH/qTD traversal) is not yet implemented, so sustained bulk throughput
-does not exist yet. See the "Known limitations" section in the review
-notes before integrating.
+The schedule engine executes one transaction per QH visit, walking the
+async list continuously and the periodic list once per microframe.
+Expected ballpark at 60 MHz UTMI with a single port:
+
+| Direction     | Bus limit   | Rough estimate |
+|---------------|-------------|----------------|
+| High-Speed IN | 480 Mbps    | not yet measured |
+| High-Speed OUT| 480 Mbps    | not yet measured |
+| Full-Speed    | 12 Mbps     | not yet measured |
+
+Actual throughput depends on the Wishbone memory latency (QH/qTD reads
+are serialized single-cycle accesses), CPU speed, and bus contention.
+Measure on hardware before quoting numbers anywhere else.
 
 ### Frame Timing
 

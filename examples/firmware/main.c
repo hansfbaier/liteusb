@@ -74,6 +74,7 @@ static ehci_qtd_t  *int_qtd;      /* interrupt transfer qTD */
 
 /* USB keyboard state */
 static uint8_t  kbd_addr = 0;         /* assigned device address */
+static uint8_t  kbd_ep0_maxp = 8;     /* EP0 max packet (from device desc) */
 static uint8_t  kbd_ep_in = 0;        /* interrupt IN endpoint number */
 static uint8_t  kbd_max_packet = 8;   /* boot protocol report size */
 static uint16_t kbd_poll_interval = 8;/* ms between polls */
@@ -192,9 +193,22 @@ static void qtd_setup(ehci_qtd_t *qtd, uint32_t pid, uint8_t *buf,
 
 static void qh_init_ctrl(ehci_qh_t *qh) {
     qh->hlp     = QH_LINK_TERMINATE;
-    qh->ep_char = (2 << 12)   /* EPS = HS (bits 13:12) */
-                | (64 << 16)  /* MaxPacketLength = 64 (bits 26:16) */
+    qh->ep_char = (0 << 12)   /* EPS = FS (bits 13:12; keyboard is FS) */
+                | (8 << 16)   /* MaxPacketLength = 8 (bits 26:16) */
                 | 0;          /* device address 0, EP 0 */
+    qh->ep_cap  = 0;
+    qh->cur_qtd = 0;
+    for (int i = 0; i < 8; i++) qh->overlay[i] = 0;
+}
+
+/* Initialize the interrupt-IN QH for the polled keyboard endpoint */
+static void qh_init_int(ehci_qh_t *qh, uint8_t addr, uint8_t ep,
+                        uint8_t max_packet) {
+    qh->hlp     = QH_LINK_TERMINATE;   /* end of the periodic chain */
+    qh->ep_char = (0 << 12)                    /* EPS = FS */
+                | ((uint32_t)max_packet << 16) /* MaxPacketLength */
+                | ((uint32_t)ep << 8)          /* EndPt */
+                | addr;                        /* DevAddr */
     qh->ep_cap  = 0;
     qh->cur_qtd = 0;
     for (int i = 0; i < 8; i++) qh->overlay[i] = 0;
@@ -253,7 +267,9 @@ static int control_transfer(uint8_t bmRequestType, uint8_t bRequest,
 
     /* Set up control QH pointing at the first qTD */
     qh_init_ctrl(ctrl_qh);
-    ctrl_qh->ep_char = (2 << 12) | (64 << 16) | (kbd_addr << 0);
+    ctrl_qh->ep_char = (0 << 12)                    /* EPS = FS */
+                     | ((uint32_t)kbd_ep0_maxp << 16)
+                     | (kbd_addr << 0);
     ctrl_qh->cur_qtd = (uint32_t)qtd_s;
 
     /* Link into async list: ASYNCLISTADDR -> QH */
@@ -318,6 +334,7 @@ static int poll_keyboard(void) {
 
     /* Reprime the qTD (Active) and point the QH at it */
     qtd_setup(qtd, QTD_TOKEN_PID_IN, report, kbd_max_packet, 1);
+    qh_init_int(int_qh, kbd_addr, kbd_ep_in, kbd_max_packet);
     int_qh->cur_qtd = (uint32_t)qtd;
 
     /* Link the interrupt QH into the periodic schedule.
@@ -384,6 +401,7 @@ static int enumerate_keyboard(void) {
     uart_puts("bMaxPacketSize0: ");
     uart_hex(dev_desc[7]);
     uart_puts("\r\n");
+    kbd_ep0_maxp = dev_desc[7];
 
     /* 2. Assign address 1 */
     if (set_address(1)) {
