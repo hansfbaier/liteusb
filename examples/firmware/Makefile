@@ -14,10 +14,13 @@ OBJCOPY        = $(CROSS_COMPILE)objcopy
 SIZE           = $(CROSS_COMPILE)size
 
 # RISC-V 32-bit (VexRiscv is RV32IM), bare-metal
+# -msmall-data-limit=0: no .sdata/.sbss — the linker script and crt0
+# only place .data/.bss; small statics must not end up in unplaced
+# small-data sections (they would neither be copied nor zeroed at boot).
 ARCH_FLAGS = -march=rv32im -mabi=ilp32
 
 CFLAGS  = $(ARCH_FLAGS) -Os -g -Wall -Wextra -ffreestanding -nostdlib
-CFLAGS += -I. -fno-builtin -fno-stack-protector -fno-pic -mno-relax
+CFLAGS += -I. -fno-builtin -fno-stack-protector -fno-pic -mno-relax -msmall-data-limit=0
 LDFLAGS = $(ARCH_FLAGS) -nostdlib -T linker.ld -mno-relax -no-pie
 
 TARGET = firmware
@@ -33,7 +36,7 @@ $(TARGET).elf: $(OBJS) linker.ld
 
 $(TARGET).bin: $(TARGET).elf
 	$(OBJCOPY) -O binary $< $@
-	@echo "Built $@ ($(shell wc -c < $@) bytes)"
+	@echo "Built $@ ($$(wc -c < $@) bytes)"
 
 %.o: %.c ehci.h
 	$(CC) $(CFLAGS) -c -o $@ $<

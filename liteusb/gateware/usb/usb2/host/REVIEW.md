@@ -282,11 +282,65 @@ on-the-wire bytes.
 - QH max-packet comment corrected (bits [26:16]).
 - README register table corrected (CONFIGFLAG 0x60, PORTSC 0x64
   absolute).
+- `LED_OUT_BASE`/`UART_BASE` corrected to the actual LiteX CSR
+  addresses (`main_led_out` @ 0xf0001000, `uart` @ 0xf0002000 — see
+  `csr.csv`); the old values pointed at `ctrl_reset`/the LED bank.
+- Firmware now boots directly from the integrated ROM (no BIOS): the SoC
+  embeds `firmware.bin` (`integrated_rom_init`), `crt0.S` copies `.data`
+  from ROM to RAM and zeroes `.bss`, and the linker script places
+  `.text/.rodata` in ROM and `.data/.bss/DMA pool/stack` in main RAM.
+- Frame-list entries for the interrupt QH now carry the QH link type
+  (bits [2:1] = 01); the schedule engine stops at non-QH entries, so the
+  keyboard would never have been polled without it.
+- `build_deca_ehci.sh` builds firmware before gateware (the ROM embeds
+  the binary) and targets the platform-named build dir.
+- **SoC memory sizing fixed — the DECA gateware could never have fit**: a
+  48 KiB main_ram (12288 words) does NOT infer as M9K block RAM under
+  Quartus 21.1 MAX10 (limit: 8192 words per inferred altsyncram;
+  "RAM logic \"mem\" is uninferred due to inappropriate RAM size").
+  It synthesized as 393,216 flip-flops + muxes → 709,112 estimated LEs
+  on a 49,760-LE device, and synthesis crawled in
+  `MLS_NETLIST::remove_duplicate_dffs` (each main_ram write DFF's fanin
+  cone included the giant read mux — 40+ min, never completing). The
+  SoC now uses a 32 KiB main_ram (8192 words → infers as M9Ks) and the
+  firmware DMA pool shrinks 32 KiB → 16 KiB (frame list 4K + QH/qTD
+  area needs ~8.5 KiB). Result: **20,285 LEs / 11,038 registers /
+  466,432 memory bits — fits with 58% headroom; map+fit+asm+sta in
+  ~4.5 min; usb_clk 70.3 MHz ≥ 60 MHz, sys_clk 75.3 MHz ≥ 50 MHz.**
+- `linker.ld` gains `ASSERT(__stack_top <= 0x40008000, ...)` to keep
+  the stack inside the 32 KiB RAM. Note: GNU ld (binutils 2.44) rejects
+  `ASSERT(...)` with a trailing semicolon — omit it.
+- `build_deca_ehci.sh` removes `db/` + `incremental_db/` before the
+  build: a build interrupted mid-map leaves the Quartus working state in
+  a condition that makes the next parallel map's workers die right after
+  elaboration ("Terminating backend processes..." then hang). Fresh db
+  → clean parallel build (16 workers).
+- `poll_keyboard()` interrupt-IN polling fixed (would have failed on
+  hardware):
+  - Data toggle was hardcoded DATA1 on every poll. Endpoint toggles
+    reset to DATA0 at Set Configuration, so the first poll (and every
+    other poll) carried the wrong toggle and the device would ignore
+    the token. The firmware now tracks `kbd_toggle`, starting DATA0,
+    and flips it after each completed transfer — matching the HC,
+    which sources the toggle from each qTD's token bit 31 (per-qTD
+    toggle, DTControl=1-style; QH overlay toggle is not used).
+  - Idle NAKs were treated as timeout errors. An idle keyboard NAKs
+    every interrupt IN; the schedule engine leaves the qTD Active and
+    retries on the next microframe (EHCI §4.10), so the firmware must
+    NOT re-arm on NAK. `poll_keyboard()` now keeps the armed qTD in
+    flight until the HC completes it or flags a hard error
+    (HALTED/XACTERR/DATABUFFER/BABBLE), re-arming only then.
+  - `kbd_poll_armed` tracks whether a poll is in flight, so a
+    completed qTD (Active cleared by HC writeback, data in `report[]`)
+    is distinguished from an unarmed qTD.
+  - Re-enumeration robustness: `enumerate_keyboard()` resets
+    `kbd_addr`/`kbd_ep_in`/`kbd_toggle`/`kbd_poll_armed` for the fresh
+    device (a retry after failed enumeration would otherwise talk to
+    the stale address), and the poll loop watches PORTSC CCS so a
+    removed device re-triggers port reset + enumeration.
 
 ### OPEN
 
-- `LED_OUT_BASE`/`UART_BASE` are guessed addresses; read them from
-  `csr.csv`/`csr.json` at build time instead.
 - Firmware needs hardware verification on the DECA (the gateware path it
   exercises is now covered by the integration test in simulation).
 

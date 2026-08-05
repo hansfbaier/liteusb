@@ -44,7 +44,7 @@ static inline void leds_set(uint8_t value) {
 
 /* ── UART debug output via LiteX CSR (JTAG UART at default base) ───────── */
 
-#define UART_BASE   0xf0001000  /* jtag_uart — adjust from csr.csv */
+#define UART_BASE   0xf0002000  /* jtag_uart — must match csr.csv */
 static inline void uart_putc(char c) {
     volatile uint32_t *txfull = (volatile uint32_t *)(UART_BASE + 0x04);
     volatile uint32_t *txdata = (volatile uint32_t *)(UART_BASE + 0x00);
@@ -65,8 +65,14 @@ static void uart_hex(uint32_t v) {
 /* ── EHCI in-RAM data structures ───────────────────────────────────────── */
 
 /* 4K-aligned frame list (1024 entries), plus QH/qTD pools.
+ * 16 KiB: frame list 4K + QH/qTD/descriptor area (the working set is
+ * ~8.5 KiB: frame list @0x0000, ctrl_qh @0x1000, int_qh @0x2000,
+ * int_qtd @0x2100). Sized so the whole pool + stack + .data/.bss fit
+ * in the 32 KiB main RAM — the DECA's M9K blocks only infer block RAM
+ * up to 8192 words, and 12288-word (48 KiB) RAMs synthesize as
+ * 393K flip-flops instead (Quartus 21.1, MAX10).
  * Alignment is guaranteed by the linker script (.bss.ehci_dma section). */
-static uint8_t      ehci_pool[0x8000] __attribute__((aligned(4096)));
+static uint8_t      ehci_pool[0x4000] __attribute__((aligned(4096)));
 static uint32_t    *frame_list;   /* 1024 x 32-bit */
 static ehci_qh_t   *ctrl_qh;      /* control pipe QH */
 static ehci_qh_t   *int_qh;       /* interrupt pipe QH */
@@ -78,6 +84,9 @@ static uint8_t  kbd_ep0_maxp = 8;     /* EP0 max packet (from device desc) */
 static uint8_t  kbd_ep_in = 0;        /* interrupt IN endpoint number */
 static uint8_t  kbd_max_packet = 8;   /* boot protocol report size */
 static uint16_t kbd_poll_interval = 8;/* ms between polls */
+static uint8_t  kbd_toggle = 0;       /* interrupt-IN data toggle; EP toggles
+                                         reset to DATA0 at Set Configuration */
+static uint8_t  kbd_poll_armed = 0;   /* poll qTD armed on the periodic list */
 static uint8_t  report[8];            /* last HID report */
 
 /* ── Small helpers ──────────────────────────────────────────────────────── */
@@ -331,39 +340,52 @@ static int set_boot_protocol(void) {
 
 static int poll_keyboard(void) {
     ehci_qtd_t *qtd = int_qtd;
+    uint32_t tok = qtd->token;
 
-    /* Reprime the qTD (Active) and point the QH at it */
-    qtd_setup(qtd, QTD_TOKEN_PID_IN, report, kbd_max_packet, 1);
-    qh_init_int(int_qh, kbd_addr, kbd_ep_in, kbd_max_packet);
-    int_qh->cur_qtd = (uint32_t)qtd;
+    if (!kbd_poll_armed) {
+        /* Nothing in flight: arm a poll with the current toggle.
+         * Active is set last in qtd_setup, so the HC can never observe
+         * a partially-written qTD. The HC then retries NAKs itself on
+         * every microframe while the qTD stays Active. */
+        qtd_setup(qtd, QTD_TOKEN_PID_IN, report, kbd_max_packet, kbd_toggle);
+        qh_init_int(int_qh, kbd_addr, kbd_ep_in, kbd_max_packet);
+        int_qh->cur_qtd = (uint32_t)qtd;
 
-    /* Link the interrupt QH into the periodic schedule.
-     * Every frame-list entry points to it (polled every microframe). */
-    for (int i = 0; i < EHCI_FRAME_LIST_ENTRIES; i++) {
-        frame_list[i] = (uint32_t)int_qh;  /* QH link, type = QH */
+        /* Link the interrupt QH into the periodic schedule.
+         * Every frame-list entry points to it (polled every microframe).
+         * Type tag in bits [2:1] must be QH (01), not iTD (00): the HC's
+         * periodic walker stops at non-QH entries (EHCI §3.4.2, §3.1). */
+        for (int i = 0; i < EHCI_FRAME_LIST_ENTRIES; i++) {
+            frame_list[i] = (uint32_t)int_qh | EHCI_FL_TYP_QH;
+        }
+
+        /* Enable periodic schedule */
+        ehci_write(EHCI_USBCMD, ehci_read(EHCI_USBCMD) | USBCMD_PSE);
+
+        kbd_poll_armed = 1;
+        return -1;  /* data, when it arrives, is picked up on a later call */
     }
 
-    /* Enable periodic schedule */
-    ehci_write(EHCI_USBCMD, ehci_read(EHCI_USBCMD) | USBCMD_PSE);
-
-    /* Wait for completion (poll interval ms * 1000 iterations/ms) */
-    int timeout = 100000;
-    while (timeout--) {
-        if (!(qtd->token & QTD_TOKEN_ACTIVE)) break;
-        if (qtd->token & (QTD_TOKEN_HALTED | QTD_TOKEN_XACTERR |
-                          QTD_TOKEN_DATABUFFER | QTD_TOKEN_BABBLE)) break;
-    }
-    if (timeout <= 0) {
-        qtd->token = 0;
-        return -1;
-    }
-    if (qtd->token & (QTD_TOKEN_HALTED | QTD_TOKEN_XACTERR |
-                      QTD_TOKEN_DATABUFFER | QTD_TOKEN_BABBLE)) {
+    /* Armed: hard error → retire and re-arm (no data moved, the
+     * device's toggle is unchanged). */
+    if (tok & (QTD_TOKEN_HALTED | QTD_TOKEN_XACTERR |
+               QTD_TOKEN_DATABUFFER | QTD_TOKEN_BABBLE)) {
         uart_puts("EP err\r\n");
         qtd->token = 0;
+        qtd_setup(qtd, QTD_TOKEN_PID_IN, report, kbd_max_packet, kbd_toggle);
+        int_qh->cur_qtd = (uint32_t)qtd;
         return -1;
     }
-    return 0;
+
+    /* Completed: the HC cleared Active after writing the report. */
+    if (!(tok & QTD_TOKEN_ACTIVE)) {
+        kbd_poll_armed = 0;
+        kbd_toggle ^= 1;  /* endpoint flipped; next poll uses DATA1 */
+        return 0;
+    }
+
+    /* Still in flight (idle keyboard NAKs; the HC keeps retrying). */
+    return -1;
 }
 
 /* ── HID report decode ─────────────────────────────────────────────────── */
@@ -390,6 +412,12 @@ static void handle_report(void) {
 static int enumerate_keyboard(void) {
     uint8_t dev_desc[18];
     uint8_t cfg_desc[64];
+
+    /* Fresh device after port reset: address 0, EP toggles DATA0 */
+    kbd_addr = 0;
+    kbd_ep_in = 0;
+    kbd_toggle = 0;
+    kbd_poll_armed = 0;
 
     uart_puts("Enumerate\r\n");
 
@@ -491,6 +519,10 @@ int main(void) {
                 while (1) {
                     if (poll_keyboard() == 0) {
                         handle_report();
+                    }
+                    if (!(ehci_read(EHCI_PORTSC1) & PORTSC_CCS)) {
+                        uart_puts("Device removed\r\n");
+                        break;  /* re-enumerate */
                     }
                     delay_ms(1);
                 }

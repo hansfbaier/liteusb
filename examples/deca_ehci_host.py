@@ -60,6 +60,21 @@ class DecaEHCIKeyboardSoC(SoCCore):
         kwargs.setdefault("cpu_type", "vexriscv")
         kwargs.setdefault("uart_name", "jtag_uart")
 
+        # Boot firmware directly from the initialized ROM (no BIOS).
+        # Sizes are M9K-budget-conscious (DECA has 182 M9Ks): 8 KiB ROM
+        # for the ~3.4 KiB firmware, 32 KiB main RAM for the 16 KiB EHCI
+        # DMA pool + .data/.bss + 8 KiB stack. The RAM must stay at
+        # 8192 words or less: Quartus 21.1 on MAX10 does not infer block
+        # RAM for deeper arrays (12288-word/48 KiB RAMs synthesize as
+        # 393K flip-flops and the design can never fit). Override the
+        # firmware with FIRMWARE_BIN=...
+        kwargs.setdefault("integrated_rom_size", 0x2000)
+        kwargs.setdefault("integrated_main_ram_size", 0x8000)
+        firmware_bin = os.environ.get("FIRMWARE_BIN",
+            os.path.join(os.path.dirname(__file__), "firmware", "firmware.bin"))
+        if os.path.exists(firmware_bin):
+            kwargs.setdefault("integrated_rom_init", firmware_bin)
+
         self.platform = platform = terasic_deca.Platform()
 
         # ── Clocks / reset (reuses the DECA USB clock architecture) ─────
@@ -98,7 +113,7 @@ class DecaEHCIKeyboardSoC(SoCCore):
             region=SoCRegion(origin=0xe0000000, size=0x1000, cached=False))
 
         # Wishbone master: EHCI schedule structures + payload DMA in RAM
-        self.bus.add_master(host.dma)
+        self.bus.add_master("usb_ehci_dma", host.dma)
 
         # Interrupt routing
         self.comb += self.cpu.interrupt[17].eq(host.interrupt)

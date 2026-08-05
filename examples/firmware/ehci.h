@@ -19,8 +19,9 @@
 /* EHCI operational register base address */
 #define EHCI_BASE       0xe0000000
 
-/* CSR register base for the LED output (LiteX default CSR base) */
-#define LED_OUT_BASE    0xf0000000
+/* CSR register base for the LED output (main_led_out) — must match
+ * the address allocated by LiteX (see csr.csv: main region). */
+#define LED_OUT_BASE    0xf0001000
 
 /* ── EHCI capability register offsets (bytes from EHCI_BASE) ─────────────── */
 
@@ -188,6 +189,7 @@ typedef struct {
 #define EHCI_FRAME_LIST_ENTRY_SIZE 4
 #define EHCI_FRAME_LIST_ALIGNMENT 4096
 #define EHCI_FL_T_BIT             0x00000001
+#define EHCI_FL_TYP_QH            0x00000002  /* link type = QH (bits [2:1]) */
 #define EHCI_FL_LINK_MASK         0xFFFFFFE0
 
 /* ── USB standard constants ───────────────────────────────────────────────── */

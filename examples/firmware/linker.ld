@@ -4,20 +4,19 @@
  * Copyright (c) 2026 Hans Baier <foss@hans-baier.de>
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * Generated using DeepSeek V4.0 Pro
+ * Memory layout (LiteX VexRiscv, boot from initialized ROM, no BIOS):
+ *   ROM: 0x00000000              (integrated ROM, firmware .text/.rodata)
+ *   RAM: 0x40000000              (integrated main RAM: .data/.bss/
+ *                                 EHCI DMA pool/stack)
  *
- * Memory layout (typical LiteX VexRiscv with internal SRAM):
- *   RAM: 0x00000000 - 0x0000FFFF   (64 KB internal SRAM)
- *
- * The EHCI DMA pool (.bss.ehci_dma) is placed at a fixed offset with
- * 4K alignment so the frame list and QH/qTD structures satisfy the
- * EHCI alignment requirements.
+ * The EHCI DMA pool (.bss.ehci_dma) is 4K-aligned so the frame list and
+ * QH/qTD structures satisfy the EHCI alignment requirements.
  */
 
 MEMORY
 {
-    /* Internal SRAM (adjust size to match your SoC --with-ram) */
-    RAM (rwx) : ORIGIN = 0x00000000, LENGTH = 0x10000  /* 64 KB */
+    ROM (rx)  : ORIGIN = 0x00000000, LENGTH = 0x2000   /* 8 KB */
+    RAM (rwx) : ORIGIN = 0x40000000, LENGTH = 0x8000   /* 32 KB */
 }
 
 ENTRY(_start)
@@ -35,12 +34,17 @@ SECTIONS
         *(.text*)
         *(.rodata*)
         . = ALIGN(4);
-    } > RAM :text
+    } > ROM :text
 
+    /* .data runs from RAM but is loaded in ROM right after .text;
+     * crt0 copies it to RAM at boot. */
     .data : {
+        __data_load = LOADADDR(.data);
+        __data_start = .;
         *(.data*)
         . = ALIGN(4);
-    } > RAM :data
+        __data_end = .;
+    } > RAM AT> ROM :data
 
     .bss (NOLOAD) : {
         . = ALIGN(4);
@@ -51,9 +55,7 @@ SECTIONS
         __bss_end = .;
     } > RAM
 
-    /* EHCI DMA structures: 4K-aligned frame list first.
-     * Keep this region away from the stack (which grows down from
-     * __stack_top). */
+    /* EHCI DMA structures: 4K-aligned frame list first. */
     .bss.ehci_dma (NOLOAD) : {
         . = ALIGN(4096);
         __ehci_dma_start = .;
@@ -64,6 +66,9 @@ SECTIONS
 
     . = ALIGN(16);
     __stack_top = . + 0x2000;   /* 8 KB stack */
+
+    /* Stack must stay inside the 32 KiB RAM (0x40000000-0x40008000). */
+    ASSERT(__stack_top <= 0x40008000, "stack overflows 32 KiB RAM")
 
     _end = .;
 }

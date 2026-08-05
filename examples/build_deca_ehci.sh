@@ -29,7 +29,9 @@ BUILD_GATEWARE=1
 BUILD_FIRMWARE=1
 LOAD_BITSTREAM=0
 OPEN_TERMINAL=0
-TARGET="${TARGET:-deca_ehci_host}"
+TARGET="${TARGET:-terasic_deca}"
+# (LiteX names the build dir after the platform, not the example target:
+# Builder defaults build_name to platform.name.)
 
 usage() {
     cat <<EOF
@@ -55,19 +57,10 @@ for arg in "$@"; do
     esac
 done
 
-# ── 1. Gateware ───────────────────────────────────────────────────────────
-
-if [ "$BUILD_GATEWARE" = "1" ]; then
-    echo "=== Building LiteX gateware ($TARGET) ==="
-    # The SoC builder is a liteusb example; run from examples/ so the
-    # terasic_deca_common import resolves.
-    (cd "$SCRIPT_DIR" && \
-     python3 deca_ehci_host.py --build \
-       --cpu-type vexriscv \
-       --uart-name jtag_uart)
-fi
-
-# ── 2. Firmware ───────────────────────────────────────────────────────────
+# ── 1. Firmware ────────────────────────────────────────────────────────────
+# Build FIRST: the gateware embeds firmware.bin into the integrated ROM
+# (deca_ehci_host.py passes it via integrated_rom_init / FIRMWARE_BIN), so
+# a clean gateware build requires the firmware binary to already exist.
 
 if [ "$BUILD_FIRMWARE" = "1" ]; then
     echo "=== Building bare-metal firmware ==="
@@ -82,6 +75,25 @@ if [ "$BUILD_FIRMWARE" = "1" ]; then
         exit 1
     fi
     make -C "$FIRMWARE_DIR" CROSS_COMPILE="$CROSS_COMPILE"
+fi
+
+# ── 2. Gateware ───────────────────────────────────────────────────────────
+
+if [ "$BUILD_GATEWARE" = "1" ]; then
+    echo "=== Building LiteX gateware ($TARGET) ==="
+    # Remove stale Quartus working databases: a build interrupted mid-map
+    # leaves db/ + incremental_db/ in a state that makes the next
+    # quartus_map's parallel workers die ("Terminating backend
+    # processes...") right after elaboration. Fresh db → clean build.
+    rm -rf "$SCRIPT_DIR/build/$TARGET/gateware/db" \
+           "$SCRIPT_DIR/build/$TARGET/gateware/incremental_db"
+    # The SoC builder is a liteusb example; run from examples/ so the
+    # terasic_deca_common import resolves.
+    (cd "$SCRIPT_DIR" && \
+     python3 deca_ehci_host.py --build \
+       --cpu-type vexriscv \
+       --uart-name jtag_uart \
+       --integrated-rom-size 0x2000)
 fi
 
 # ── 3. Load ───────────────────────────────────────────────────────────────
@@ -109,5 +121,6 @@ if [ "$OPEN_TERMINAL" = "1" ]; then
 fi
 
 echo "=== Done ==="
-echo "To load the firmware over the terminal: use the BIOS 'load' command"
-echo "with serial boot (or mount the RISC-V toolchain's firmware at 0x00000000)."
+echo "The bitstream boots the firmware directly from the integrated ROM"
+echo "(firmware.bin is embedded at build time); no BIOS/loader is needed."
+echo "For debug output, use: litex_term /dev/ttyUSB0 (JTAG UART)"
