@@ -26,13 +26,16 @@ corners met (worst-case setup slack +0.213 ns; DDR3 PHY paths +0.213 ns).
 
   **NOT tracked in git**: these are generated portions of the Intel FPGA
   IP, which the Quartus Prime and Intel FPGA IP License Agreement does not
-  permit redistributing (see .gitignore). To regenerate locally, copy
-  `deca_qsys/synthesis/submodules/` from the Terasic DECA CD demo
-  (`DECA_DDR3_Nios_Test`), run `qsys-generate deca_qsys.qsys
-  --synthesis=VERILOG` with Quartus 21.1, and copy the EMIF subset listed
-  in the directory (deca_qsys_mem_if_ddr3_emif* / rw_manager_* /
-  sequencer_* / alt_mem_ddrx_* / altera_* / max10emif_dcfifo.sv +
-  the three .sdc files).
+  permit redistributing (see .gitignore). Regenerate locally with:
+
+  ```sh
+  ./regenerate_deca_emif.sh /path/to/DECA_DDR3_Nios_Test   # from the DECA CD
+  ./regenerate_deca_emif.sh --smoke-test                   # + quartus_map check
+  ```
+
+  The script runs `qsys-generate` (Quartus 21.1, Lite Edition works) on the
+  Terasic DECA CD demo and extracts the EMIF subset; the optional smoke test
+  re-verifies that the set elaborates cleanly for the 10M50DAF484C6GES.
 - platform changes in `litex-boards/litex_boards/platforms/terasic_deca.py`:
   added `ddr3_clk` resource (PIN_N15) + `ENABLE_OCT_DONE OFF`
 
