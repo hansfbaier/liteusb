@@ -5,3 +5,7 @@
 examples/firmware/*.o
 examples/firmware/*.elf
 examples/firmware/*.bin
+
+# Intel EMIF IP generated sources (Intel FPGA IP License Agreement:
+# generated IP HDL may not be redistributed; see README_DECA_EHCI_LINUX.md).
+examples/vendor/

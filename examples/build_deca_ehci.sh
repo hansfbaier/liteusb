@@ -29,9 +29,9 @@ BUILD_GATEWARE=1
 BUILD_FIRMWARE=1
 LOAD_BITSTREAM=0
 OPEN_TERMINAL=0
-TARGET="${TARGET:-terasic_deca}"
-# (LiteX names the build dir after the platform, not the example target:
-# Builder defaults build_name to platform.name.)
+TARGET="${TARGET:-deca_ehci_host}"
+# (Build dir: examples/build/deca_ehci_host — set in deca_ehci_host.py
+# via deca_main(output_dir=...), not derived from the platform name.)
 
 usage() {
     cat <<EOF

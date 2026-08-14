@@ -37,7 +37,7 @@ from litex_boards.platforms import terasic_deca
 from liteusb.gateware.interface.ulpi import ULPIInterface
 from liteusb.gateware.usb.usb2.host.ehci import USBHostController
 
-from terasic_deca_common import DecaUSBCrg, deca_main
+from terasic_deca_common import DecaUSBCrg, deca_usb_sdc, deca_main
 
 
 class DecaEHCIKeyboardSoC(SoCCore):
@@ -86,6 +86,9 @@ class DecaEHCIKeyboardSoC(SoCCore):
             ulpi=ulpi_plat, clk60=clk60,
             sys_from_usb=sys_from_usb, with_por=with_por)
 
+        # ULPI I/O timing + CDC constraints.
+        deca_usb_sdc(platform)
+
         SoCCore.__init__(self, platform, sys_clk_freq,
             ident="DECA EHCI Keyboard Host", **kwargs)
 
@@ -129,7 +132,8 @@ class DecaEHCIKeyboardSoC(SoCCore):
 
 
 def main():
-    deca_main(DecaEHCIKeyboardSoC, "EHCI USB Keyboard Host on Terasic DECA")
+    deca_main(DecaEHCIKeyboardSoC, "EHCI USB Keyboard Host on Terasic DECA",
+        output_dir="build/deca_ehci_host")
 
 
 if __name__ == "__main__":
