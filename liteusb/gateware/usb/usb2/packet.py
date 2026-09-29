@@ -278,12 +278,14 @@ class USBTokenDetector(Module):
             The UTMI bus to observe.
         filter_by_address: bool
             If true, this detector will only report events for the address supplied in the address[] field.
+        domain: str, optional
+            name of the USB clock domain (default: "usb").
     """
 
     SOF_PID      = 0b0101
     TOKEN_SUFFIX =   0b01
 
-    def __init__(self, *, utmi, filter_by_address=True, domain_clock=60e6, fs_only=False):
+    def __init__(self, *, utmi, filter_by_address=True, domain_clock=60e6, fs_only=False, domain="usb"):
         self.utmi = utmi
         self.filter_by_address = filter_by_address
         self._domain_clock = domain_clock
@@ -431,6 +433,8 @@ class USBTokenDetector(Module):
             )
         )
 
+        ClockDomainsRenamer({"usb": domain})(self)
+
     @staticmethod
     def _generate_crc_for_token(token):
         """ Generates a 5-bit signal equivalent to the CRC check for the provided token packet. """
@@ -462,6 +466,8 @@ class USBHandshakeDetector(Module):
     ----------
     utmi: [UTMIInterface, UTMITranslator]
         The UTMI interface to listen on.
+    domain: str, optional
+        name of the USB clock domain (default: "usb").
     """
 
     ACK_PID   = 0b0010
@@ -469,7 +475,7 @@ class USBHandshakeDetector(Module):
     STALL_PID = 0b1110
     NYET_PID  = 0b0110
 
-    def __init__(self, *, utmi):
+    def __init__(self, *, utmi, domain="usb"):
         self.utmi = utmi
 
         #
@@ -535,6 +541,8 @@ class USBHandshakeDetector(Module):
             )
         )
 
+        ClockDomainsRenamer({"usb": domain})(self)
+
 
 class USBDataPacketCRC(Module):
     """ Gateware that computes a running CRC-16.
@@ -560,9 +568,11 @@ class USBDataPacketCRC(Module):
     ----------
     initial_value: [int, Const]
             The initial value of the CRC shift register; the USB default is used if not provided.
+    domain: str, optional
+        name of the USB clock domain (default: "usb").
     """
 
-    def __init__(self, initial_value=0xFFFF):
+    def __init__(self, initial_value=0xFFFF, domain="usb"):
 
         self._initial_value = initial_value
 
@@ -610,6 +620,8 @@ class USBDataPacketCRC(Module):
 
         # Connect the public crc signal to the output
         self.comb += self.crc.eq(self._output_crc)
+
+        ClockDomainsRenamer({"usb": domain})(self)
 
     def do_finalize(self):
         # Called after all interfaces have been added via add_interface()
@@ -716,11 +728,13 @@ class USBDataPacketReceiver(Module):
         Debug value. If True, a submodule CRC generator will be created.
     speed: USBSpeed
         USBSpeed signal or constant that specifies our speed in standalone mode.
+    domain: str, optional
+        name of the USB clock domain (default: "usb").
     """
 
     _DATA_SUFFIX = 0b11
 
-    def __init__(self, *, utmi, standalone=False, speed=None):
+    def __init__(self, *, utmi, standalone=False, speed=None, domain="usb"):
 
         self.utmi        = utmi
         self.standalone  = standalone
@@ -897,6 +911,8 @@ class USBDataPacketReceiver(Module):
             )
         )
 
+        ClockDomainsRenamer({"usb": domain})(self)
+
 
 class USBDataPacketDeserializer(Module):
     """ Gateware that captures USB data packet contents and parallelizes them.
@@ -924,11 +940,13 @@ class USBDataPacketDeserializer(Module):
         The maximum packet (payload) size to be deserialized, in bytes.
     create_crc_generator: bool
         If True, a submodule CRC generator will be created. Excellent for testing.
+    domain: str, optional
+        name of the USB clock domain (default: "usb").
     """
 
     _DATA_SUFFIX = 0b11
 
-    def __init__(self, *, utmi, max_packet_size=64, create_crc_generator=False):
+    def __init__(self, *, utmi, max_packet_size=64, create_crc_generator=False, domain="usb"):
 
         self.utmi                 = utmi
         self._max_packet_size     = max_packet_size
@@ -1051,6 +1069,8 @@ class USBDataPacketDeserializer(Module):
             )
         )
 
+        ClockDomainsRenamer({"usb": domain})(self)
+
 
 class USBDataPacketGenerator(Module):
     """ Module that converts a FIFO-style stream into a USB data packet.
@@ -1079,9 +1099,11 @@ class USBDataPacketGenerator(Module):
     ----------
     standalone: bool
         If True, this unit will include its internal CRC generator. Perfect for unit testing or debugging.
+    domain: str, optional
+        name of the USB clock domain (default: "usb").
     """
 
-    def __init__(self, standalone=False):
+    def __init__(self, standalone=False, domain="usb"):
 
         self.standalone = standalone
 
@@ -1214,6 +1236,8 @@ class USBDataPacketGenerator(Module):
             )
         )
 
+        ClockDomainsRenamer({"usb": domain})(self)
+
 
 
 class USBHandshakeGenerator(Module):
@@ -1230,6 +1254,11 @@ class USBHandshakeGenerator(Module):
 
     tx: UTMITransmitInterface
         Interface to the relevant UTMI interface.
+
+    Parameters
+    ----------
+    domain: str, optional
+        name of the USB clock domain (default: "usb").
     """
 
     # Full contents of an ACK, NAK, and STALL packet.
@@ -1238,7 +1267,7 @@ class USBHandshakeGenerator(Module):
     _PACKET_NAK   = 0b01011010
     _PACKET_STALL = 0b00011110
 
-    def __init__(self):
+    def __init__(self, domain="usb"):
 
         #
         # I/O port
@@ -1287,6 +1316,8 @@ class USBHandshakeGenerator(Module):
             )
         )
 
+        ClockDomainsRenamer({"usb": domain})(self)
+
 
 class USBInterpacketTimer(Module):
     """ Module that tracks inter-packet timings, enforcing spec-mandated packet gaps.
@@ -1299,6 +1330,10 @@ class USBInterpacketTimer(Module):
         The device's current operating speed. Should be a USBSpeed enumeration value --
         0 for high, 1 for full, 2 for low.
 
+    Parameters
+    ----------
+    domain: str, optional
+        name of the USB clock domain (default: "usb").
     """
 
     # Per the USB 2.0 and ULPI 1.1 specifications, after receipt:
@@ -1323,7 +1358,7 @@ class USBInterpacketTimer(Module):
     _LS_TX_TO_RX_TIMEOUT = {60e6: 640}
 
 
-    def __init__(self, domain_clock=60e6, fs_only=False):
+    def __init__(self, domain_clock=60e6, fs_only=False, domain="usb"):
         self._fs_only = fs_only
 
         # Start off with empty delays -- this doesn't change anything, but makes
@@ -1408,6 +1443,8 @@ class USBInterpacketTimer(Module):
                 self._tx_to_rx_timeout.eq(counter == self._ls_tx_to_rx_timeout) if not self._fs_only else self._tx_to_rx_timeout.eq(0)
             )
         ]
+
+        ClockDomainsRenamer({"usb": domain})(self)
 
 
     def add_interface(self, interface):

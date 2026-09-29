@@ -91,6 +91,11 @@ class USBResetSequencer(Module):
 
     tx: UTMITransmitInterface, output stream
                      -- Our UTMI transmit interface; used to drive chirp signaling onto the bus.
+
+    Parameters
+    ----------
+    domain: str, optional
+        name of the USB clock domain (default: "usb").
     """
 
     # Constants for our line states at various speeds.
@@ -115,7 +120,7 @@ class USBResetSequencer(Module):
     _CYCLES_3_MILLISECONDS     = _CYCLES_1_MILLISECONDS   * 3
 
 
-    def __init__(self):
+    def __init__(self, domain="usb"):
 
         #
         # I/O port
@@ -137,6 +142,8 @@ class USBResetSequencer(Module):
         self.termination_select = Signal(1, reset=1)
 
         self.tx                 = UTMITransmitInterface()
+
+        ClockDomainsRenamer({"usb": domain})(self)
 
 
     def do_finalize(self, platform=None):

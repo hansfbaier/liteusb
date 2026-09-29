@@ -111,7 +111,7 @@ class USBACMSerialDevice(Module):
     def __init__(self, bus, idVendor, idProduct,
             manufacturer_string="LiteUSB",
             product_string="USB-to-serial",
-            serial_number="", max_packet_size=64, handle_clocking=True):
+            serial_number="", max_packet_size=64, handle_clocking=True, domain="usb"):
 
         self._bus                 = bus
         self._idVendor            = idVendor
@@ -121,6 +121,7 @@ class USBACMSerialDevice(Module):
         self._serial_number       = serial_number
         self._max_packet_size     = max_packet_size
         self._handle_clocking     = handle_clocking
+        self._domain              = domain
 
         #
         # I/O port
@@ -137,6 +138,10 @@ class USBACMSerialDevice(Module):
         # registered before finalization starts.
         self.submodules.usb = self.usb = USBDevice(bus=self._bus, handle_clocking=self._handle_clocking)
         self._configure()
+
+        # Relocate the USB clock domain of the whole device (core, endpoints and CDC FIFOs) on
+        # request; the LiteX-facing sink/source stay in their own ("sys") domain.
+        ClockDomainsRenamer({"usb": domain})(self)
 
     def create_descriptors(self):
         """ Creates the descriptors that describe our serial topology. """

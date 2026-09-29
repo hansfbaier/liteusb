@@ -42,7 +42,7 @@ class USBDescriptorStreamGenerator(Module):
         # (sync read in the usb domain; FSM holds the address one cycle ahead.
         #  The migen default "sys" domain would register dat_r on the wrong clock.)
         self.specials.rom = Memory(8, self._data_length, init=data)
-        rom_read_port = self.rom.get_port(clock_domain="usb")
+        rom_read_port = self.rom.get_port(clock_domain=self._domain)
         self.specials += rom_read_port
 
         # Signals
@@ -57,7 +57,7 @@ class USBDescriptorStreamGenerator(Module):
 
         # FSM for stream generation
         fsm = FSM(reset_state="IDLE")
-        fsm = ClockDomainsRenamer("usb")(fsm)
+        fsm = ClockDomainsRenamer(self._domain)(fsm)
         self.submodules += fsm
 
         fsm.act("IDLE",
@@ -120,14 +120,16 @@ class GetDescriptorHandlerDistributed(Module):
         O: stall      -- Pulsed if a STALL handshake should be generated, instead of a response.
     """
 
-    def __init__(self, descriptor_collection, max_packet_length=64):
+    def __init__(self, descriptor_collection, max_packet_length=64, domain="usb"):
         """
         Parameters:
             descriptor_collection -- The DeviceDescriptorCollection containing the descriptors
                                      to use for this device.
+            domain -- Name of the USB clock domain (default: "usb").
         """
         self._descriptors = descriptor_collection
         self._max_packet_length = max_packet_length
+        self._domain = domain
 
         #
         # I/O port
@@ -164,7 +166,7 @@ class GetDescriptorHandlerDistributed(Module):
         for type_number, index, raw_descriptor in self._descriptors:
             # Create the generator...
             if isinstance(raw_descriptor, bytes):
-                generator = USBDescriptorStreamGenerator(raw_descriptor, domain="usb")
+                generator = USBDescriptorStreamGenerator(raw_descriptor, domain=self._domain)
             else:
                 generator = raw_descriptor()
             self._descriptor_generators[(type_number, index)] = generator
@@ -363,7 +365,7 @@ class GetDescriptorHandlerBlock(Module):
         rom_content, descriptor_max_length, max_type_index, index_map = self.generate_rom_content()
 
         self.specials.rom = Memory(32, len(rom_content), init=rom_content)
-        rom_read_port = self.rom.get_port(clock_domain="usb")
+        rom_read_port = self.rom.get_port(clock_domain=self._domain)
         self.specials += rom_read_port
 
         # Convenience aliases - ROM data format is (count, pointer) for metadata

@@ -91,12 +91,15 @@ class USBDevice(Module):
 
     """
 
-    def __init__(self, bus, handle_clocking=True, register_tx_outputs=False):
+    def __init__(self, bus, handle_clocking=True, register_tx_outputs=False, domain="usb"):
         """
         Parameters:
             register_tx_outputs -- If True and a ULPI bus is used, the ULPI
                 TX data/stp outputs are registered before the pins (timing
                 closure at 60MHz ULPI, at the cost of one cycle of latency).
+            domain -- Name of the USB clock domain (default: "usb"). Intended for raw-UTMI
+                integrations that clock the device from a differently-named domain; the ULPI and
+                raw-I/O translators keep their own ("usb" / "usb_io") domains.
         """
         self.handle_clocking = handle_clocking
         self.bus = bus
@@ -164,6 +167,11 @@ class USBDevice(Module):
                 self._bus_name = bus.clk.path[0]
         except (AttributeError, TypeError):
             pass
+
+        # The USB protocol domain is named "usb" internally; relocate it on request so that the
+        # whole device (core, control endpoint and the endpoints added by the integrator) can run
+        # in a differently-named clock domain.
+        ClockDomainsRenamer({"usb": domain})(self)
 
     def add_endpoint(self, endpoint):
         """ Adds an endpoint interface to the device.

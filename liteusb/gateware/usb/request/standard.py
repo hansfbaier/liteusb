@@ -40,13 +40,16 @@ class StandardRequestHandler(ControlRequestHandler):
         Collection of functions that determine if a given packet will be handled by this request handler.
     avoid_blockram: int, optional
         If True, placing data into block RAM will be avoided.
+    domain: str, optional
+        Name of the USB clock domain (default: "usb").
 
      """
 
-    def __init__(self, descriptors: DeviceDescriptorCollection, max_packet_size=64, avoid_blockram=None, blacklist: Iterable[Callable[[SetupPacket], "_Value"]] = (), skiplist: Iterable[Callable[[SetupPacket], "_Value"]] = ()):
+    def __init__(self, descriptors: DeviceDescriptorCollection, max_packet_size=64, avoid_blockram=None, blacklist: Iterable[Callable[[SetupPacket], "_Value"]] = (), skiplist: Iterable[Callable[[SetupPacket], "_Value"]] = (), domain="usb"):
         self.descriptors      = descriptors
         self._max_packet_size = max_packet_size
         self._avoid_blockram  = avoid_blockram
+        self._domain          = domain
         if len(blacklist) > 0:
             warn("Argument 'blacklist' is deprecated; prefer 'skiplist'.", DeprecationWarning)
             if len(skiplist) > 0:
@@ -66,7 +69,8 @@ class StandardRequestHandler(ControlRequestHandler):
 
         # The distributed handler supports a combination of fixed and runtime descriptors directly...
         if self._avoid_blockram:
-            return GetDescriptorHandlerDistributed(self.descriptors, max_packet_length=self._max_packet_size)
+            return GetDescriptorHandlerDistributed(self.descriptors, max_packet_length=self._max_packet_size,
+                domain=self._domain)
 
         # ...but the block handler does not. In this case, first we split the descriptors into two
         # collections: fixed descriptors (for the ROM) and runtime descriptors.
@@ -82,12 +86,15 @@ class StandardRequestHandler(ControlRequestHandler):
 
         # If there are runtime descriptors, we add a get descriptor multiplexer and a distributed handler.
         if has_runtime_descriptors:
-            handler_mux = GetDescriptorHandlerMux()
-            handler_mux.add_descriptor_handler(GetDescriptorHandlerBlock(fixed_descriptors, max_packet_length=self._max_packet_size))
-            handler_mux.add_descriptor_handler(GetDescriptorHandlerDistributed(runtime_descriptors, max_packet_length=self._max_packet_size))
+            handler_mux = GetDescriptorHandlerMux(domain=self._domain)
+            handler_mux.add_descriptor_handler(GetDescriptorHandlerBlock(fixed_descriptors, max_packet_length=self._max_packet_size,
+                domain=self._domain))
+            handler_mux.add_descriptor_handler(GetDescriptorHandlerDistributed(runtime_descriptors, max_packet_length=self._max_packet_size,
+                domain=self._domain))
             return handler_mux
         else:
-            return GetDescriptorHandlerBlock(self.descriptors, max_packet_length=self._max_packet_size)
+            return GetDescriptorHandlerBlock(self.descriptors, max_packet_length=self._max_packet_size,
+                domain=self._domain)
 
 
     def do_finalize(self):
@@ -111,7 +118,7 @@ class StandardRequestHandler(ControlRequestHandler):
 
         # Handler for various small-constant-response requests (GET_CONFIGURATION, GET_STATUS).
         self.submodules.transmitter = transmitter = \
-            StreamSerializer(data_length=2, domain="usb", stream_type=USBInStreamInterface, max_length_width=2)
+            StreamSerializer(data_length=2, domain=self._domain, stream_type=USBInStreamInterface, max_length_width=2)
 
 
         #
@@ -122,7 +129,7 @@ class StandardRequestHandler(ControlRequestHandler):
         self.comb += interface.claim.eq((setup.type == USBRequestType.STANDARD) & ~skiplisted)
 
         # FSM for handling standard requests (runs in the USB clock domain)
-        fsm = ClockDomainsRenamer("usb")(FSM(reset_state='IDLE'))
+        fsm = ClockDomainsRenamer(self._domain)(FSM(reset_state='IDLE'))
         self.submodules += fsm
 
         # IDLE -- not handling any active request

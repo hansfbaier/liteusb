@@ -44,9 +44,11 @@ class USBSignalInEndpoint(Module):
     signal_domain: str, optional
         The name of the domain :attr:``signal`` is clocked from. If this value is anything other than
         "usb", the signal will automatically be synchronized to the USB clock domain.
+    domain: str, optional
+        name of the USB clock domain (default: "usb").
     """
 
-    def __init__(self, *, width, endpoint_number, endianness="little", signal_domain="usb"):
+    def __init__(self, *, width, endpoint_number, endianness="little", signal_domain="usb", domain="usb"):
         self._width = width
         self._endpoint_number = endpoint_number
         self._signal_domain = signal_domain
@@ -72,6 +74,9 @@ class USBSignalInEndpoint(Module):
         tokenizer = self.interface.tokenizer
 
         # Grab a copy of the relevant signal that's in our USB domain; synchronizing if we need to.
+        # Note: this comparison is Python-level and intentionally names the canonical "usb" domain,
+        # as in LUNA (where a DomainRenamer relocation also leaves it matching): a `domain`
+        # relocation keeps the "signal already in the USB domain" case working.
         if self._signal_domain == "usb":
             target_signal = self.signal
         else:
@@ -170,3 +175,5 @@ class USBSignalInEndpoint(Module):
                 NextState("TRANSMIT_RESPONSE"),
             ),
         )
+
+        ClockDomainsRenamer({"usb": domain})(self)

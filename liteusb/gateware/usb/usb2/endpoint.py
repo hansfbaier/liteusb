@@ -127,9 +127,14 @@ class USBEndpointMultiplexer(Module):
 
     shared: EndpointInterface
         The post-multiplexer endpoint interface.
+
+    Parameters
+    ----------
+    domain: str, optional
+        name of the USB clock domain (default: "usb").
     """
 
-    def __init__(self):
+    def __init__(self, domain="usb"):
 
         #
         # I/O port
@@ -140,6 +145,8 @@ class USBEndpointMultiplexer(Module):
         # Internals
         #
         self._interfaces = []
+
+        ClockDomainsRenamer({"usb": domain})(self)
 
 
     def add_interface(self, interface: EndpointInterface):

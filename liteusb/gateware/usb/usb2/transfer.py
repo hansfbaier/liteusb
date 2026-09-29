@@ -77,9 +77,11 @@ class USBInTransferManager(Module):
     ----------
     max_packet_size: int
         The maximum packet size for our associated endpoint, in bytes.
+    domain: str, optional
+        Name of the USB clock domain (default: "usb").
     """
 
-    def __init__(self, max_packet_size):
+    def __init__(self, max_packet_size, domain="usb"):
 
         self._max_packet_size = max_packet_size
 
@@ -379,3 +381,6 @@ class USBInTransferManager(Module):
                 read_stream_ended.eq(0)
             )
         )
+
+        # Internals keep the canonical "usb" name; the domain parameter relocates them.
+        ClockDomainsRenamer({"usb": domain})(self)

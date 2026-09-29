@@ -46,9 +46,11 @@ class USBControlEndpoint(Module):
             Debug parameter. If true, this module will operate without external components;
             i.e. without an internal data-CRC generator, or tokenizer. In this case, tokenizer
             and timer should be set to None; and will be ignored.
+        domain: str, optional
+            Name of the USB clock domain (default: "usb").
     """
 
-    def __init__(self, *, utmi, endpoint_number=0, standalone=False, max_packet_size=64):
+    def __init__(self, *, utmi, endpoint_number=0, standalone=False, max_packet_size=64, domain="usb"):
         self.utmi             = utmi
         self._standalone      = standalone
         self._endpoint_number = endpoint_number
@@ -65,6 +67,9 @@ class USBControlEndpoint(Module):
 
         # List of the modules that will handle control requests.
         self._request_handlers = []
+
+        # Internals keep the canonical "usb" name; the domain parameter relocates them.
+        ClockDomainsRenamer({"usb": domain})(self)
 
     def add_request_handler(self, request_handler):
         """ Adds a ControlRequestHandler module to this control endpoint.

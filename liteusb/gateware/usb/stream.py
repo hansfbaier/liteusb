@@ -171,10 +171,10 @@ class USBOutStreamBoundaryDetector(Module):
         buffered_complete = Signal()
         buffered_invalid  = Signal()
 
-        # Create the finite state machine in the usb domain
+        # Create the finite state machine in the USB domain
         fsm = FSM(reset_state="WAIT_FOR_FIRST_BYTE")
-        # Explicitly place FSM in the usb domain to match the test clock
-        fsm = ClockDomainsRenamer("usb")(fsm)
+        # Explicitly place the FSM in the USB domain (migen's default domain is "sys")
+        fsm = ClockDomainsRenamer(self._domain)(fsm)
         self.submodules += fsm
 
         # WAIT_FOR_FIRST_BYTE -- we're not actively receiving data, yet. Wait for the
@@ -220,7 +220,8 @@ class USBOutStreamBoundaryDetector(Module):
 
         # Synchronous output assignments to match Amaranth timing
         # These implement the same behavior as Amaranth's m.d.usb +=
-        self.sync.usb += [
+        domain_sync = getattr(self.sync, self._domain)
+        domain_sync += [
             # Default assignments
             out_stream.valid.eq(0),
             out_stream.next.eq(0),

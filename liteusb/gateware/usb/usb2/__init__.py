@@ -47,9 +47,14 @@ class USBDirection:
 # USB Packet ID Definitions
 #
 
-class USBPacketID:
-    """ Class specifying all of the valid USB PIDs we can handle. """
-    
+class USBPacketID(int):
+    """ Class specifying all of the valid USB PIDs we can handle.
+
+    The members are ``int`` subclasses, so both the member-level API used by LUNA
+    (``USBPacketID.DATA1.byte()``, ``pid.is_data()``, ``pid.summarize()``, ``pid.name``) and the
+    class-level API (``USBPacketID.byte(pid)``) are available.
+    """
+
     # Token group (lsbs = 0b01).
     OUT   = 0b0001
     IN    = 0b1001
@@ -98,7 +103,18 @@ class USBPacketID:
     }
     
     _value_map = {v: k for k, v in _name_map.items()}
-    
+
+    # Member properties (LUNA parity).
+    @property
+    def name(self):
+        """ Name of the PID, as a string (e.g. "DATA1"). """
+        return USBPacketID._name_map.get(int(self) & USBPacketID.PID_CORE_MASK, 'UNKNOWN')
+
+    @property
+    def value(self):
+        """ Value of the PID, as an integer. """
+        return int(self)
+
     @classmethod
     def from_byte(cls, byte, skip_checks=False):
         """ Creates a PID object from a byte. """
@@ -123,12 +139,12 @@ class USBPacketID:
             if (pid ^ inverted_pid) != PID_MASK:
                 pid |= cls.PID_INVALID
         
-        return pid
+        return cls(pid)
     
     @classmethod
     def from_name(cls, name):
         """ Create a PID object from a string representation of its name. """
-        return cls._value_map[name.upper()]
+        return getattr(cls, name.upper())
     
     @classmethod
     def parse(cls, value):
@@ -144,61 +160,64 @@ class USBPacketID:
         
         return value
     
-    @classmethod
-    def category(cls, pid):
+    # PID classification. Written as member methods (``pid.is_data()``) that also work when called
+    # with the PID as first argument (``USBPacketID.is_data(pid)``): method bodies only use integer
+    # operations on self and reference the class explicitly.
+    def category(self):
         """ Returns the USBPIDCategory that each given PID belongs to. """
-        return pid & USBPIDCategory.MASK
+        return self & USBPIDCategory.MASK
     
-    @classmethod
-    def is_data(cls, pid):
+    def is_data(self):
         """ Returns true iff the given PID represents a DATA packet. """
-        return cls.category(pid) == USBPIDCategory.DATA
+        return USBPacketID.category(self) == USBPIDCategory.DATA
     
-    @classmethod
-    def is_token(cls, pid):
+    def is_token(self):
         """ Returns true iff the given PID represents a token packet. """
-        return cls.category(pid) == USBPIDCategory.TOKEN
+        return USBPacketID.category(self) == USBPIDCategory.TOKEN
     
-    @classmethod
-    def is_handshake(cls, pid):
+    def is_handshake(self):
         """ Returns true iff the given PID represents a handshake packet. """
-        return cls.category(pid) == USBPIDCategory.HANDSHAKE
+        return USBPacketID.category(self) == USBPIDCategory.HANDSHAKE
     
-    @classmethod
-    def is_invalid(cls, pid):
+    def is_invalid(self):
         """ Returns true if this object is an attempt to encapsulate an invalid PID. """
-        return bool(pid & cls.PID_INVALID)
+        return bool(self & USBPacketID.PID_INVALID)
     
-    @classmethod
-    def direction(cls, pid):
+    def direction(self):
         """ Get a USB direction from a PacketID. """
-        if pid == cls.SOF:
+        if self == USBPacketID.SOF:
             return None
         
-        if pid == cls.SETUP or pid == cls.OUT:
+        if self == USBPacketID.SETUP or self == USBPacketID.OUT:
             return USBDirection.OUT
         
-        if pid == cls.IN:
+        if self == USBPacketID.IN:
             return USBDirection.IN
         
         raise ValueError("cannot determine the direction of a non-token PID")
     
-    @classmethod
-    def summarize(cls, pid):
+    def summarize(self):
         """ Return a summary of the given packet. """
         # By default, get the raw name.
-        core_pid = pid & cls.PID_CORE_MASK
-        name = cls._name_map.get(core_pid, 'UNKNOWN')
+        core_pid = self & USBPacketID.PID_CORE_MASK
+        name = USBPacketID._name_map.get(core_pid, 'UNKNOWN')
         
-        if cls.is_invalid(pid):
+        if USBPacketID.is_invalid(self):
             return "{} (check-nibble invalid)".format(name)
         else:
             return name
     
-    @classmethod
-    def byte(cls, pid):
+    def byte(self):
         """ Return the value with its upper nibble. """
-        inverted_pid = pid ^ 0b1111
-        full_pid     = (inverted_pid << 4) | pid
+        inverted_pid = self ^ 0b1111
+        full_pid     = (inverted_pid << 4) | self
         
         return full_pid
+
+
+# Expose the PID constants as member instances, so that the member-level API (leaf.byte(),
+# leaf.is_data(), leaf.name, ...) is available on USBPacketID.OUT, USBPacketID.DATA1, etc.
+for _pid_name in ("OUT", "IN", "SOF", "SETUP", "DATA0", "DATA1", "DATA2", "MDATA",
+                  "ACK", "NAK", "STALL", "NYET", "PRE", "ERR", "SPLIT", "PING"):
+    setattr(USBPacketID, _pid_name, USBPacketID(getattr(USBPacketID, _pid_name)))
+del _pid_name

@@ -43,9 +43,11 @@ class USBIsochronousStreamOutEndpoint(Module):
     buffer_size: int, optional
         The total amount of data we'll keep in the buffer; typically two (TODO three?) max-packet-sizes or more.
         Defaults to twice (TODO three?) times the maximum packet size.
+    domain: str, optional
+        name of the USB clock domain (default: "usb").
     """
 
-    def __init__(self, *, endpoint_number, max_packet_size, buffer_size=None):
+    def __init__(self, *, endpoint_number, max_packet_size, buffer_size=None, domain="usb"):
         self._endpoint_number = endpoint_number
         self._max_packet_size = max_packet_size
         # TODO self._buffer_size = buffer_size if (buffer_size is not None) else (self._max_packet_size * 3)
@@ -157,3 +159,5 @@ class USBIsochronousStreamOutEndpoint(Module):
                 rx_cnt.eq(0)
             )
         ]
+
+        ClockDomainsRenamer({"usb": domain})(self)

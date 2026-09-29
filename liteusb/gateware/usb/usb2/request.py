@@ -141,10 +141,12 @@ class USBSetupDecoder(Module):
                         enumeration value -- 0 for high, 1 for full, 2 for low.
         *: packet    -- The SetupPacket record carrying our parsed output.
         I: ack       -- True when we're requesting that an ACK be generated.
+        domain: str, optional
+            Name of the USB clock domain (default: "usb").
     """
     SETUP_PID = 0b1101
 
-    def __init__(self, *, utmi, standalone=False):
+    def __init__(self, *, utmi, standalone=False, domain="usb"):
         """
         Paremeters:
             utmi           -- The UTMI bus we'll monitor for data. We'll consider this read-only.
@@ -167,6 +169,9 @@ class USBSetupDecoder(Module):
 
         self.packet        = SetupPacket()
         self.ack           = Signal()
+
+        # Internals keep the canonical "usb" name; the domain parameter relocates them.
+        ClockDomainsRenamer({"usb": domain})(self)
 
 
     def do_finalize(self):

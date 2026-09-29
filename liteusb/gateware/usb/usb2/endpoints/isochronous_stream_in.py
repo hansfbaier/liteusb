@@ -58,11 +58,13 @@ class USBIsochronousStreamInEndpoint(Module):
     max_packet_size: int
         The maximum packet size for this endpoint. Should match the wMaxPacketSize provided in the
         USB endpoint descriptor.
+    domain: str, optional
+        name of the USB clock domain (default: "usb").
     """
 
     _MAX_FRAME_DATA = 1024 * 3
 
-    def __init__(self, *, endpoint_number, max_packet_size):
+    def __init__(self, *, endpoint_number, max_packet_size, domain="usb"):
         self._endpoint_number = endpoint_number
         self._max_packet_size = max_packet_size
 
@@ -266,3 +268,5 @@ class USBIsochronousStreamInEndpoint(Module):
 
         # Update tx_cnt based on next_byte (synchronous)
         self.sync.usb += tx_cnt.eq(next_byte)
+
+        ClockDomainsRenamer({"usb": domain})(self)

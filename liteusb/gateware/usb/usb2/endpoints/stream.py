@@ -60,10 +60,12 @@ class USBStreamInEndpoint(Module):
     max_packet_size: int
         The maximum packet size for this endpoint. Should match the wMaxPacketSize provided in the
         USB endpoint descriptor.
+    domain: str, optional
+        name of the USB clock domain (default: "usb").
     """
 
 
-    def __init__(self, *, endpoint_number, max_packet_size):
+    def __init__(self, *, endpoint_number, max_packet_size, domain="usb"):
 
         self._endpoint_number = endpoint_number
         self._max_packet_size = max_packet_size
@@ -113,6 +115,8 @@ class USBStreamInEndpoint(Module):
             interface.handshakes_in.connect(tx_manager.handshakes_in)
         ]
 
+        ClockDomainsRenamer({"usb": domain})(self)
+
 
 
 class USBMultibyteStreamInEndpoint(Module):
@@ -148,8 +152,10 @@ class USBMultibyteStreamInEndpoint(Module):
     max_packet_size: int
         The maximum packet size for this endpoint. Should match the wMaxPacketSize provided in the
         USB endpoint descriptor.
+    domain: str, optional
+        name of the USB clock domain (default: "usb").
     """
-    def __init__(self, *, byte_width, endpoint_number, max_packet_size):
+    def __init__(self, *, byte_width, endpoint_number, max_packet_size, domain="usb"):
         self._byte_width      = byte_width
         self._endpoint_number = endpoint_number
         self._max_packet_size = max_packet_size
@@ -243,6 +249,8 @@ class USBMultibyteStreamInEndpoint(Module):
             byte_stream.last.eq(last_latched  & is_last_byte)
         ]
 
+        ClockDomainsRenamer({"usb": domain})(self)
+
 
 
 class USBStreamOutEndpoint(Module):
@@ -268,10 +276,12 @@ class USBStreamOutEndpoint(Module):
     buffer_size: int, optional
         The total amount of data we'll keep in the buffer; typically two max-packet-sizes or more.
         Defaults to twice the maximum packet size.
+    domain: str, optional
+        name of the USB clock domain (default: "usb").
     """
 
 
-    def __init__(self, *, endpoint_number, max_packet_size, buffer_size=None):
+    def __init__(self, *, endpoint_number, max_packet_size, buffer_size=None, domain="usb"):
         self._endpoint_number = endpoint_number
         self._max_packet_size = max_packet_size
         self._buffer_size = buffer_size if (buffer_size is not None) else (self._max_packet_size * 2 - 1)
@@ -427,3 +437,5 @@ class USBStreamOutEndpoint(Module):
                 expected_data_toggle.eq(0)
             )
         ]
+
+        ClockDomainsRenamer({"usb": domain})(self)
