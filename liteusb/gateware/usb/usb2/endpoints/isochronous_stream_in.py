@@ -135,9 +135,9 @@ class USBIsochronousStreamInEndpoint(Module):
         ]
 
         #
-        # Core sequencing FSM.
+        # Core sequencing FSM (runs in the USB domain, as the rest of the endpoint).
         #
-        fsm = FSM(reset_state="IDLE")
+        fsm = ClockDomainsRenamer("usb")(FSM(reset_state="IDLE"))
         self.submodules += fsm
 
         # IDLE -- the host hasn't yet requested data from our endpoint.

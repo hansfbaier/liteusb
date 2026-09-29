@@ -187,7 +187,8 @@ class USBMultibyteStreamInEndpoint(Module):
         self.comb += byte_stream.payload.eq(data_shift[0:8])
 
 
-        fsm = FSM(reset_state="IDLE")
+        # Serialization FSM (runs in the USB domain, as the inner byte stream endpoint).
+        fsm = ClockDomainsRenamer("usb")(FSM(reset_state="IDLE"))
         self.submodules += fsm
 
         # IDLE: transmitter is waiting for input
