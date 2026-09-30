@@ -49,6 +49,7 @@ liteusb/tests/device_test.py
 liteusb/tests/test_case.py
 liteusb/tests/test_ulpi.py
 liteusb/tests/test_ulpi_rx_gaps.py
+liteusb/tests/test_usb2_clkdomain.py
 liteusb/tests/test_usb2_descriptor.py
 liteusb/tests/test_usb2_device.py
 liteusb/tests/test_usb2_endpoints.py
@@ -69,6 +70,7 @@ tests/README.md
 tests/__init__.py
 tests/test_case.py
 tests/test_ulpi.py
+tests/test_usb2_clkdomain.py
 tests/test_usb2_descriptor.py
 tests/test_usb2_device.py
 tests/test_usb2_endpoints.py

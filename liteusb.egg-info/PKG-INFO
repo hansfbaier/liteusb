@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: liteusb
-Version: 2025.12
+Version: 0.2.0
 Summary: Small footprint and configurable USB core for LiteX.
 Home-page: https://github.com/hansfbaier/
 Download-URL: https://github.com/hansfbaier/liteusb

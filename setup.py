@@ -10,7 +10,7 @@ with open("README.md", "r", encoding="utf-8") as fp:
 
 setup(
     name                          = "liteusb",
-    version                       = "2025.12",
+    version                       = "0.2.0",
     description                   = "Small footprint and configurable USB core for LiteX.",
     long_description              = long_description,
     long_description_content_type = "text/markdown",
