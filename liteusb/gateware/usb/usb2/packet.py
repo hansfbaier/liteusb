@@ -1380,7 +1380,7 @@ class USBInterpacketTimer(Module):
         # If we're not in a FS-only configuration, capture our other delays.
         if not self._fs_only:
             if domain_clock not in self._HS_RX_TO_TX_DELAY:
-                raise ValueError(f"Domain clock must be in {self._FS_TX_TO_RX_TIMEOUT.keys()}, not {domain_clock}.")
+                raise ValueError(f"Domain clock must be in {self._HS_RX_TO_TX_DELAY.keys()}, not {domain_clock}.")
 
             # Capute our HS and LS delays for the given clock speed.
             self._hs_rx_to_tx_delay   = self._HS_RX_TO_TX_DELAY[domain_clock]

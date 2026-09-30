@@ -385,7 +385,9 @@ class USBDevice(Module):
             self.utmi.dp_pulldown.eq(0),
 
             # Let our reset sequencer set our USB mode and speed.
-            reset_sequencer.low_speed_only.eq(self.low_speed_only & ~self.always_fs),
+            # `always_fs` is a plain Python bool on the raw-UTMI/raw-I/O paths: negate it as an int,
+            # since `~bool` is deprecated in Python 3.16 (and is not a logical negation).
+            reset_sequencer.low_speed_only.eq(self.low_speed_only & ~int(self.always_fs)),
             reset_sequencer.full_speed_only.eq(self.full_speed_only | self.always_fs),
             self.utmi.op_mode.eq(reset_sequencer.operating_mode),
             self.utmi.xcvr_select.eq(reset_sequencer.current_speed),
